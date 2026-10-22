@@ -13,12 +13,8 @@
     </security>
   </trustInfo>
 
-  <application xmlns="urn:schemas-microsoft-com:asm.v3">
-    <windowsSettings>
-      <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
-      <dpiAwareness xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">PerMonitorV2</dpiAwareness>
-    </windowsSettings>
-  </application>
+  <!-- O DPI fica na propriedade ApplicationHighDpiMode do projeto, nao aqui:
+       declarado no manifest, o WinForms avisa (WFAC010) e as duas fontes brigam. -->
 
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>
