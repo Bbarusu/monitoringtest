@@ -35,13 +35,21 @@
                     </StackPanel>
                 </StackPanel>
 
-                <Button x:Name="BotaoPausar" Style="{StaticResource BotaoRedondo}"
-                        HorizontalAlignment="Right" VerticalAlignment="Top"
-                        ToolTip="Pausar monitoramento" Click="Pausar_Click">
-                    <Path Data="M12,3 L12,11 M6.5,6.5 A8,8 0 1,0 17.5,6.5"
-                          Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round"
-                          StrokeEndLineCap="Round" Width="20" Height="20" Stretch="Uniform" />
-                </Button>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Button Style="{StaticResource BotaoRedondoFraco}" Margin="0,0,8,0"
+                            ToolTip="Minimizar painel" Click="Minimizar_Click">
+                        <Path Data="M5,12 L19,12" Stroke="#C4CAD6" StrokeThickness="2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Width="18" Height="18" Stretch="Uniform" />
+                    </Button>
+                    <Button x:Name="BotaoPausar" Style="{StaticResource BotaoRedondo}"
+                            ToolTip="Pausar monitoramento" Click="Pausar_Click">
+                        <Path Data="M12,3 L12,11 M6.5,6.5 A8,8 0 1,0 17.5,6.5"
+                              Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" Width="20" Height="20" Stretch="Uniform" />
+                    </Button>
+                </StackPanel>
             </Grid>
 
             <!-- Aviso: driver de sensores -->

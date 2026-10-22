@@ -23,7 +23,14 @@ public partial class FlyoutWindow : Window
 
         AplicarTransparencia();
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() => Aplicar(snap));
-        Deactivated += (_, _) => Esconder();
+
+        // Por padrao o painel fica aberto mesmo sem foco, para dar para olhar,
+        // trocar de janela e tirar print. Quem fecha e o botao de minimizar
+        // ou o icone da bandeja.
+        Deactivated += (_, _) =>
+        {
+            if (_cfg.FecharAoPerderFoco) Esconder();
+        };
     }
 
     // ------------------------------------------------------------------
@@ -144,6 +151,8 @@ public partial class FlyoutWindow : Window
         var figura = new PathFigure(inicio, new[] { arco }, false);
         Anel.Data = new PathGeometry(new[] { figura });
     }
+
+    private void Minimizar_Click(object sender, RoutedEventArgs e) => Esconder();
 
     private void Pausar_Click(object sender, RoutedEventArgs e)
     {

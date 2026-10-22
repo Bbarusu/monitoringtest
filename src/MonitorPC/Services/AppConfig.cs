@@ -46,6 +46,13 @@ public sealed class AppConfig
     public bool Transparencia { get; set; } = true;
     public int Opacidade { get; set; } = 85;
 
+    /// <summary>
+    /// Fechar o painel ao clicar fora dele. Desligado por padrao: assim da para
+    /// olhar o painel, trocar de janela e tirar print sem ele sumir. Quem fecha
+    /// e o botao de minimizar ou o icone da bandeja.
+    /// </summary>
+    public bool FecharAoPerderFoco { get; set; }
+
     // --- Intervalos de leitura, em milissegundos ---
     public int IntervaloPainelAberto { get; set; } = 1000;
     public int IntervaloPainelFechado { get; set; } = 3000;

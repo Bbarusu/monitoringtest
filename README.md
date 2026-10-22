@@ -38,6 +38,10 @@ passam a valer sobre a detecção.
 Os **watts por unidade**, a capacidade e a eficiência da fonte, e os limites de
 temperatura também ficam nesse arquivo.
 
+`FecharAoPerderFoco` vem desligado: o painel continua aberto quando você clica em
+outra janela, o que permite comparar com outro programa ou tirar print. Quem fecha
+é o botão de minimizar ou o ícone da bandeja. Ligue se preferir que ele suma sozinho.
+
 ## Estrutura
 
 ```

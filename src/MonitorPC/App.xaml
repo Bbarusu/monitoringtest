@@ -103,6 +103,28 @@
             </Setter>
         </Style>
 
+        <!-- Botao redondo discreto, para acoes secundarias do cabecalho -->
+        <Style x:Key="BotaoRedondoFraco" TargetType="Button">
+            <Setter Property="Width" Value="44" />
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="22" Background="{StaticResource Chip}"
+                                BorderBrush="{StaticResource Trilho}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="{StaticResource Trilho}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Botao quadrado do rodape -->
         <Style x:Key="BotaoIcone" TargetType="Button">
             <Setter Property="Width" Value="36" />
