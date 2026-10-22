@@ -19,6 +19,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        InstalarCapturaDeErros();
 
         _cfg = AppConfig.Carregar();
         AplicarAcento();
@@ -50,15 +51,51 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// Sem isto, qualquer excecao vira uma caixa de erro do Windows sem
+    /// informacao nenhuma. Erros na interface sao registrados e o app segue;
+    /// os demais sao registrados antes de encerrar.
+    /// </summary>
+    private void InstalarCapturaDeErros()
+    {
+        DispatcherUnhandledException += (_, args) =>
+        {
+            Log.Erro("Interface", args.Exception);
+            args.Handled = true;
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception ex) Log.Erro("Processo", ex);
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Log.Erro("Tarefa em segundo plano", args.Exception);
+            args.SetObserved();
+        };
+    }
+
+    /// <summary>
     /// O acento acompanha a cor do Windows quando a configuracao pede;
     /// senao usa a cor escolhida pelo usuario.
     /// </summary>
     private void AplicarAcento()
     {
-        var cor = (Color)ColorConverter.ConvertFromString(_cfg.CorDestaque)!;
+        var cor = Colors.DodgerBlue;
 
-        if (_cfg.AcompanharCorDoSistema && CorDeDestaqueDoWindows() is { } sistema)
-            cor = sistema;
+        try
+        {
+            cor = (Color)ColorConverter.ConvertFromString(_cfg.CorDestaque)!;
+
+            if (_cfg.AcompanharCorDoSistema && CorDeDestaqueDoWindows() is { } sistema)
+                cor = sistema;
+        }
+        catch (Exception ex)
+        {
+            // Uma cor invalida ou um registro inacessivel nao pode impedir o app
+            // de abrir: fica o azul padrao.
+            Log.Erro("Cor de destaque", ex);
+        }
 
         Resources["Acento"] = new SolidColorBrush(cor);
     }
