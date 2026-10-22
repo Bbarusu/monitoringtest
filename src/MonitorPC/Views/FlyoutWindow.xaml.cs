@@ -11,6 +11,8 @@ public partial class FlyoutWindow : Window
     private const double Raio = 100;
     private const double Margem = 20;
 
+    private static readonly Color FundoSolido = Color.FromRgb(0x15, 0x17, 0x1C);
+
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
     private bool _pausado;
@@ -77,11 +79,24 @@ public partial class FlyoutWindow : Window
         else Mostrar();
     }
 
+    /// <summary>
+    /// A transparencia vai no alpha do fundo, nao na opacidade do elemento:
+    /// Opacity desbota tambem o texto, os aneis e os icones, e o painel inteiro
+    /// fica lavado. Com alpha so o fundo deixa passar o que esta atras.
+    /// </summary>
     private void AplicarTransparencia()
     {
-        Painel.Opacity = _cfg.Transparencia
-            ? Math.Clamp(_cfg.Opacidade, 40, 100) / 100.0
-            : 1.0;
+        Painel.Opacity = 1.0;
+
+        if (!_cfg.Transparencia)
+        {
+            Painel.Background = new SolidColorBrush(FundoSolido);
+            return;
+        }
+
+        var alpha = (byte)(Math.Clamp(_cfg.Opacidade, 40, 100) * 255 / 100);
+        Painel.Background = new SolidColorBrush(
+            Color.FromArgb(alpha, FundoSolido.R, FundoSolido.G, FundoSolido.B));
     }
 
     // ------------------------------------------------------------------
