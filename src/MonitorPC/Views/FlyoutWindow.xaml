@@ -145,7 +145,7 @@
                            Foreground="#C4CAD6" Text="Sensores ativos" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Style="{StaticResource BotaoIcone}" ToolTip="Personalização"
-                            Margin="0,0,8,0" IsEnabled="False">
+                            Margin="0,0,8,0" Click="Personalizar_Click">
                         <Path Data="M12,3 A9,9 0 1,0 12,21 A2,2 0 0,0 14,19 C14,18 13,17.5 13,16.5 C13,15.5 13.7,15 15,15 L17,15 A3,3 0 0,0 20,12 C20,7 16,3 12,3 Z"
                               Stroke="#C4CAD6" StrokeThickness="1.8" Width="16" Height="16" Stretch="Uniform" />
                     </Button>

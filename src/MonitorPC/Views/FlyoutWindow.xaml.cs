@@ -174,6 +174,20 @@ public partial class FlyoutWindow : Window
 
     private void Minimizar_Click(object sender, RoutedEventArgs e) => Esconder();
 
+    private void Personalizar_Click(object sender, RoutedEventArgs e)
+    {
+        // A tela aplica cor e transparencia na hora, para dar para ver o efeito
+        // enquanto se mexe nos controles.
+        var tela = new PersonalizacaoWindow(_cfg, () =>
+        {
+            (Application.Current as App)?.AplicarAparencia();
+            AplicarTransparencia();
+        })
+        { Owner = this };
+
+        tela.ShowDialog();
+    }
+
     private void Pausar_Click(object sender, RoutedEventArgs e)
     {
         _pausado = !_pausado;

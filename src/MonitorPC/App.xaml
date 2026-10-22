@@ -103,6 +103,81 @@
             </Setter>
         </Style>
 
+        <!-- Interruptor -->
+        <Style x:Key="Interruptor" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="trilho" Width="40" Height="22" CornerRadius="11"
+                                Background="{StaticResource Trilho}">
+                            <Ellipse x:Name="bolinha" Width="18" Height="18" Fill="White"
+                                     HorizontalAlignment="Left" Margin="2,0,0,0" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="trilho" Property="Background" Value="{DynamicResource Acento}" />
+                                <Setter TargetName="bolinha" Property="HorizontalAlignment" Value="Right" />
+                                <Setter TargetName="bolinha" Property="Margin" Value="0,0,2,0" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="trilho" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Amostra de cor -->
+        <Style x:Key="Amostra" TargetType="RadioButton">
+            <Setter Property="Width" Value="44" />
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="aro" CornerRadius="22" Padding="3"
+                                BorderThickness="2" BorderBrush="Transparent">
+                            <Ellipse Fill="{TemplateBinding Background}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="aro" Property="BorderBrush" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="aro" Property="Opacity" Value="0.45" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Botao de acao secundaria, largura cheia -->
+        <Style x:Key="BotaoLargo" TargetType="Button">
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Foreground" Value="#C4CAD6" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="12" Background="{StaticResource Cartao}"
+                                BorderBrush="{StaticResource Borda}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="{StaticResource Trilho}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Botao redondo discreto, para acoes secundarias do cabecalho -->
         <Style x:Key="BotaoRedondoFraco" TargetType="Button">
             <Setter Property="Width" Value="44" />

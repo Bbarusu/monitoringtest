@@ -79,6 +79,9 @@ public partial class App : Application
     /// O acento acompanha a cor do Windows quando a configuracao pede;
     /// senao usa a cor escolhida pelo usuario.
     /// </summary>
+    /// <summary>Reaplica a cor de destaque. Chamada pela tela de Personalização.</summary>
+    public void AplicarAparencia() => AplicarAcento();
+
     private void AplicarAcento()
     {
         var cor = Colors.DodgerBlue;
