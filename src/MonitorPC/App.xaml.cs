@@ -57,20 +57,39 @@ public partial class App : Application
     {
         var cor = (Color)ColorConverter.ConvertFromString(_cfg.CorDestaque)!;
 
-        if (_cfg.AcompanharCorDoSistema)
-        {
-            try
-            {
-                var sistema = SystemParameters.WindowGlassColor;
-                if (sistema.A > 0) cor = sistema;
-            }
-            catch
-            {
-                // Sem cor do sistema disponivel, fica a configurada.
-            }
-        }
+        if (_cfg.AcompanharCorDoSistema && CorDeDestaqueDoWindows() is { } sistema)
+            cor = sistema;
 
         Resources["Acento"] = new SolidColorBrush(cor);
+    }
+
+    /// <summary>
+    /// Cor de destaque escolhida pelo usuario no Windows. Vem do DWM, em ABGR.
+    /// Nao usar SystemParameters.WindowGlassColor: aquilo e a cor do vidro das
+    /// janelas, que costuma sair acinzentada e nao acompanha a escolha do usuario.
+    /// </summary>
+    private static Color? CorDeDestaqueDoWindows()
+    {
+        try
+        {
+            using var chave = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
+                @"Software\Microsoft\Windows\DWM");
+
+            if (chave?.GetValue("AccentColor") is not int abgr) return null;
+
+            var cor = Color.FromRgb(
+                (byte)(abgr & 0xFF),
+                (byte)((abgr >> 8) & 0xFF),
+                (byte)((abgr >> 16) & 0xFF));
+
+            // Um acento quase preto ou quase branco sumiria sobre o painel escuro.
+            var brilho = (0.299 * cor.R + 0.587 * cor.G + 0.114 * cor.B) / 255.0;
+            return brilho is > 0.12 and < 0.95 ? cor : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>

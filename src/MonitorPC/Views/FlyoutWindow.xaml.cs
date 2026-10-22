@@ -132,13 +132,18 @@ public partial class FlyoutWindow : Window
     /// <summary>Arco do topo no sentido horario, proporcional a carga.</summary>
     private void DesenharAnel(double porcentagem)
     {
-        if (porcentagem <= 0)
+        // Abaixo de uns 2% o arco vira um ponto solto no topo. Um minimo visual
+        // mantem a leitura de "tem pouca carga" sem parecer defeito.
+        var valor = Math.Clamp(porcentagem, 0, 100);
+        if (valor > 0) valor = Math.Max(valor, 1.8);
+
+        if (valor <= 0)
         {
             Anel.Data = null;
             return;
         }
 
-        var angulo = Math.Min(porcentagem, 99.999) / 100.0 * 2 * Math.PI;
+        var angulo = Math.Min(valor, 99.999) / 100.0 * 2 * Math.PI;
         var centro = new Point(110, 110);
         var inicio = new Point(centro.X, centro.Y - Raio);
         var fim = new Point(
