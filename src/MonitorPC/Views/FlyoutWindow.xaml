@@ -23,12 +23,12 @@
                                Foreground="{StaticResource Texto}" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
-                                BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,0">
+                                BorderThickness="1" CornerRadius="10" Padding="10,5" Margin="0,0,8,0">
                             <TextBlock x:Name="ChipCpu" Text="-- °C" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Texto}" />
                         </Border>
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
-                                BorderThickness="1" CornerRadius="999" Padding="10,5">
+                                BorderThickness="1" CornerRadius="10" Padding="10,5">
                             <TextBlock x:Name="ChipRam" Text="RAM --%" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Texto}" />
                         </Border>
@@ -131,12 +131,12 @@
 
             <!-- Perfis de energia -->
             <UniformGrid Columns="3" Margin="0,12,0,0">
-                <RadioButton Style="{StaticResource Perfil}" Content="Econômico"
-                             Margin="0,0,6,0" IsEnabled="False" />
-                <RadioButton Style="{StaticResource Perfil}" Content="Equilibrado"
-                             Margin="6,0,6,0" IsChecked="True" IsEnabled="False" />
-                <RadioButton Style="{StaticResource Perfil}" Content="Desempenho"
-                             Margin="6,0,0,0" IsEnabled="False" />
+                <RadioButton x:Name="PerfilEconomico" Style="{StaticResource Perfil}"
+                             Content="Econômico" Margin="0,0,6,0" Click="Perfil_Click" />
+                <RadioButton x:Name="PerfilEquilibrado" Style="{StaticResource Perfil}"
+                             Content="Equilibrado" Margin="6,0,6,0" Click="Perfil_Click" />
+                <RadioButton x:Name="PerfilDesempenho" Style="{StaticResource Perfil}"
+                             Content="Desempenho" Margin="6,0,0,0" Click="Perfil_Click" />
             </UniformGrid>
 
             <!-- Rodape -->

@@ -11,6 +11,9 @@ namespace MonitorPC.Services;
 /// </summary>
 public sealed class AppConfig
 {
+    /// <summary>Opacidade minima do painel. Abaixo disto o texto deixa de ser legivel.</summary>
+    public const int OpacidadeMinima = 15;
+
     // --- Watts por unidade (estimativa, ajustavel) ---
     public double WattsPorModuloRam { get; set; } = 3.0;
     public double WattsPorDisco { get; set; } = 2.0;

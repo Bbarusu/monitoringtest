@@ -32,7 +32,7 @@ public partial class PersonalizacaoWindow : Window
 
         SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
         Transparencia.IsChecked = _cfg.Transparencia;
-        Opacidade.Value = Math.Clamp(_cfg.Opacidade, 40, 100);
+        Opacidade.Value = Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
 
         AtualizarEstados();
         AplicarFundo();
@@ -152,7 +152,7 @@ public partial class PersonalizacaoWindow : Window
             return;
         }
 
-        var alpha = (byte)(Math.Clamp(_cfg.Opacidade, 40, 100) * 255 / 100);
+        var alpha = (byte)(Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
         Painel.Background = new SolidColorBrush(
             Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
     }

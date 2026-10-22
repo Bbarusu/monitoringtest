@@ -38,6 +38,10 @@ passam a valer sobre a detecção.
 Os **watts por unidade**, a capacidade e a eficiência da fonte, e os limites de
 temperatura também ficam nesse arquivo.
 
+Os perfis de energia trocam o plano do Windows pelo `powercfg`. Quando o plano de
+alto desempenho vem oculto na instalação, o app o duplica antes de ativar. Se a troca
+falhar, o painel volta a marcar o plano que está realmente em vigor.
+
 `FecharAoPerderFoco` vem desligado: o painel continua aberto quando você clica em
 outra janela, o que permite comparar com outro programa ou tirar print. Quem fecha
 é o botão de minimizar ou o ícone da bandeja. Ligue se preferir que ele suma sozinho.

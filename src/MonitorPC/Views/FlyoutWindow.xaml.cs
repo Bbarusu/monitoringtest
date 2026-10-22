@@ -16,6 +16,8 @@ public partial class FlyoutWindow : Window
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
     private bool _pausado;
+    private bool _trocandoPerfil;
+    private DateTime _recadoAte;
 
     public FlyoutWindow(AppConfig cfg, SensorService sensores)
     {
@@ -53,6 +55,7 @@ public partial class FlyoutWindow : Window
     public void Mostrar()
     {
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
+        SincronizarPerfil();
 
         Opacity = 0;
         Show();
@@ -94,7 +97,7 @@ public partial class FlyoutWindow : Window
             return;
         }
 
-        var alpha = (byte)(Math.Clamp(_cfg.Opacidade, 40, 100) * 255 / 100);
+        var alpha = (byte)(Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
         Painel.Background = new SolidColorBrush(
             Color.FromArgb(alpha, FundoSolido.R, FundoSolido.G, FundoSolido.B));
     }
@@ -137,6 +140,10 @@ public partial class FlyoutWindow : Window
         CardRam.Text = s.RamUsadaGb is { } usada && s.RamTotalGb is { } total
             ? $"{usada:F1} / {total:F0} GB"
             : s.RamUso is { } ru ? $"{ru:F0}% em uso" : "--";
+
+        // Um recado recente sobre o plano de energia segura o rodape por alguns
+        // segundos: senao a proxima leitura o apagaria antes de dar para ler.
+        if (DateTime.UtcNow < _recadoAte) return;
 
         var intervalo = _pausado ? "pausado" : "atualiza a cada 1 s";
         Status.Text = s.SensoresDeBaixoNivel
@@ -186,6 +193,53 @@ public partial class FlyoutWindow : Window
         { Owner = this };
 
         tela.ShowDialog();
+    }
+
+    // ------------------------------------------------------------------
+    // Perfis de energia
+
+    /// <summary>
+    /// O plano pode ter sido trocado fora do app, entao o painel le o que
+    /// esta em vigor em vez de assumir o que ele mesmo selecionou.
+    /// </summary>
+    private void SincronizarPerfil()
+    {
+        var atual = PowerService.Atual();
+
+        _trocandoPerfil = true;
+        PerfilEconomico.IsChecked = atual == PerfilEnergia.Economico;
+        PerfilEquilibrado.IsChecked = atual == PerfilEnergia.Equilibrado;
+        PerfilDesempenho.IsChecked = atual == PerfilEnergia.Desempenho;
+        _trocandoPerfil = false;
+    }
+
+    private void Perfil_Click(object sender, RoutedEventArgs e)
+    {
+        if (_trocandoPerfil) return;
+
+        var perfil = sender switch
+        {
+            var s when ReferenceEquals(s, PerfilEconomico) => PerfilEnergia.Economico,
+            var s when ReferenceEquals(s, PerfilDesempenho) => PerfilEnergia.Desempenho,
+            _ => PerfilEnergia.Equilibrado
+        };
+
+        if (PowerService.Aplicar(perfil))
+        {
+            Recado($"Plano de energia: {perfil}");
+            return;
+        }
+
+        // Falhou: volta a marcacao para o plano que realmente esta ativo,
+        // em vez de deixar o painel mostrando algo que nao vigora.
+        Recado("Não foi possível trocar o plano de energia");
+        SincronizarPerfil();
+    }
+
+    private void Recado(string texto)
+    {
+        Status.Text = texto;
+        _recadoAte = DateTime.UtcNow.AddSeconds(4);
     }
 
     private void Pausar_Click(object sender, RoutedEventArgs e)
