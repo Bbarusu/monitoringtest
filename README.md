@@ -55,7 +55,13 @@ Na primeira execução o painel abre na configuração inicial, para os limites 
 temperatura não ficarem no palpite do padrão. Depois, a mesma tela fica acessível
 pelo ícone de ajustes no rodapé ou pelo menu do ícone da bandeja.
 
-Os perfis de energia trocam o plano do Windows pelo `powercfg`. Quando o plano de
+O botão **Desempenho** abre uma tela com o que será feito, em vez de agir sozinho:
+trocar o plano de energia, limpar arquivos temporários e fechar programas escolhidos
+na lista. Cada programa recebe o mesmo pedido de fechar que o botão X da janela, então
+ainda dá para salvar o que estiver aberto; nada é forçado. Antivírus, drivers e
+processos do Windows nunca entram na lista.
+
+Os perfis Econômico e Equilibrado trocam o plano do Windows pelo `powercfg`. Quando o plano de
 alto desempenho vem oculto na instalação, o app o duplica antes de ativar. Se a troca
 falhar, o painel volta a marcar o plano que está realmente em vigor.
 
@@ -80,6 +86,8 @@ src/MonitorPC/
   Views/ConfiguracaoWindow.xaml    limites de temperatura
   Services/PowerService.cs  perfis de energia
   Services/AlertService.cs  quando a temperatura passa do limite
+  Services/PerformanceService.cs  ações do Modo Desempenho
+  Views/DesempenhoWindow.xaml     a tela do Modo Desempenho
   App.xaml.cs               ícone da bandeja e ciclo de vida
 ```
 

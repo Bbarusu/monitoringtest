@@ -961,6 +961,14 @@ public partial class FlyoutWindow : Window
             _ => PerfilEnergia.Equilibrado
         };
 
+        // O Desempenho nao e so um plano de energia: abre a tela com as demais
+        // acoes, para a pessoa escolher o que fazer.
+        if (perfil == PerfilEnergia.Desempenho)
+        {
+            AbrirDesempenho();
+            return;
+        }
+
         if (PowerService.Aplicar(perfil))
         {
             Recado($"Plano de energia: {perfil}");
@@ -999,6 +1007,14 @@ public partial class FlyoutWindow : Window
     }
 
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
+
+    private void AbrirDesempenho()
+    {
+        new DesempenhoWindow { Owner = this }.ShowDialog();
+
+        // O plano pode ter mudado la dentro.
+        SincronizarPerfil();
+    }
 
     /// <summary>Tambem usada na primeira execucao, pela janela principal.</summary>
     public void AbrirConfiguracao(bool primeiraVez)
