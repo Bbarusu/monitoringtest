@@ -24,6 +24,9 @@ public sealed class SensorService : IDisposable
     private DateTime _ultimaLeitura = DateTime.UtcNow;
     private DateTime _ultimoLento = DateTime.MinValue;
     private double _whAcumulado;
+    private double _wattsSoma;
+    private double _wattsPico;
+    private long _leiturasDeEnergia;
 
     private volatile bool _painelAberto;
 
@@ -101,7 +104,13 @@ public sealed class SensorService : IDisposable
         var gpuW = Pegar(EhGpu, SensorType.Power, "Package", "Board", "GPU");
 
         var total = (cpuW ?? 0) + (gpuW ?? 0) + _wattsEstimados;
-        if (dt > 0 && dt < 60) _whAcumulado += total * dt / 3600.0;
+        if (dt > 0 && dt < 60)
+        {
+            _whAcumulado += total * dt / 3600.0;
+            _wattsSoma += total;
+            _wattsPico = Math.Max(_wattsPico, total);
+            _leiturasDeEnergia++;
+        }
 
         // Sensores lentos: vida util e espaco livre nao precisam de 1 s.
         if ((agora - _ultimoLento).TotalMilliseconds > _cfg.IntervaloSensoresLentos)
@@ -163,6 +172,11 @@ public sealed class SensorService : IDisposable
             WattsEstimados = _wattsEstimados,
             WattsTotais = total,
             WhAcumulado = _whAcumulado,
+            WattsMedia = _leiturasDeEnergia > 0 ? _wattsSoma / _leiturasDeEnergia : 0,
+            WattsPico = _wattsPico,
+            ModulosRam = ModulosRam.Valor,
+            Discos2 = Discos.Valor,
+            VentoinhasAtivas = Ventoinhas.Valor,
 
             // Sem o driver, a temperatura da CPU volta zerada e o chip da placa-mae
             // nem aparece. E assim que a falha se manifesta.

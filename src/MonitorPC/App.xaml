@@ -106,7 +106,8 @@
         <!-- Seletor compacto, no tom do painel -->
         <Style x:Key="Seletor" TargetType="ComboBox">
             <Setter Property="Foreground" Value="{StaticResource Texto}" />
-            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontFamily" Value="{StaticResource FonteUI}" />
+            <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Height" Value="28" />
             <Setter Property="Cursor" Value="Hand" />
@@ -114,7 +115,8 @@
                 <Setter.Value>
                     <Style TargetType="ComboBoxItem">
                         <Setter Property="Foreground" Value="{StaticResource Texto}" />
-                        <Setter Property="FontSize" Value="11" />
+                        <Setter Property="FontFamily" Value="{StaticResource FonteUI}" />
+                        <Setter Property="FontSize" Value="12" />
                         <Setter Property="Padding" Value="10,7" />
                         <Setter Property="Cursor" Value="Hand" />
                         <Setter Property="Template">

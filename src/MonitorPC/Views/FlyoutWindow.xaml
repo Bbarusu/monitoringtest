@@ -304,7 +304,7 @@
                         </Grid>
                         <Border Height="1" Background="{StaticResource Borda}" />
                         <Grid Height="36">
-                            <TextBlock Text="Temp. mais alta" FontSize="12" VerticalAlignment="Center"
+                            <TextBlock Text="Temperatura" FontSize="12" VerticalAlignment="Center"
                                        Foreground="{StaticResource TextoFraco}" />
                             <TextBlock x:Name="DiscoTempTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -336,6 +336,82 @@
                 </Grid>
             </StackPanel>
 
+
+            <!-- ====================== TOPO: ENERGIA ====================== -->
+            <StackPanel x:Name="TopoEnergia" Visibility="Collapsed" Margin="0,16,0,0">
+                <Grid Height="150">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Path x:Name="AnelEnergia" Stroke="{DynamicResource Acento}" StrokeThickness="9"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock x:Name="EnergiaWattsTexto" Text="--" FontSize="44" FontWeight="Light"
+                                           FontFamily="{StaticResource FonteNumero}" Foreground="White"
+                                           LineHeight="46" />
+                                <TextBlock Text="W" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                           Margin="2,6,0,0" />
+                            </StackPanel>
+                            <TextBlock x:Name="EnergiaLegenda" Text="Potência agora" FontSize="11" Margin="0,4,0,0"
+                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <Grid Height="36">
+                            <TextBlock Text="Sessão" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="EnergiaSessaoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Média" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="EnergiaMediaTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Pico" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="EnergiaPicoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Na tomada" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="EnergiaTomadaTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,16,0,0">
+                    <TextBlock Text="Potência · últimos 5 min" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="EnergiaPicoHistorico" Text="" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                </Grid>
+                <Grid x:Name="AreaGraficoEnergia" Height="80" Margin="0,6,0,0" ClipToBounds="True"
+                      SizeChanged="AreaGraficoEnergia_SizeChanged">
+                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Polygon x:Name="GraficoAreaEnergia" Fill="{DynamicResource Acento}" Opacity="0.14" />
+                    <Polyline x:Name="GraficoLinhaEnergia" Stroke="{DynamicResource Acento}" StrokeThickness="2"
+                              StrokeLineJoin="Round" />
+                </Grid>
+            </StackPanel>
+
             <!-- ========================== ABAS =========================== -->
             <Border Margin="0,16,0,0" CornerRadius="14" Background="{StaticResource Cartao}"
                     BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="4">
@@ -348,7 +424,8 @@
                                  Checked="Aba_Selecionada" />
                     <RadioButton x:Name="AbaDisco" Style="{StaticResource Aba}" Content="Disco"
                                  Checked="Aba_Selecionada" />
-                    <RadioButton Style="{StaticResource Aba}" Content="Energia" IsEnabled="False" />
+                    <RadioButton x:Name="AbaEnergia" Style="{StaticResource Aba}" Content="Energia"
+                                 Checked="Aba_Selecionada" />
                 </UniformGrid>
             </Border>
 
@@ -450,6 +527,37 @@
                     </Border>
                 </Grid>
                 <StackPanel x:Name="ListaDisco" />
+            </StackPanel>
+
+
+            <!-- ====================== BASE: ENERGIA ====================== -->
+            <StackPanel x:Name="BaseEnergia" Visibility="Collapsed">
+                <Grid Margin="0,16,0,10">
+                    <TextBlock Text="Para onde vai a energia" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                    <TextBlock Text="agora" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                </Grid>
+
+                <Grid Height="10">
+                    <Border CornerRadius="5" Background="{StaticResource Trilho}" />
+                    <Grid x:Name="FaixaEnergia" ClipToBounds="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="FaixaGpu" Width="0*" />
+                            <ColumnDefinition x:Name="FaixaCpu" Width="0*" />
+                            <ColumnDefinition x:Name="FaixaOutros" Width="100*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="{DynamicResource Acento}"
+                                CornerRadius="5,0,0,5" />
+                        <Border Grid.Column="1" Background="#8FBAFF" />
+                        <Border Grid.Column="2" Background="#4B5365" CornerRadius="0,5,5,0" />
+                    </Grid>
+                </Grid>
+
+                <StackPanel x:Name="LegendaEnergia" Margin="0,12,0,0" />
+
+                <TextBlock x:Name="NotaEnergia" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
+                           Foreground="{StaticResource TextoMuitoFraco}" />
             </StackPanel>
 
             <!-- ========================= RODAPE ========================== -->

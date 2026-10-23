@@ -10,7 +10,7 @@ namespace MonitorPC.Views;
 
 public partial class FlyoutWindow : Window
 {
-    private enum Aba { Geral, Cpu, Gpu, Disco }
+    private enum Aba { Geral, Cpu, Gpu, Disco, Energia }
 
     private const double Raio = 100;
     private const double RaioCpu = 69;
@@ -25,6 +25,7 @@ public partial class FlyoutWindow : Window
     private readonly Queue<double> _historicoCpu = new();
     private readonly Queue<double> _historicoGpu = new();
     private readonly Queue<double> _historicoDisco = new();
+    private readonly Queue<double> _historicoEnergia = new();
     private readonly DiskProcessService _processos = new();
 
     /// <summary>Quantas linhas a lista de processos reserva, para a altura nao oscilar.</summary>
@@ -155,6 +156,7 @@ public partial class FlyoutWindow : Window
         _aba = ReferenceEquals(sender, AbaCpu) ? Aba.Cpu
              : ReferenceEquals(sender, AbaGpu) ? Aba.Gpu
              : ReferenceEquals(sender, AbaDisco) ? Aba.Disco
+             : ReferenceEquals(sender, AbaEnergia) ? Aba.Energia
              : Aba.Geral;
 
         // A medicao por processo so corre com a aba Disco aberta. Ao voltar, as
@@ -165,6 +167,7 @@ public partial class FlyoutWindow : Window
         Mostrar(TopoCpu, BaseCpu, _aba == Aba.Cpu);
         Mostrar(TopoGpu, BaseGpu, _aba == Aba.Gpu);
         Mostrar(TopoDisco, BaseDisco, _aba == Aba.Disco);
+        Mostrar(TopoEnergia, BaseEnergia, _aba == Aba.Energia);
         SeletorDisco.Visibility = _aba == Aba.Disco ? Visibility.Visible : Visibility.Collapsed;
 
         static void Mostrar(UIElement topo, UIElement baseP, bool visivel)
@@ -214,6 +217,7 @@ public partial class FlyoutWindow : Window
             case Aba.Cpu: AplicarCpu(s); break;
             case Aba.Gpu: AplicarGpu(s); break;
             case Aba.Disco: AplicarDisco(s); break;
+            case Aba.Energia: AplicarEnergia(s); break;
             default: AplicarGeral(s); break;
         }
 
@@ -225,6 +229,11 @@ public partial class FlyoutWindow : Window
         Guardar(_historicoCpu, s.CpuUso);
         Guardar(_historicoGpu, s.GpuUso);
         Guardar(_historicoDisco, s.DiscoAtividade);
+
+        // O grafico trabalha em porcentagem, entao a potencia entra como fracao
+        // da capacidade da fonte.
+        if (_cfg.CapacidadeFonteW > 0)
+            Guardar(_historicoEnergia, (float)(s.WattsTotais / _cfg.CapacidadeFonteW * 100));
 
         if (s.GpuWatts is { } w) _gpuWattsMax = Math.Max(_gpuWattsMax, w);
         if (s.GpuFanRpm is { } r) _gpuRpmMax = Math.Max(_gpuRpmMax, r);
@@ -391,7 +400,11 @@ public partial class FlyoutWindow : Window
             : null;
 
         var atividade = Math.Clamp(escolhido?.Atividade ?? s.DiscoAtividade ?? 0, 0, 100);
-        var temperatura = escolhido?.TemperaturaC ?? s.DiscoTempMaior;
+        // Com uma unidade escolhida, a temperatura e dela. No conjunto, a da
+        // primeira unidade — a do sistema —, nao a mais alta das tres.
+        var temperatura = escolhido?.TemperaturaC
+                       ?? s.Discos.FirstOrDefault()?.TemperaturaC
+                       ?? s.DiscoTempMaior;
         var vida = escolhido?.VidaPct ?? s.DiscoVidaMenor;
         var leitura = escolhido?.LeituraMbs ?? s.DiscoLeituraMbs;
         var escrita = escolhido?.EscritaMbs ?? s.DiscoEscritaMbs;
@@ -408,13 +421,21 @@ public partial class FlyoutWindow : Window
             : $"{atividade:F0}";
         AnelDisco.Data = ArcoDeCarga(atividade, RaioCpu, 75);
 
-        var quente = temperatura is { } t && t >= _cfg.LimiteDisco;
+        // O alerta olha a mais alta entre as unidades: um disco quente nao pode
+        // passar despercebido so porque o painel mostra outro.
+        var maisAlta = escolhido?.TemperaturaC ?? s.DiscoTempMaior;
+        var quente = maisAlta is { } t && t >= _cfg.LimiteDisco;
         AnelDisco.Stroke = quente ? Pincel("Alerta") : Pincel("Acento");
 
         DiscoLeituraTexto.Text = Taxa(leitura);
         DiscoEscritaTexto.Text = Taxa(escrita);
         DiscoTempTexto.Text = temperatura is > 0 ? $"{temperatura:F0} °C" : "n/d";
         DiscoTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
+        DiscoTempTexto.ToolTip = escolhido is null && s.Discos.Count > 1
+            ? string.Join("\n", s.Discos
+                .Where(d => d.TemperaturaC is > 0)
+                .Select(d => $"{d.Nome}: {d.TemperaturaC:F0} °C"))
+            : null;
 
         // Numa unidade so, as horas ligado cabem ao lado da vida util.
         DiscoVidaTexto.Text = escolhido is { VidaPct: { } vp, HorasLigado: { } h }
@@ -459,8 +480,16 @@ public partial class FlyoutWindow : Window
     private static string Encurtar(string nome) =>
         nome.Length <= 22 ? nome : nome[..21].TrimEnd() + "…";
 
-    private static string Taxa(float? mbs) =>
-        mbs is null ? "n/d" : mbs < 0.1f ? "—" : $"{mbs:0.0} MB/s";
+    /// <summary>
+    /// As taxas de disco em repouso ficam na casa dos KB/s. Arredondar tudo para
+    /// MB/s escondia o movimento real, entao a unidade acompanha a grandeza.
+    /// </summary>
+    private static string Taxa(float? mbs)
+    {
+        if (mbs is not { } v) return "n/d";
+        if (v <= 0) return "0";
+        return v < 1 ? $"{v * 1024:0} KB/s" : $"{v:0.0} MB/s";
+    }
 
     /// <summary>Uma linha por unidade, com o que o SMART informa.</summary>
     private void MontarUnidades(Snapshot s)
@@ -531,6 +560,86 @@ public partial class FlyoutWindow : Window
             ListaDisco.Children.RemoveAt(ListaDisco.Children.Count - 1);
         while (ListaDisco.Children.Count < quantidade)
             ListaDisco.Children.Add(new LinhaDeDisco());
+    }
+
+    private void AplicarEnergia(Snapshot s)
+    {
+        Titulo.Text = "Energia";
+        ChipEsquerdo.Text = $"{s.WattsTotais:F0} W";
+        ChipDireito.Text = s.WhAcumulado >= 1000
+            ? $"{s.WhAcumulado / 1000:0.00} kWh"
+            : $"{s.WhAcumulado:0.0} Wh";
+
+        EnergiaWattsTexto.Text = $"{s.WattsTotais:F0}";
+
+        // O anel compara a potencia com a capacidade da fonte.
+        var fracao = _cfg.CapacidadeFonteW > 0
+            ? s.WattsTotais / _cfg.CapacidadeFonteW * 100
+            : 0;
+        AnelEnergia.Data = ArcoDeCarga(fracao, RaioCpu, 75);
+        EnergiaLegenda.Text = _cfg.CapacidadeFonteW > 0
+            ? $"de {_cfg.CapacidadeFonteW} W"
+            : "Potência agora";
+
+        EnergiaSessaoTexto.Text = s.WhAcumulado >= 1000
+            ? $"{s.WhAcumulado / 1000:0.00} kWh"
+            : $"{s.WhAcumulado:0.0} Wh";
+        EnergiaMediaTexto.Text = $"{s.WattsMedia:F0} W";
+        EnergiaPicoTexto.Text = $"{s.WattsPico:F0} W";
+        EnergiaTomadaTexto.Text = _cfg.EficienciaFonte > 0
+            ? $"{s.WattsTotais / _cfg.EficienciaFonte:F0} W"
+            : "n/d";
+
+        DesenharHistoricoEnergia();
+        MontarDistribuicao(s);
+    }
+
+    /// <summary>
+    /// Separa o que e medido do que e estimado: so CPU e GPU tem sensor de
+    /// potencia; o resto vem das quantidades detectadas e dos watts por unidade.
+    /// </summary>
+    private void MontarDistribuicao(Snapshot s)
+    {
+        var gpu = s.GpuWatts ?? 0;
+        var cpu = s.CpuWatts ?? 0;
+        var outros = s.WattsEstimados;
+        var total = Math.Max(gpu + cpu + outros, 0.001);
+
+        FaixaGpu.Width = new GridLength(gpu / total * 100, GridUnitType.Star);
+        FaixaCpu.Width = new GridLength(cpu / total * 100, GridUnitType.Star);
+        FaixaOutros.Width = new GridLength(outros / total * 100, GridUnitType.Star);
+
+        var itens = new (string Cor, string Nome, double Watts, string Origem)[]
+        {
+            ("Acento", "GPU", gpu, "medido"),
+            ("#8FBAFF", "CPU", cpu, "medido"),
+            ("#4B5365", DescricaoDosOutros(s), outros, "estimado")
+        };
+
+        while (LegendaEnergia.Children.Count > itens.Length)
+            LegendaEnergia.Children.RemoveAt(LegendaEnergia.Children.Count - 1);
+        while (LegendaEnergia.Children.Count < itens.Length)
+            LegendaEnergia.Children.Add(new LinhaDeLegenda());
+
+        for (var i = 0; i < itens.Length; i++)
+        {
+            var (cor, nome, watts, origem) = itens[i];
+            ((LinhaDeLegenda)LegendaEnergia.Children[i])
+                .Atualizar(cor, nome, $"{watts:F0} W", origem);
+        }
+
+        NotaEnergia.Text = "Energia (Wh) = potência × tempo, somada a cada leitura. " +
+                           "Ajuste as quantidades e os watts por unidade no config.json.";
+    }
+
+    private static string DescricaoDosOutros(Snapshot s)
+    {
+        var partes = new List<string>();
+        if (s.ModulosRam > 0) partes.Add($"{s.ModulosRam} de RAM");
+        if (s.Discos2 > 0) partes.Add($"{s.Discos2} discos");
+        if (s.VentoinhasAtivas > 0) partes.Add($"{s.VentoinhasAtivas} ventoinhas");
+
+        return partes.Count == 0 ? "Outros componentes" : string.Join(", ", partes) + " e outros";
     }
 
     private void AtualizarStatus(Snapshot s)
@@ -641,6 +750,8 @@ public partial class FlyoutWindow : Window
 
     private void AreaGraficoDisco_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistoricoDisco();
 
+    private void AreaGraficoEnergia_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistoricoEnergia();
+
     private void DesenharHistorico() =>
         Desenhar(_historicoCpu, AreaGrafico, GraficoLinha, GraficoArea, CpuPicoHistorico);
 
@@ -649,6 +760,17 @@ public partial class FlyoutWindow : Window
 
     private void DesenharHistoricoDisco() =>
         Desenhar(_historicoDisco, AreaGraficoDisco, GraficoLinhaDisco, GraficoAreaDisco, DiscoPicoHistorico);
+
+    private void DesenharHistoricoEnergia()
+    {
+        Desenhar(_historicoEnergia, AreaGraficoEnergia, GraficoLinhaEnergia, GraficoAreaEnergia,
+                 EnergiaPicoHistorico);
+
+        // O historico esta em porcentagem da fonte; o rotulo mostra watts.
+        if (_historicoEnergia.Count >= 2)
+            EnergiaPicoHistorico.Text =
+                $"Pico: {_historicoEnergia.Max() / 100 * _cfg.CapacidadeFonteW:F0} W";
+    }
 
     private static void Desenhar(Queue<double> historico, FrameworkElement area,
         Polyline linha, Polygon preenchimento, TextBlock rotuloDoPico)

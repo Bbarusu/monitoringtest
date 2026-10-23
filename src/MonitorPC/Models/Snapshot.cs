@@ -59,6 +59,13 @@ public sealed class Snapshot
     public double WattsEstimados { get; init; }
     public double WattsTotais { get; init; }
     public double WhAcumulado { get; init; }
+    public double WattsMedia { get; init; }
+    public double WattsPico { get; init; }
+
+    /// <summary>Quantidades em uso no calculo, e se vieram da deteccao.</summary>
+    public int ModulosRam { get; init; }
+    public int Discos2 { get; init; }
+    public int VentoinhasAtivas { get; init; }
 
     /// <summary>Falso quando o driver de acesso em modo kernel nao carregou.</summary>
     public bool SensoresDeBaixoNivel { get; init; }
