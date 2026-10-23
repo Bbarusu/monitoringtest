@@ -44,6 +44,10 @@ duas amostras. Essa medição só roda enquanto a aba está aberta: varrer a lis
 processos a cada segundo o tempo todo contrariaria a meta de não pesar no sistema.
 Processos protegidos do sistema não permitem a leitura e ficam de fora.
 
+Na primeira execução o painel abre na configuração inicial, para os limites de
+temperatura não ficarem no palpite do padrão. Depois, a mesma tela fica acessível
+pelo ícone de ajustes no rodapé ou pelo menu do ícone da bandeja.
+
 Os perfis de energia trocam o plano do Windows pelo `powercfg`. Quando o plano de
 alto desempenho vem oculto na instalação, o app o duplica antes de ativar. Se a troca
 falhar, o painel volta a marcar o plano que está realmente em vigor.
@@ -66,6 +70,7 @@ src/MonitorPC/
   Views/LinhaDeLegenda.cs   uma linha da legenda de energia
   Services/DiskProcessService.cs  uso de disco por processo
   Views/PersonalizacaoWindow.xaml  cor e transparência
+  Views/ConfiguracaoWindow.xaml    limites de temperatura
   Services/PowerService.cs  perfis de energia
   App.xaml.cs               ícone da bandeja e ciclo de vida
 ```

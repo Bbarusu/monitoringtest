@@ -40,6 +40,11 @@ public partial class App : Application
 
         var menu = new WF.ContextMenuStrip();
         menu.Items.Add("Abrir painel", null, (_, _) => _painel.Mostrar());
+        menu.Items.Add("Ajustes", null, (_, _) =>
+        {
+            _painel.Mostrar();
+            _painel.AbrirConfiguracao(false);
+        });
         menu.Items.Add(new WF.ToolStripSeparator());
         menu.Items.Add("Sair", null, (_, _) => Shutdown());
         _bandeja.ContextMenuStrip = menu;
@@ -48,6 +53,14 @@ public partial class App : Application
             AtualizarBandeja(snap.CpuTemp, snap.SensoresDeBaixoNivel));
 
         _sensores.Iniciar();
+
+        // Na primeira execucao o painel abre direto na configuracao, para os
+        // limites de temperatura nao ficarem no palpite do padrao.
+        if (!_cfg.ConfiguracaoInicialFeita)
+        {
+            _painel.Mostrar();
+            _painel.AbrirConfiguracao(true);
+        }
     }
 
     /// <summary>

@@ -936,6 +936,19 @@ public partial class FlyoutWindow : Window
         tela.ShowDialog();
     }
 
+    private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
+
+    /// <summary>Tambem usada na primeira execucao, pela janela principal.</summary>
+    public void AbrirConfiguracao(bool primeiraVez)
+    {
+        var tela = new ConfiguracaoWindow(_cfg, _sensores, primeiraVez) { Owner = this };
+        tela.ShowDialog();
+
+        // Os limites mudam a cor do anel, entao vale repintar sem esperar a
+        // proxima leitura.
+        if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
+    }
+
     private void Pausar_Click(object sender, RoutedEventArgs e)
     {
         _pausado = !_pausado;
