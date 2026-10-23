@@ -114,6 +114,83 @@ public static class PerformanceService
         return (fechados, memoria);
     }
 
+    /// <summary>
+    /// Todos os processos da sessao por consumo de memoria, inclusive os
+    /// protegidos — que aparecem marcados, para a lista nao parecer incompleta.
+    /// </summary>
+    public static List<ProcessoMemoria> PorMemoria(int quantos = 12)
+    {
+        var sessao = Process.GetCurrentProcess().SessionId;
+        var lista = new List<ProcessoMemoria>();
+
+        foreach (var p in Process.GetProcesses())
+        {
+            try
+            {
+                if (p.SessionId != sessao) continue;
+
+                lista.Add(new ProcessoMemoria(
+                    p.Id,
+                    p.ProcessName,
+                    string.IsNullOrWhiteSpace(p.MainWindowTitle) ? p.ProcessName : p.MainWindowTitle,
+                    p.WorkingSet64 / 1048576.0,
+                    Protegidos.Contains(p.ProcessName) || p.Id == Environment.ProcessId,
+                    p.MainWindowHandle != IntPtr.Zero));
+            }
+            catch
+            {
+                // Processo encerrado no meio da varredura.
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+
+        // Varios processos com o mesmo nome (abas de navegador, por exemplo)
+        // viram uma linha so, com a soma.
+        return lista
+            .GroupBy(x => x.Nome)
+            .Select(g => g.OrderByDescending(x => x.MemoriaMb).First() with
+            {
+                MemoriaMb = g.Sum(x => x.MemoriaMb),
+                TemJanela = g.Any(x => x.TemJanela)
+            })
+            .OrderByDescending(x => x.MemoriaMb)
+            .Take(quantos)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Fecha todos os processos com este nome, pelo mesmo pedido do botao X da
+    /// janela. Devolve quantos aceitaram.
+    /// </summary>
+    public static int FecharPorNome(string nome)
+    {
+        if (Protegidos.Contains(nome)) return 0;
+
+        var fechados = 0;
+
+        foreach (var p in Process.GetProcessesByName(nome))
+        {
+            try
+            {
+                if (p.Id == Environment.ProcessId) continue;
+                if (p.CloseMainWindow()) fechados++;
+            }
+            catch (Exception ex)
+            {
+                Log.Erro("Fechar por nome", ex);
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+
+        return fechados;
+    }
+
     // ------------------------------------------------------------------
     // Arquivos temporarios
 

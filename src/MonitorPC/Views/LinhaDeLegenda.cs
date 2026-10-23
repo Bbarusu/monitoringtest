@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
+using MonitorPC.Services;
+
 namespace MonitorPC.Views;
 
 /// <summary>
@@ -39,7 +41,7 @@ public sealed class LinhaDeLegenda : Grid
             Margin = new Thickness(8, 0, 8, 0),
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         };
         SetColumn(_nome, 1);
         Children.Add(_nome);
@@ -49,7 +51,7 @@ public sealed class LinhaDeLegenda : Grid
             FontSize = 12,
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         };
         SetColumn(_valor, 2);
         Children.Add(_valor);
@@ -59,7 +61,7 @@ public sealed class LinhaDeLegenda : Grid
             FontSize = 11,
             TextAlignment = TextAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["TextoFraco"]
+            Foreground = ThemeService.Pincel("TextoFraco")
         };
         SetColumn(_origem, 3);
         Children.Add(_origem);

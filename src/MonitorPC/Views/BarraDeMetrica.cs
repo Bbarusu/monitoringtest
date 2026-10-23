@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
+using MonitorPC.Services;
+
 namespace MonitorPC.Views;
 
 /// <summary>
@@ -24,14 +26,14 @@ public sealed class BarraDeMetrica : StackPanel
         _rotulo = new TextBlock
         {
             FontSize = 12,
-            Foreground = (Brush)Application.Current.Resources["TextoFraco"],
+            Foreground = ThemeService.Pincel("TextoFraco"),
             HorizontalAlignment = HorizontalAlignment.Left
         };
         _valor = new TextBlock
         {
             FontSize = 12,
             FontWeight = FontWeights.Medium,
-            Foreground = (Brush)Application.Current.Resources["Texto"],
+            Foreground = ThemeService.Pincel("Texto"),
             HorizontalAlignment = HorizontalAlignment.Right
         };
         topo.Children.Add(_rotulo);
@@ -43,7 +45,7 @@ public sealed class BarraDeMetrica : StackPanel
         {
             Height = 6,
             CornerRadius = new CornerRadius(3),
-            Background = (Brush)Application.Current.Resources["Trilho"]
+            Background = ThemeService.Pincel("Trilho")
         });
 
         _cheia = new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) };

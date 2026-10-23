@@ -23,6 +23,7 @@ public partial class App : Application
         InstalarCapturaDeErros();
 
         _cfg = AppConfig.Carregar();
+        ThemeService.Aplicar(_cfg.Tema);
         AplicarAcento();
 
         _sensores = new SensorService(_cfg);
@@ -102,7 +103,11 @@ public partial class App : Application
     /// senao usa a cor escolhida pelo usuario.
     /// </summary>
     /// <summary>Reaplica a cor de destaque. Chamada pela tela de Personalização.</summary>
-    public void AplicarAparencia() => AplicarAcento();
+    public void AplicarAparencia()
+    {
+        ThemeService.Aplicar(_cfg.Tema);
+        AplicarAcento();
+    }
 
     private void AplicarAcento()
     {

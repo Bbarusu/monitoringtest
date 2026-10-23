@@ -77,7 +77,7 @@ public partial class DesempenhoWindow : Window
                 VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = p.Titulo,
-                Foreground = (Brush)Application.Current.Resources["Texto"]
+                Foreground = ThemeService.Pincel("Texto")
             };
             Grid.SetColumn(nome, 1);
             linha.Children.Add(nome);
@@ -87,7 +87,7 @@ public partial class DesempenhoWindow : Window
                 Text = $"{p.MemoriaMb:N0} MB",
                 FontSize = 12,
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = (Brush)Application.Current.Resources["TextoFraco"]
+                Foreground = ThemeService.Pincel("TextoFraco")
             };
             Grid.SetColumn(memoria, 2);
             linha.Children.Add(memoria);
@@ -171,7 +171,7 @@ public partial class DesempenhoWindow : Window
         Resultado.Text = feito.Count == 0
             ? "Nada foi selecionado."
             : "Feito: " + string.Join("; ", feito) + ".";
-        Resultado.Foreground = (Brush)Application.Current.Resources["TextoFraco"];
+        Resultado.Foreground = ThemeService.Pincel("TextoFraco");
 
         BotaoAtivar.IsEnabled = true;
         Reposicionar();

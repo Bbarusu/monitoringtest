@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using MonitorPC.Models;
 using MonitorPC.Services;
 
 namespace MonitorPC.Views;
@@ -12,11 +13,22 @@ public partial class LogDiscoWindow : Window
     private readonly AppConfig _cfg;
     private readonly DiskLogService _log;
 
-    public LogDiscoWindow(AppConfig cfg)
+    private readonly SensorService _sensores;
+    private bool _montandoSeletor;
+
+    public LogDiscoWindow(AppConfig cfg, SensorService sensores)
     {
         InitializeComponent();
         _cfg = cfg;
+        _sensores = sensores;
         _log = new DiskLogService(cfg);
+
+        MontarSeletor();
+
+        // Os contadores por processo nao dizem a unidade: o log guarda qual
+        // estava mais ativa a cada amostra, como pista.
+        _sensores.Atualizado += AoLer;
+        Closed += (_, _) => _sensores.Atualizado -= AoLer;
 
         Limite.Value = Math.Clamp(_cfg.LimiteLogMbs, Limite.Minimum, Limite.Maximum);
         AtualizarRotulos();
@@ -35,6 +47,36 @@ public partial class LogDiscoWindow : Window
     }
 
     // ------------------------------------------------------------------
+
+    private void AoLer(Snapshot s)
+    {
+        var ativo = s.Discos
+            .Where(d => d.Atividade.HasValue)
+            .OrderByDescending(d => d.Atividade)
+            .FirstOrDefault();
+
+        _log.DiscoMaisAtivo = ativo?.Atividade > 1 ? ativo.Nome : null;
+    }
+
+    private void MontarSeletor()
+    {
+        var discos = _sensores.Ultimo?.Discos ?? Array.Empty<DiscoInfo>();
+
+        _montandoSeletor = true;
+        SeletorDisco.Items.Clear();
+        SeletorDisco.Items.Add("todas");
+        foreach (var d in discos)
+            SeletorDisco.Items.Add(d.Nome.Length <= 18 ? d.Nome : d.Nome[..17].TrimEnd() + "…");
+        SeletorDisco.SelectedIndex = 0;
+        SeletorDisco.Visibility = discos.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        _montandoSeletor = false;
+    }
+
+    private void SeletorDisco_Alterado(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsInitialized || _montandoSeletor) return;
+        Montar();
+    }
 
     private void AtualizarRotulos()
     {
@@ -62,6 +104,15 @@ public partial class LogDiscoWindow : Window
     private void Montar()
     {
         var eventos = _log.Eventos.AsEnumerable();
+
+        // O filtro por unidade usa a pista do momento, nao a atribuicao exata.
+        if (SeletorDisco.SelectedIndex > 0 &&
+            _sensores.Ultimo?.Discos is { } discos &&
+            SeletorDisco.SelectedIndex - 1 < discos.Count)
+        {
+            var nome = discos[SeletorDisco.SelectedIndex - 1].Nome;
+            eventos = eventos.Where(x => x.DiscoAtivo == nome);
+        }
 
         if (FiltroLeitura.IsChecked == true) eventos = eventos.Where(x => x.Tipo == "Leitura");
         else if (FiltroEscrita.IsChecked == true) eventos = eventos.Where(x => x.Tipo == "Escrita");
@@ -95,7 +146,7 @@ public partial class LogDiscoWindow : Window
             Text = ev.Hora.ToString("HH:mm:ss"),
             FontSize = 11,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["TextoMuitoFraco"]
+            Foreground = ThemeService.Pincel("TextoMuitoFraco")
         };
         Grid.SetColumn(hora, 0);
         linha.Children.Add(hora);
@@ -107,15 +158,17 @@ public partial class LogDiscoWindow : Window
             FontSize = 13,
             FontWeight = FontWeights.SemiBold,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         });
         textos.Children.Add(new TextBlock
         {
-            Text = $"PID {ev.Pid} · leitura {ev.LeituraMbs:0.0} · escrita {ev.EscritaMbs:0.0} MB/s",
+            Text = ev.DiscoAtivo is null
+                ? $"PID {ev.Pid} · leitura {ev.LeituraMbs:0.0} · escrita {ev.EscritaMbs:0.0} MB/s"
+                : $"PID {ev.Pid} · {ev.DiscoAtivo} · {ev.LeituraMbs:0.0} / {ev.EscritaMbs:0.0} MB/s",
             FontSize = 11,
             Margin = new Thickness(0, 2, 0, 0),
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = (Brush)Application.Current.Resources["TextoFraco"]
+            Foreground = ThemeService.Pincel("TextoFraco")
         });
         Grid.SetColumn(textos, 1);
         linha.Children.Add(textos);
@@ -127,7 +180,7 @@ public partial class LogDiscoWindow : Window
             FontSize = 13,
             FontWeight = FontWeights.SemiBold,
             TextAlignment = TextAlignment.Right,
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         });
         direita.Children.Add(new TextBlock
         {
@@ -140,7 +193,11 @@ public partial class LogDiscoWindow : Window
         Grid.SetColumn(direita, 2);
         linha.Children.Add(direita);
 
-        linha.ToolTip = ev.Caminho ?? "Caminho indisponível (processo do sistema ou já encerrado)";
+        var dica = ev.Caminho ?? "Caminho indisponível (processo do sistema ou já encerrado)";
+        if (ev.DiscoAtivo is not null)
+            dica += $"\n\nUnidade mais ativa no momento: {ev.DiscoAtivo}\n" +
+                    "Os contadores por processo não dizem em qual disco o acesso ocorreu.";
+        linha.ToolTip = dica;
         return linha;
     }
 
@@ -152,7 +209,7 @@ public partial class LogDiscoWindow : Window
         {
             var arquivo = _log.Exportar();
             Rodape.Text = $"Salvo em {arquivo}";
-            Rodape.Foreground = (Brush)Application.Current.Resources["TextoFraco"];
+            Rodape.Foreground = ThemeService.Pincel("TextoFraco");
 
             // Abrir a pasta poupa procurar o arquivo.
             Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{arquivo}\"")

@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
+using MonitorPC.Services;
+
 namespace MonitorPC.Views;
 
 /// <summary>
@@ -31,14 +33,14 @@ public sealed class LinhaDeDisco : StackPanel
             FontSize = 13,
             FontWeight = FontWeights.Medium,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         };
         _detalhe = new TextBlock
         {
             FontSize = 11,
             Margin = new Thickness(0, 2, 0, 0),
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = (Brush)Application.Current.Resources["TextoFraco"]
+            Foreground = ThemeService.Pincel("TextoFraco")
         };
         textos.Children.Add(_nome);
         textos.Children.Add(_detalhe);
@@ -51,7 +53,7 @@ public sealed class LinhaDeDisco : StackPanel
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(10, 0, 0, 0),
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         };
         Grid.SetColumn(_valor, 1);
         topo.Children.Add(_valor);
@@ -62,7 +64,7 @@ public sealed class LinhaDeDisco : StackPanel
         {
             Height = 4,
             CornerRadius = new CornerRadius(2),
-            Background = (Brush)Application.Current.Resources["Trilho"]
+            Background = ThemeService.Pincel("Trilho")
         });
 
         _cheia = new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) };
@@ -88,7 +90,7 @@ public sealed class LinhaDeDisco : StackPanel
     public void Vazia(string texto)
     {
         _nome.Text = texto;
-        _nome.Foreground = (Brush)Application.Current.Resources["TextoMuitoFraco"];
+        _nome.Foreground = ThemeService.Pincel("TextoMuitoFraco");
         _detalhe.Text = " ";
         _detalhe.Visibility = Visibility.Visible;
         _valor.Text = "";
@@ -99,7 +101,7 @@ public sealed class LinhaDeDisco : StackPanel
 
     public void Atualizar(string nome, string detalhe, string valor, double porcentagem)
     {
-        _nome.Foreground = (Brush)Application.Current.Resources["Texto"];
+        _nome.Foreground = ThemeService.Pincel("Texto");
 
         var p = Math.Clamp(porcentagem, 0, 100);
 

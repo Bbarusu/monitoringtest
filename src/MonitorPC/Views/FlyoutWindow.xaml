@@ -8,8 +8,8 @@
         FontFamily="{StaticResource FonteUI}">
 
     <Border x:Name="Painel" Margin="20" CornerRadius="16"
-            Background="{StaticResource Fundo}"
-            BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="20">
+            Background="{DynamicResource Fundo}"
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
         </Border.Effect>
@@ -21,32 +21,32 @@
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="Titulo" Text="Meu PC" FontSize="15" FontWeight="SemiBold"
-                                   VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                                   VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                         <ComboBox x:Name="SeletorDisco" Style="{StaticResource Seletor}"
                                   Visibility="Collapsed" Margin="10,1,0,0" MaxWidth="150"
                                   SelectionChanged="SeletorDisco_Alterado" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
+                        <Border Background="{DynamicResource Chip}" BorderBrush="{DynamicResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5" Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
-                                <Path x:Name="IconeEsquerdo" Stroke="{StaticResource TextoFraco}"
+                                <Path x:Name="IconeEsquerdo" Stroke="{DynamicResource TextoFraco}"
                                       StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                       StrokeLineJoin="Round" Width="12" Height="12" Stretch="Uniform"
                                       Margin="0,0,6,0" VerticalAlignment="Center" Visibility="Collapsed" />
                                 <TextBlock x:Name="ChipEsquerdo" Text="-- °C" FontSize="12" FontWeight="SemiBold"
-                                           VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                                           VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             </StackPanel>
                         </Border>
-                        <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
+                        <Border Background="{DynamicResource Chip}" BorderBrush="{DynamicResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5">
                             <StackPanel Orientation="Horizontal">
-                                <Path x:Name="IconeDireito" Stroke="{StaticResource TextoFraco}"
+                                <Path x:Name="IconeDireito" Stroke="{DynamicResource TextoFraco}"
                                       StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                       StrokeLineJoin="Round" Width="12" Height="12" Stretch="Uniform"
                                       Margin="0,0,6,0" VerticalAlignment="Center" Visibility="Collapsed" />
                                 <TextBlock x:Name="ChipDireito" Text="RAM --%" FontSize="12" FontWeight="SemiBold"
-                                           VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                                           VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -73,7 +73,7 @@
             <Border x:Name="AvisoDriver" Visibility="Collapsed" Margin="0,16,0,0"
                     CornerRadius="12" Background="#2A1A10" BorderBrush="#7C3A14"
                     BorderThickness="1" Padding="12">
-                <TextBlock Foreground="{StaticResource AlertaTexto}" FontSize="12" TextWrapping="Wrap"
+                <TextBlock Foreground="{DynamicResource AlertaTexto}" FontSize="12" TextWrapping="Wrap"
                            Text="Sensores de CPU e placa-mãe indisponíveis. Abra o app como administrador." />
             </Border>
 
@@ -96,7 +96,7 @@
                                        Foreground="White" TextWrapping="Wrap" MaxWidth="300"
                                        HorizontalAlignment="Left" />
                             <TextBlock x:Name="AvisoDetalhe" FontSize="12" Margin="0,2,0,0"
-                                       Foreground="{StaticResource AlertaTexto}" />
+                                       Foreground="{DynamicResource AlertaTexto}" />
                         </StackPanel>
                     </StackPanel>
 
@@ -125,7 +125,7 @@
                                     <Border x:Name="bg" CornerRadius="10" Background="Transparent"
                                             BorderBrush="#7C3A14" BorderThickness="1">
                                         <TextBlock Text="Silenciar 10 min" FontSize="13" FontWeight="Medium"
-                                                   Foreground="{StaticResource AlertaTexto}"
+                                                   Foreground="{DynamicResource AlertaTexto}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -143,7 +143,7 @@
             <!-- ======================= TOPO: GERAL ======================= -->
             <StackPanel x:Name="TopoGeral">
                 <Grid Width="220" Height="220" Margin="0,16,0,0">
-                    <Ellipse Width="200" Height="200" Stroke="{StaticResource Trilho}" StrokeThickness="10" />
+                    <Ellipse Width="200" Height="200" Stroke="{DynamicResource Trilho}" StrokeThickness="10" />
                     <Path x:Name="Anel" Stroke="{DynamicResource Acento}" StrokeThickness="10"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -151,18 +151,18 @@
                             <TextBlock x:Name="ValorPrincipal" Text="--" FontSize="76" FontWeight="Light"
                                        FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                        LineHeight="78" />
-                            <TextBlock Text="°C" FontSize="24" Foreground="{StaticResource TextoFraco}"
+                            <TextBlock Text="°C" FontSize="24" Foreground="{DynamicResource TextoFraco}"
                                        Margin="4,10,0,0" />
                         </StackPanel>
                         <TextBlock x:Name="LegendaPrincipal" Text="CPU" FontSize="12" Margin="0,8,0,0"
-                                   HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                                   HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                 </Grid>
 
                 <!-- As duas colunas se dividem pela carga: o preenchimento acompanha a
                      largura real do painel, sem conta em pixels que possa dar negativa. -->
                 <Grid Margin="0,8,0,0">
-                    <Border Height="6" CornerRadius="3" Background="{StaticResource Trilho}"
+                    <Border Height="6" CornerRadius="3" Background="{DynamicResource Trilho}"
                             VerticalAlignment="Center" />
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -174,11 +174,11 @@
                     </Grid>
                 </Grid>
                 <Grid Margin="0,6,0,0">
-                    <TextBlock Text="0%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
+                    <TextBlock Text="0%" FontSize="11" Foreground="{DynamicResource TextoMuitoFraco}"
                                HorizontalAlignment="Left" />
-                    <TextBlock Text="50%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
+                    <TextBlock Text="50%" FontSize="11" Foreground="{DynamicResource TextoMuitoFraco}"
                                HorizontalAlignment="Center" />
-                    <TextBlock Text="100%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
+                    <TextBlock Text="100%" FontSize="11" Foreground="{DynamicResource TextoMuitoFraco}"
                                HorizontalAlignment="Right" />
                 </Grid>
             </StackPanel>
@@ -192,7 +192,7 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Ellipse Width="138" Height="138" Stroke="{DynamicResource Trilho}" StrokeThickness="9" />
                         <Path x:Name="AnelCpu" Stroke="{DynamicResource Acento}" StrokeThickness="9"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -200,45 +200,45 @@
                                 <TextBlock x:Name="CpuUsoTexto" Text="--" FontSize="48" FontWeight="Light"
                                            FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                            LineHeight="50" />
-                                <TextBlock Text="%" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                <TextBlock Text="%" FontSize="18" Foreground="{DynamicResource TextoFraco}"
                                            Margin="2,6,0,0" />
                             </StackPanel>
                             <TextBlock Text="Uso total" FontSize="11" Margin="0,4,0,0"
-                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                                       HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                         </StackPanel>
                     </Grid>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                         <Grid Height="36">
                             <TextBlock Text="Temperatura" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="CpuTempTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Clock" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="CpuClockTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Potência" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="CpuWattsTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Tensão" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="CpuTensaoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
                     </StackPanel>
                 </Grid>
@@ -246,13 +246,13 @@
                 <!-- Historico da carga -->
                 <Grid Margin="0,16,0,0">
                     <TextBlock Text="Carga · últimos 5 min" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="CpuPicoHistorico" Text="" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
                 <Grid x:Name="AreaGrafico" Height="80" Margin="0,6,0,0" ClipToBounds="True"
                       SizeChanged="AreaGrafico_SizeChanged">
-                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Border Height="1" Background="{DynamicResource Borda}" VerticalAlignment="Bottom" />
                     <Polygon x:Name="GraficoArea" Fill="{DynamicResource Acento}" Opacity="0.14" />
                     <Polyline x:Name="GraficoLinha" Stroke="{DynamicResource Acento}" StrokeThickness="2"
                               StrokeLineJoin="Round" />
@@ -269,7 +269,7 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Ellipse Width="138" Height="138" Stroke="{DynamicResource Trilho}" StrokeThickness="9" />
                         <Path x:Name="AnelGpu" Stroke="{DynamicResource Acento}" StrokeThickness="9"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -277,58 +277,58 @@
                                 <TextBlock x:Name="GpuUsoTexto" Text="--" FontSize="48" FontWeight="Light"
                                            FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                            LineHeight="50" />
-                                <TextBlock Text="%" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                <TextBlock Text="%" FontSize="18" Foreground="{DynamicResource TextoFraco}"
                                            Margin="2,6,0,0" />
                             </StackPanel>
                             <TextBlock Text="Uso" FontSize="11" Margin="0,4,0,0"
-                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                                       HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                         </StackPanel>
                     </Grid>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                         <Grid Height="36">
                             <TextBlock Text="Temp. borda" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="GpuTempTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Hot spot" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="GpuHotTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Clock núcleo" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="GpuClockTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Clock memória" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="GpuClockMemTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
                     </StackPanel>
                 </Grid>
 
                 <Grid Margin="0,16,0,0">
                     <TextBlock Text="Carga · últimos 5 min" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="GpuPicoHistorico" Text="" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
                 <Grid x:Name="AreaGraficoGpu" Height="80" Margin="0,6,0,0" ClipToBounds="True"
                       SizeChanged="AreaGraficoGpu_SizeChanged">
-                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Border Height="1" Background="{DynamicResource Borda}" VerticalAlignment="Bottom" />
                     <Polygon x:Name="GraficoAreaGpu" Fill="{DynamicResource Acento}" Opacity="0.14" />
                     <Polyline x:Name="GraficoLinhaGpu" Stroke="{DynamicResource Acento}" StrokeThickness="2"
                               StrokeLineJoin="Round" />
@@ -345,7 +345,7 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Ellipse Width="138" Height="138" Stroke="{DynamicResource Trilho}" StrokeThickness="9" />
                         <Path x:Name="AnelDisco" Stroke="{DynamicResource Acento}" StrokeThickness="9"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -353,58 +353,58 @@
                                 <TextBlock x:Name="DiscoUsoTexto" Text="--" FontSize="48" FontWeight="Light"
                                            FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                            LineHeight="50" />
-                                <TextBlock Text="%" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                <TextBlock Text="%" FontSize="18" Foreground="{DynamicResource TextoFraco}"
                                            Margin="2,6,0,0" />
                             </StackPanel>
                             <TextBlock Text="Atividade" FontSize="11" Margin="0,4,0,0"
-                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                                       HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                         </StackPanel>
                     </Grid>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                         <Grid Height="36">
                             <TextBlock Text="Leitura" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="DiscoLeituraTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Escrita" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="DiscoEscritaTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Temperatura" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="DiscoTempTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Vida útil" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="DiscoVidaTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
                     </StackPanel>
                 </Grid>
 
                 <Grid Margin="0,16,0,0">
                     <TextBlock Text="Atividade · últimos 5 min" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="DiscoPicoHistorico" Text="" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
                 <Grid x:Name="AreaGraficoDisco" Height="80" Margin="0,6,0,0" ClipToBounds="True"
                       SizeChanged="AreaGraficoDisco_SizeChanged">
-                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Border Height="1" Background="{DynamicResource Borda}" VerticalAlignment="Bottom" />
                     <Polygon x:Name="GraficoAreaDisco" Fill="{DynamicResource Acento}" Opacity="0.14" />
                     <Polyline x:Name="GraficoLinhaDisco" Stroke="{DynamicResource Acento}" StrokeThickness="2"
                               StrokeLineJoin="Round" />
@@ -421,7 +421,7 @@
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
-                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Ellipse Width="138" Height="138" Stroke="{DynamicResource Trilho}" StrokeThickness="9" />
                         <Path x:Name="AnelEnergia" Stroke="{DynamicResource Acento}" StrokeThickness="9"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -429,58 +429,58 @@
                                 <TextBlock x:Name="EnergiaWattsTexto" Text="--" FontSize="44" FontWeight="Light"
                                            FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                            LineHeight="46" />
-                                <TextBlock Text="W" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                <TextBlock Text="W" FontSize="18" Foreground="{DynamicResource TextoFraco}"
                                            Margin="2,6,0,0" />
                             </StackPanel>
                             <TextBlock x:Name="EnergiaLegenda" Text="Potência agora" FontSize="11" Margin="0,4,0,0"
-                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                                       HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                         </StackPanel>
                     </Grid>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                         <Grid Height="36">
                             <TextBlock Text="Sessão" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="EnergiaSessaoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Média" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="EnergiaMediaTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Pico" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="EnergiaPicoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
-                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Border Height="1" Background="{DynamicResource Borda}" />
                         <Grid Height="36">
                             <TextBlock Text="Na tomada" FontSize="12" VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextoFraco}" />
+                                       Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="EnergiaTomadaTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       Foreground="{StaticResource Texto}" />
+                                       Foreground="{DynamicResource Texto}" />
                         </Grid>
                     </StackPanel>
                 </Grid>
 
                 <Grid Margin="0,16,0,0">
                     <TextBlock Text="Potência · últimos 5 min" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="EnergiaPicoHistorico" Text="" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
                 <Grid x:Name="AreaGraficoEnergia" Height="80" Margin="0,6,0,0" ClipToBounds="True"
                       SizeChanged="AreaGraficoEnergia_SizeChanged">
-                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Border Height="1" Background="{DynamicResource Borda}" VerticalAlignment="Bottom" />
                     <Polygon x:Name="GraficoAreaEnergia" Fill="{DynamicResource Acento}" Opacity="0.14" />
                     <Polyline x:Name="GraficoLinhaEnergia" Stroke="{DynamicResource Acento}" StrokeThickness="2"
                               StrokeLineJoin="Round" />
@@ -488,8 +488,8 @@
             </StackPanel>
 
             <!-- ========================== ABAS =========================== -->
-            <Border Margin="0,16,0,0" CornerRadius="14" Background="{StaticResource Cartao}"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="4">
+            <Border Margin="0,16,0,0" CornerRadius="14" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="4">
                 <UniformGrid Columns="5">
                     <RadioButton x:Name="AbaGeral" Style="{StaticResource Aba}" Content="Geral"
                                  IsChecked="True" Checked="Aba_Selecionada" />
@@ -507,24 +507,48 @@
             <!-- ======================= BASE: GERAL ======================= -->
             <StackPanel x:Name="BaseGeral">
                 <UniformGrid Columns="2" Margin="0,16,0,0">
-                    <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                            BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                    <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                            BorderBrush="{DynamicResource Borda}" BorderThickness="1"
                             Height="56" Padding="12,0" Margin="0,0,6,0">
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="GPU" FontSize="11" Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock Text="GPU" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
                             <TextBlock x:Name="CardGpu" Text="--" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Texto}" Margin="0,2,0,0" />
+                                       Foreground="{DynamicResource Texto}" Margin="0,2,0,0" />
                         </StackPanel>
                     </Border>
-                    <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                            BorderBrush="{StaticResource Borda}" BorderThickness="1"
-                            Height="56" Padding="12,0" Margin="6,0,0,0">
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="RAM" FontSize="11" Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock x:Name="CardRam" Text="--" FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Texto}" Margin="0,2,0,0" />
-                        </StackPanel>
-                    </Border>
+                    <!-- O conteudo fica fora do template: x:Name dentro de um
+                         ControlTemplate nao vira campo no codigo. -->
+                    <Button Margin="6,0,0,0" Cursor="Hand" Click="CardRam_Click"
+                            ToolTip="Ver os programas que mais usam memória">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bg" CornerRadius="12" Height="56" Padding="12,0"
+                                        Background="{DynamicResource Cartao}"
+                                        BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                                    <ContentPresenter VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bg" Property="Background"
+                                                Value="{DynamicResource Trilho}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="RAM" FontSize="11"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                                <TextBlock x:Name="CardRam" Text="--" FontSize="14"
+                                           FontWeight="SemiBold" Margin="0,2,0,0"
+                                           Foreground="{DynamicResource Texto}" />
+                            </StackPanel>
+                            <Path Data="M9,6 L15,12 L9,18" Stroke="#8B94A3" StrokeThickness="1.8"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Width="12" Height="12" Stretch="Uniform"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
                 </UniformGrid>
 
                 <UniformGrid Columns="3" Margin="0,12,0,0">
@@ -541,9 +565,9 @@
             <StackPanel x:Name="BaseCpu" Visibility="Collapsed">
                 <Grid Margin="0,16,0,8">
                     <TextBlock x:Name="RotuloGrade" Text="Uso por núcleo" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <TextBlock x:Name="DetectadoCpu" Text="" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
 
                 <!-- A grade e montada em codigo: a contagem vem do hardware -->
@@ -551,9 +575,9 @@
 
                 <Grid Margin="0,10,0,0">
                     <TextBlock Text="Grade" FontSize="11"
-                               VerticalAlignment="Center" Foreground="{StaticResource TextoMuitoFraco}" />
-                    <Border CornerRadius="10" Background="{StaticResource Cartao}" Width="168"
-                            BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="3"
+                               VerticalAlignment="Center" Foreground="{DynamicResource TextoMuitoFraco}" />
+                    <Border CornerRadius="10" Background="{DynamicResource Cartao}" Width="168"
+                            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="3"
                             HorizontalAlignment="Right">
                         <UniformGrid Columns="2">
                             <RadioButton x:Name="ModoNucleos" Style="{StaticResource Aba}" Height="28"
@@ -572,13 +596,13 @@
                 <Border x:Name="AvisoHotSpot" Visibility="Collapsed" Margin="0,16,0,0"
                         CornerRadius="12" Background="#2A1A10" BorderBrush="#7C3A14"
                         BorderThickness="1" Padding="12">
-                    <TextBlock x:Name="TextoHotSpot" Foreground="{StaticResource AlertaTexto}"
+                    <TextBlock x:Name="TextoHotSpot" Foreground="{DynamicResource AlertaTexto}"
                                FontSize="12" TextWrapping="Wrap" />
                 </Border>
 
                 <Grid Margin="0,16,0,10">
                     <TextBlock Text="Memória e resfriamento" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                 </Grid>
                 <StackPanel x:Name="BarrasGpu" />
             </StackPanel>
@@ -588,9 +612,9 @@
             <StackPanel x:Name="BaseDisco" Visibility="Collapsed">
                 <Grid Margin="0,16,0,10">
                     <TextBlock x:Name="RotuloListaDisco" Text="Consumindo o disco agora" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
-                    <Border CornerRadius="10" Background="{StaticResource Cartao}" Width="168"
-                            BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="3"
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
+                    <Border CornerRadius="10" Background="{DynamicResource Cartao}" Width="168"
+                            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="3"
                             HorizontalAlignment="Right">
                         <UniformGrid Columns="2">
                             <RadioButton x:Name="ModoProcessos" Style="{StaticResource Aba}" Height="28"
@@ -619,13 +643,13 @@
             <StackPanel x:Name="BaseEnergia" Visibility="Collapsed">
                 <Grid Margin="0,16,0,10">
                     <TextBlock Text="Para onde vai a energia" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <TextBlock Text="agora" FontSize="11"
-                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                               Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
 
                 <Grid Height="10">
-                    <Border CornerRadius="5" Background="{StaticResource Trilho}" />
+                    <Border CornerRadius="5" Background="{DynamicResource Trilho}" />
                     <Grid x:Name="FaixaEnergia" ClipToBounds="True">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition x:Name="FaixaGpu" Width="0*" />
@@ -642,7 +666,7 @@
                 <StackPanel x:Name="LegendaEnergia" Margin="0,12,0,0" />
 
                 <TextBlock x:Name="NotaEnergia" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
-                           Foreground="{StaticResource TextoMuitoFraco}" />
+                           Foreground="{DynamicResource TextoMuitoFraco}" />
             </StackPanel>
 
             <!-- ========================= RODAPE ========================== -->

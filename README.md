@@ -59,6 +59,14 @@ O botão **Ver log detalhado**, na aba Disco, abre o log: registra quem passou d
 limite de MB/s que você definir, guarda os últimos 15 minutos e exporta em `.txt` com
 nome e caminho de cada processo. O registro corre enquanto a tela está aberta.
 
+Cada evento traz também a unidade que estava **mais ativa naquele momento**, e o seletor
+filtra por ela. É uma pista, não uma atribuição exata: os contadores por processo do
+Windows informam quantos bytes cada programa leu e escreveu, mas não em qual disco. Saber
+isso com precisão exige o rastreamento por arquivo, que ainda não está implementado.
+
+O card de **RAM**, na aba Geral, abre a lista de programas por consumo de memória, de onde
+dá para fechá-los. Processos do Windows e de segurança aparecem marcados e sem o botão.
+
 O botão **Desempenho** abre uma tela com o que será feito, em vez de agir sozinho:
 trocar o plano de energia, limpar arquivos temporários e fechar programas escolhidos
 na lista. Cada programa recebe o mesmo pedido de fechar que o botão X da janela, então
@@ -90,6 +98,8 @@ src/MonitorPC/
   Views/ConfiguracaoWindow.xaml    limites de temperatura
   Services/PowerService.cs  perfis de energia
   Services/AlertService.cs  quando a temperatura passa do limite
+  Services/ThemeService.cs  paleta clara e escura
+  Views/MemoriaWindow.xaml  programas por consumo de memória
   Services/PerformanceService.cs  ações do Modo Desempenho
   Services/DiskLogService.cs      registro de picos de disco
   Views/LogDiscoWindow.xaml       a tela do log

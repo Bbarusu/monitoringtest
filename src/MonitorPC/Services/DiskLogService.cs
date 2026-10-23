@@ -11,7 +11,8 @@ public sealed record EventoDeDisco(
     string Nome,
     string? Caminho,
     double LeituraMbs,
-    double EscritaMbs)
+    double EscritaMbs,
+    string? DiscoAtivo)
 {
     public double TotalMbs => LeituraMbs + EscritaMbs;
 
@@ -35,6 +36,13 @@ public sealed class DiskLogService : IDisposable
     private static readonly TimeSpan Janela = TimeSpan.FromMinutes(15);
 
     private readonly DiskProcessService _medidor = new();
+
+    /// <summary>
+    /// Preenchido pelo painel a cada leitura. Os contadores por processo nao
+    /// dizem em qual unidade o acesso ocorreu, entao o log registra qual estava
+    /// mais ativa no momento — e uma pista, nao a atribuicao exata.
+    /// </summary>
+    public string? DiscoMaisAtivo { get; set; }
     private readonly List<EventoDeDisco> _eventos = new();
     private readonly AppConfig _cfg;
     private CancellationTokenSource? _cts;
@@ -108,7 +116,7 @@ public sealed class DiskLogService : IDisposable
 
             lock (_eventos)
                 _eventos.Add(new EventoDeDisco(
-                    agora, p.Pid, p.Nome, p.Caminho, p.LeituraMbs, p.EscritaMbs));
+                    agora, p.Pid, p.Nome, p.Caminho, p.LeituraMbs, p.EscritaMbs, DiscoMaisAtivo));
         }
 
         lock (_eventos)
@@ -135,6 +143,8 @@ public sealed class DiskLogService : IDisposable
         texto.AppendLine("Monitor de PC — log de disco");
         texto.AppendLine($"Gerado em {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
         texto.AppendLine($"Registra processos acima de {_cfg.LimiteLogMbs:0.#} MB/s");
+        texto.AppendLine("A unidade indicada e a que estava mais ativa no momento:");
+        texto.AppendLine("os contadores por processo nao dizem em qual disco o acesso ocorreu.");
         texto.AppendLine();
 
         foreach (var e in Eventos)
@@ -144,6 +154,9 @@ public sealed class DiskLogService : IDisposable
             texto.AppendLine(
                 $"{e.Tipo} {e.TotalMbs:0.0} MB/s · leitura {e.LeituraMbs:0.0} · " +
                 $"escrita {e.EscritaMbs:0.0} · PID {e.Pid}");
+
+            if (e.DiscoAtivo is not null)
+                texto.AppendLine($"Unidade mais ativa no momento: {e.DiscoAtivo}");
             texto.AppendLine();
         }
 

@@ -8,8 +8,8 @@
         FontFamily="{StaticResource FonteUI}">
 
     <Border x:Name="Painel" Margin="20" CornerRadius="16"
-            Background="{StaticResource Fundo}"
-            BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="20">
+            Background="{DynamicResource Fundo}"
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
         </Border.Effect>
@@ -26,38 +26,38 @@
                 </Button>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="Modo Desempenho" FontSize="15" FontWeight="SemiBold"
-                               Foreground="{StaticResource Texto}" />
+                               Foreground="{DynamicResource Texto}" />
                     <TextBlock Text="Libera recursos para jogos e tarefas pesadas" FontSize="12"
-                               Margin="0,3,0,0" Foreground="{StaticResource TextoFraco}" />
+                               Margin="0,3,0,0" Foreground="{DynamicResource TextoFraco}" />
                 </StackPanel>
             </StackPanel>
 
             <!-- Acoes -->
             <TextBlock Text="O que fazer" FontSize="11" Margin="0,20,0,8"
-                       Foreground="{StaticResource TextoFraco}" />
+                       Foreground="{DynamicResource TextoFraco}" />
 
-            <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="12,10" Margin="0,0,0,10">
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10" Margin="0,0,0,10">
                 <Grid>
                     <StackPanel VerticalAlignment="Center" MaxWidth="300" HorizontalAlignment="Left">
                         <TextBlock Text="Trocar para o plano Desempenho" FontSize="13" FontWeight="Medium"
-                                   Foreground="{StaticResource Texto}" />
+                                   Foreground="{DynamicResource Texto}" />
                         <TextBlock Text="Plano de energia do Windows" FontSize="11" Margin="0,2,0,0"
-                                   TextWrapping="Wrap" Foreground="{StaticResource TextoFraco}" />
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                     <CheckBox x:Name="TrocarPlano" Style="{StaticResource Interruptor}" IsChecked="True"
                               HorizontalAlignment="Right" VerticalAlignment="Center" />
                 </Grid>
             </Border>
 
-            <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="12,10" Margin="0,0,0,10">
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10" Margin="0,0,0,10">
                 <Grid>
                     <StackPanel VerticalAlignment="Center" MaxWidth="300" HorizontalAlignment="Left">
                         <TextBlock Text="Limpar arquivos temporários" FontSize="13" FontWeight="Medium"
-                                   Foreground="{StaticResource Texto}" />
+                                   Foreground="{DynamicResource Texto}" />
                         <TextBlock x:Name="DetalheTemporarios" FontSize="11" Margin="0,2,0,0"
-                                   TextWrapping="Wrap" Foreground="{StaticResource TextoFraco}"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}"
                                    Text="Calculando…" />
                     </StackPanel>
                     <CheckBox x:Name="LimparTemp" Style="{StaticResource Interruptor}" IsChecked="True"
@@ -65,14 +65,14 @@
                 </Grid>
             </Border>
 
-            <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="12,10">
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                 <Grid>
                     <StackPanel VerticalAlignment="Center" MaxWidth="300" HorizontalAlignment="Left">
                         <TextBlock Text="Fechar programas abertos" FontSize="13" FontWeight="Medium"
-                                   Foreground="{StaticResource Texto}" />
+                                   Foreground="{DynamicResource Texto}" />
                         <TextBlock x:Name="DetalheProcessos" FontSize="11" Margin="0,2,0,0"
-                                   TextWrapping="Wrap" Foreground="{StaticResource TextoFraco}"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}"
                                    Text="Nenhum selecionado abaixo" />
                     </StackPanel>
                     <CheckBox x:Name="FecharProcessos" Style="{StaticResource Interruptor}"
@@ -85,13 +85,13 @@
             <StackPanel x:Name="AreaProcessos" Visibility="Collapsed">
                 <Grid Margin="0,16,0,8">
                     <TextBlock Text="Escolha o que fechar" FontSize="11" HorizontalAlignment="Left"
-                               Foreground="{StaticResource TextoFraco}" />
+                               Foreground="{DynamicResource TextoFraco}" />
                     <TextBlock x:Name="TotalSelecionado" FontSize="11" HorizontalAlignment="Right"
-                               Foreground="{StaticResource TextoFraco}" />
+                               Foreground="{DynamicResource TextoFraco}" />
                 </Grid>
                 <StackPanel x:Name="ListaProcessos" />
                 <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
-                           Foreground="{StaticResource TextoMuitoFraco}"
+                           Foreground="{DynamicResource TextoMuitoFraco}"
                            Text="Cada programa recebe o mesmo pedido de fechar que o botão X da janela, então ainda dá para salvar o que estiver aberto. Antivírus, drivers e processos do Windows nunca aparecem aqui." />
             </StackPanel>
 
@@ -102,7 +102,7 @@
             </Button>
 
             <TextBlock x:Name="Resultado" FontSize="11" Margin="0,8,0,0" TextAlignment="Center"
-                       TextWrapping="Wrap" Foreground="{StaticResource TextoMuitoFraco}"
+                       TextWrapping="Wrap" Foreground="{DynamicResource TextoMuitoFraco}"
                        Text="O plano de energia volta ao normal pelo painel. Programas fechados não são reabertos." />
 
         </StackPanel>

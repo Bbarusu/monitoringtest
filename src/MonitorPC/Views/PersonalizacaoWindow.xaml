@@ -8,8 +8,8 @@
         FontFamily="{StaticResource FonteUI}">
 
     <Border x:Name="Painel" Margin="20" CornerRadius="16"
-            Background="{StaticResource Fundo}"
-            BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="20">
+            Background="{DynamicResource Fundo}"
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
         </Border.Effect>
@@ -26,24 +26,40 @@
                 </Button>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="Personalização" FontSize="15" FontWeight="SemiBold"
-                               Foreground="{StaticResource Texto}" />
+                               Foreground="{DynamicResource Texto}" />
                     <TextBlock Text="Cor e transparência do painel" FontSize="12" Margin="0,3,0,0"
-                               Foreground="{StaticResource TextoFraco}" />
+                               Foreground="{DynamicResource TextoFraco}" />
                 </StackPanel>
             </StackPanel>
 
+            <!-- Tema -->
+            <TextBlock Text="Tema" FontSize="11" Margin="0,20,0,8"
+                       Foreground="{DynamicResource TextoFraco}" />
+
+            <Border CornerRadius="14" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="4">
+                <UniformGrid Columns="3">
+                    <RadioButton x:Name="TemaEscuro" Style="{StaticResource Aba}" Content="Escuro"
+                                 Checked="Tema_Alterado" />
+                    <RadioButton x:Name="TemaClaro" Style="{StaticResource Aba}" Content="Claro"
+                                 Checked="Tema_Alterado" />
+                    <RadioButton x:Name="TemaSistema" Style="{StaticResource Aba}" Content="Sistema"
+                                 Checked="Tema_Alterado" />
+                </UniformGrid>
+            </Border>
+
             <!-- Cor de destaque -->
             <TextBlock Text="Cor de destaque" FontSize="11" Margin="0,20,0,8"
-                       Foreground="{StaticResource TextoFraco}" />
+                       Foreground="{DynamicResource TextoFraco}" />
 
-            <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="12,10">
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                 <Grid>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Acompanhar a cor do sistema" FontSize="13" FontWeight="Medium"
-                                   Foreground="{StaticResource Texto}" />
-                        <TextBlock Text="Usa a cor de destaque do Windows" FontSize="11" Margin="0,2,0,0"
-                                   Foreground="{StaticResource TextoFraco}" />
+                                   Foreground="{DynamicResource Texto}" />
+                        <TextBlock Text="Usa a cor de destaque do Windows, e o tema junto" FontSize="11" Margin="0,2,0,0"
+                                   Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                     <CheckBox x:Name="SeguirSistema" Style="{StaticResource Interruptor}"
                               HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -54,21 +70,21 @@
             <UniformGrid x:Name="Cores" Columns="6" Margin="0,10,0,0" />
 
             <TextBlock x:Name="DicaCor" Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
-                       Foreground="{StaticResource TextoMuitoFraco}"
+                       Foreground="{DynamicResource TextoMuitoFraco}"
                        Text="Desligue o acompanhamento para escolher uma cor." />
 
             <!-- Transparencia -->
             <TextBlock Text="Transparência" FontSize="11" Margin="0,20,0,8"
-                       Foreground="{StaticResource TextoFraco}" />
+                       Foreground="{DynamicResource TextoFraco}" />
 
-            <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="12,10">
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                 <Grid>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Efeito de transparência" FontSize="13" FontWeight="Medium"
-                                   Foreground="{StaticResource Texto}" />
+                                   Foreground="{DynamicResource Texto}" />
                         <TextBlock Text="Deixa o fundo aparecer atrás do painel" FontSize="11" Margin="0,2,0,0"
-                                   Foreground="{StaticResource TextoFraco}" />
+                                   Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                     <CheckBox x:Name="Transparencia" Style="{StaticResource Interruptor}"
                               HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -76,12 +92,12 @@
                 </Grid>
             </Border>
 
-            <Border CornerRadius="12" Background="{StaticResource Cartao}" Margin="0,10,0,0"
-                    BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="12">
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
                 <StackPanel>
                     <Grid>
                         <TextBlock Text="Opacidade do painel" FontSize="13" FontWeight="Medium"
-                                   VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                                   VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                         <TextBlock x:Name="ValorOpacidade" Text="85%" FontSize="28" FontWeight="Light"
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
@@ -92,9 +108,9 @@
                             ValueChanged="Opacidade_Alterada" />
                     <Grid Margin="0,4,0,0">
                         <TextBlock Text="15% · quase invisível" FontSize="11"
-                                   Foreground="{StaticResource TextoMuitoFraco}" HorizontalAlignment="Left" />
+                                   Foreground="{DynamicResource TextoMuitoFraco}" HorizontalAlignment="Left" />
                         <TextBlock Text="100% · sólido" FontSize="11"
-                                   Foreground="{StaticResource TextoMuitoFraco}" HorizontalAlignment="Right" />
+                                   Foreground="{DynamicResource TextoMuitoFraco}" HorizontalAlignment="Right" />
                     </Grid>
                 </StackPanel>
             </Border>

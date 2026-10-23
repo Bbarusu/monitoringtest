@@ -18,7 +18,7 @@ public partial class FlyoutWindow : Window
     /// <summary>5 minutos de historico a 1 s, que e o que o grafico mostra.</summary>
     private const int PontosDoHistorico = 300;
 
-    private static readonly Color FundoSolido = Color.FromRgb(0x15, 0x17, 0x1C);
+
 
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
@@ -140,13 +140,13 @@ public partial class FlyoutWindow : Window
 
         if (!_cfg.Transparencia)
         {
-            Painel.Background = new SolidColorBrush(FundoSolido);
+            Painel.Background = new SolidColorBrush(ThemeService.CorDeFundo);
             return;
         }
 
         var alpha = (byte)(Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
-        Painel.Background = new SolidColorBrush(
-            Color.FromArgb(alpha, FundoSolido.R, FundoSolido.G, FundoSolido.B));
+        var fundo = ThemeService.CorDeFundo;
+        Painel.Background = new SolidColorBrush(Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
     }
 
     // ------------------------------------------------------------------
@@ -1008,9 +1008,12 @@ public partial class FlyoutWindow : Window
 
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
 
+    private void CardRam_Click(object sender, RoutedEventArgs e) =>
+        new MemoriaWindow(_sensores) { Owner = this }.ShowDialog();
+
     private void Log_Click(object sender, RoutedEventArgs e)
     {
-        new LogDiscoWindow(_cfg) { Owner = this }.ShowDialog();
+        new LogDiscoWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
 
         // O log usa a mesma medicao por processo; ao voltar, as amostras antigas
         // virariam um pico falso.

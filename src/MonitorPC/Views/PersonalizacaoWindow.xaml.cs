@@ -30,6 +30,10 @@ public partial class PersonalizacaoWindow : Window
 
         MontarPaleta();
 
+        TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
+        TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
+
         SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
         Transparencia.IsChecked = _cfg.Transparencia;
         Opacidade.Value = Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
@@ -70,10 +74,31 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
+    private void Tema_Alterado(object sender, RoutedEventArgs e)
+    {
+        if (_carregando) return;
+
+        _cfg.Tema = TemaClaro.IsChecked == true ? Tema.Claro
+                  : TemaSistema.IsChecked == true ? Tema.Sistema
+                  : Tema.Escuro;
+
+        Confirmar();
+    }
+
     private void SeguirSistema_Alterado(object sender, RoutedEventArgs e)
     {
         if (_carregando) return;
         _cfg.AcompanharCorDoSistema = SeguirSistema.IsChecked == true;
+
+        // Acompanhar o sistema vale para o conjunto: cor de destaque e tema.
+        if (_cfg.AcompanharCorDoSistema)
+        {
+            _cfg.Tema = Tema.Sistema;
+            _carregando = true;
+            TemaSistema.IsChecked = true;
+            _carregando = false;
+        }
+
         AtualizarEstados();
         Confirmar();
     }
@@ -103,11 +128,19 @@ public partial class PersonalizacaoWindow : Window
         _cfg.CorDestaque = padrao.CorDestaque;
         _cfg.Transparencia = padrao.Transparencia;
         _cfg.Opacidade = padrao.Opacidade;
+        _cfg.Tema = padrao.Tema;
 
         _carregando = true;
+        TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
+        TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
+
         SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
         Transparencia.IsChecked = _cfg.Transparencia;
         Opacidade.Value = _cfg.Opacidade;
+        TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
+        TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
         foreach (var filho in Cores.Children.OfType<RadioButton>())
             filho.IsChecked = string.Equals((string)filho.Tag, _cfg.CorDestaque, StringComparison.OrdinalIgnoreCase);
         _carregando = false;
@@ -144,7 +177,7 @@ public partial class PersonalizacaoWindow : Window
     /// <summary>A propria tela usa a transparencia escolhida, como previa ao vivo.</summary>
     private void AplicarFundo()
     {
-        var fundo = Color.FromRgb(0x15, 0x17, 0x1C);
+        var fundo = ThemeService.CorDeFundo;
 
         if (!_cfg.Transparencia)
         {

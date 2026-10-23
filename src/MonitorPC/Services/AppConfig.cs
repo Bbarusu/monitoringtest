@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+
 namespace MonitorPC.Services;
 
 /// <summary>
@@ -44,6 +45,7 @@ public sealed class AppConfig
     public bool SugerirEconomico { get; set; } = true;
 
     // --- Aparencia ---
+    public Tema Tema { get; set; } = Tema.Escuro;
     public bool AcompanharCorDoSistema { get; set; } = true;
     public string CorDestaque { get; set; } = "#3B82F6";
     public bool Transparencia { get; set; } = true;

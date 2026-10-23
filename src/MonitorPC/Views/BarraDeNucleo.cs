@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
+using MonitorPC.Services;
+
 namespace MonitorPC.Views;
 
 /// <summary>
@@ -27,7 +29,7 @@ public sealed class BarraDeNucleo : Grid
         {
             FontSize = 11,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["TextoMuitoFraco"]
+            Foreground = ThemeService.Pincel("TextoMuitoFraco")
         };
         SetColumn(_rotulo, 0);
         Children.Add(_rotulo);
@@ -36,7 +38,7 @@ public sealed class BarraDeNucleo : Grid
         {
             Height = 6,
             CornerRadius = new CornerRadius(3),
-            Background = (Brush)Application.Current.Resources["Trilho"],
+            Background = ThemeService.Pincel("Trilho"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(6, 0, 6, 0)
         };
@@ -70,7 +72,7 @@ public sealed class BarraDeNucleo : Grid
             FontSize = 11,
             TextAlignment = TextAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = (Brush)Application.Current.Resources["Texto"]
+            Foreground = ThemeService.Pincel("Texto")
         };
         SetColumn(_valor, 2);
         Children.Add(_valor);
