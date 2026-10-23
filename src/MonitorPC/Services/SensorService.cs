@@ -129,7 +129,7 @@ public sealed class SensorService : IDisposable
             CpuClocksPorNucleo = ClocksPorNucleo(),
             CpuCargaPorThread = CargasPorThread(),
             CpuPicoDeNucleo = Pegar(h => h == HardwareType.Cpu, SensorType.Load, "CPU Core Max"),
-            CpuTensao = Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN", "Vcore", "VID"),
+            CpuTensao = TensaoDoNucleo(),
 
             GpuNome = _pc.Hardware.FirstOrDefault(h => EhGpu(h.HardwareType))?.Name,
             GpuTemp = Pegar(EhGpu, SensorType.Temperature, "GPU Core", "Core"),
@@ -139,6 +139,9 @@ public sealed class SensorService : IDisposable
             VramUsadaMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Used"),
             VramTotalMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Total"),
             GpuFanRpm = Pegar(EhGpu, SensorType.Fan, "Fan"),
+            GpuClockNucleo = Pegar(EhGpu, SensorType.Clock, "GPU Core"),
+            GpuClockMemoria = Pegar(EhGpu, SensorType.Clock, "GPU Memory"),
+            GpuTempMemoria = Pegar(EhGpu, SensorType.Temperature, "GPU Memory"),
 
             RamUso = Pegar(h => h == HardwareType.Memory, SensorType.Load, "Memory"),
             RamUsadaGb = Pegar(h => h == HardwareType.Memory, SensorType.Data, "Memory Used"),
@@ -255,6 +258,26 @@ public sealed class SensorService : IDisposable
         .Select(x => x.Sensor.Value)
         .DefaultIfEmpty(null)
         .Max();
+
+    /// <summary>
+    /// Tensao do nucleo. O sensor SVI2 fica travado num valor fixo em parte dos
+    /// Ryzen, entao a preferencia e o maior VID entre os nucleos, que acompanha
+    /// a carga. Vcore da placa-mae e a ultima opcao.
+    /// </summary>
+    private float? TensaoDoNucleo()
+    {
+        var vids = Todos()
+            .Where(x => x.Hardware.HardwareType == HardwareType.Cpu
+                        && x.Sensor.SensorType == SensorType.Voltage
+                        && x.Sensor.Name.Contains("VID", StringComparison.OrdinalIgnoreCase)
+                        && x.Sensor.Value > 0)
+            .Select(x => x.Sensor.Value)
+            .DefaultIfEmpty(null)
+            .Max();
+
+        return vids ?? Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN")
+                    ?? Pegar(_ => true, SensorType.Voltage, "Vcore");
+    }
 
     private float? TotalRamGb()
     {

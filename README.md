@@ -4,7 +4,7 @@ Painel de monitoramento que vive na bandeja do Windows. Abre no canto inferior d
 ancorado ao ícone da barra de tarefas, e mostra temperatura, carga, memória e energia
 do PC sem pesar no sistema.
 
-**Estado atual:** abas Geral e CPU funcionais, com leitura real dos sensores,
+**Estado atual:** abas Geral, CPU e GPU funcionais, com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
 ## Requisitos
@@ -56,6 +56,7 @@ src/MonitorPC/
   Services/AppConfig.cs     configuração em JSON
   Views/FlyoutWindow.xaml   o painel e suas abas
   Views/BarraDeNucleo.cs    uma linha da grade de núcleos
+  Views/BarraDeMetrica.cs   barra rotulada com valor (VRAM, potência, ventoinha)
   Views/PersonalizacaoWindow.xaml  cor e transparência
   Services/PowerService.cs  perfis de energia
   App.xaml.cs               ícone da bandeja e ciclo de vida

@@ -31,6 +31,9 @@ public sealed class Snapshot
     public float? VramUsadaMb { get; init; }
     public float? VramTotalMb { get; init; }
     public float? GpuFanRpm { get; init; }
+    public float? GpuClockNucleo { get; init; }
+    public float? GpuClockMemoria { get; init; }
+    public float? GpuTempMemoria { get; init; }
 
     // RAM
     public float? RamUso { get; init; }

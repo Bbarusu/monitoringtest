@@ -76,7 +76,7 @@ public sealed class BarraDeNucleo : Grid
         Children.Add(_valor);
     }
 
-    public void Atualizar(string rotulo, double porcentagem, float? clockMhz)
+    public void Atualizar(string rotulo, double porcentagem, float? clockMhz, string? origem = null)
     {
         var valor = Math.Clamp(porcentagem, 0, 100);
 
@@ -85,8 +85,9 @@ public sealed class BarraDeNucleo : Grid
         _cheia.Width = new GridLength(valor, GridUnitType.Star);
         _vazia.Width = new GridLength(100 - valor, GridUnitType.Star);
 
-        ToolTip = clockMhz is > 0
-            ? $"{rotulo} · {valor:F0}% · {clockMhz / 1000:0.00} GHz"
-            : $"{rotulo} · {valor:F0}%";
+        var partes = new List<string> { $"{rotulo} · {valor:F0}%" };
+        if (clockMhz is > 0) partes.Add($"{clockMhz / 1000:0.00} GHz");
+        if (origem is not null) partes.Add(origem);
+        ToolTip = string.Join(" · ", partes);
     }
 }

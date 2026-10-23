@@ -179,6 +179,82 @@
                 </Grid>
             </StackPanel>
 
+
+            <!-- ======================== TOPO: GPU ======================== -->
+            <StackPanel x:Name="TopoGpu" Visibility="Collapsed" Margin="0,16,0,0">
+                <Grid Height="150">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Path x:Name="AnelGpu" Stroke="{DynamicResource Acento}" StrokeThickness="9"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock x:Name="GpuUsoTexto" Text="--" FontSize="48" FontWeight="Light"
+                                           FontFamily="{StaticResource FonteNumero}" Foreground="White"
+                                           LineHeight="50" />
+                                <TextBlock Text="%" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                           Margin="2,6,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="Uso" FontSize="11" Margin="0,4,0,0"
+                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <Grid Height="36">
+                            <TextBlock Text="Temp. borda" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="GpuTempTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Hot spot" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="GpuHotTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Clock núcleo" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="GpuClockTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Clock memória" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="GpuClockMemTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,16,0,0">
+                    <TextBlock Text="Carga · últimos 5 min" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="GpuPicoHistorico" Text="" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                </Grid>
+                <Grid x:Name="AreaGraficoGpu" Height="80" Margin="0,6,0,0" ClipToBounds="True"
+                      SizeChanged="AreaGraficoGpu_SizeChanged">
+                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Polygon x:Name="GraficoAreaGpu" Fill="{DynamicResource Acento}" Opacity="0.14" />
+                    <Polyline x:Name="GraficoLinhaGpu" Stroke="{DynamicResource Acento}" StrokeThickness="2"
+                              StrokeLineJoin="Round" />
+                </Grid>
+            </StackPanel>
+
             <!-- ========================== ABAS =========================== -->
             <Border Margin="0,16,0,0" CornerRadius="14" Background="{StaticResource Cartao}"
                     BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="4">
@@ -187,7 +263,8 @@
                                  IsChecked="True" Checked="Aba_Selecionada" />
                     <RadioButton x:Name="AbaCpu" Style="{StaticResource Aba}" Content="CPU"
                                  Checked="Aba_Selecionada" />
-                    <RadioButton Style="{StaticResource Aba}" Content="GPU" IsEnabled="False" />
+                    <RadioButton x:Name="AbaGpu" Style="{StaticResource Aba}" Content="GPU"
+                                 Checked="Aba_Selecionada" />
                     <RadioButton Style="{StaticResource Aba}" Content="Disco" IsEnabled="False" />
                     <RadioButton Style="{StaticResource Aba}" Content="Energia" IsEnabled="False" />
                 </UniformGrid>
@@ -253,6 +330,23 @@
                         </UniformGrid>
                     </Border>
                 </Grid>
+            </StackPanel>
+
+
+            <!-- ======================== BASE: GPU ======================== -->
+            <StackPanel x:Name="BaseGpu" Visibility="Collapsed">
+                <Border x:Name="AvisoHotSpot" Visibility="Collapsed" Margin="0,16,0,0"
+                        CornerRadius="12" Background="#2A1A10" BorderBrush="#7C3A14"
+                        BorderThickness="1" Padding="12">
+                    <TextBlock x:Name="TextoHotSpot" Foreground="{StaticResource AlertaTexto}"
+                               FontSize="12" TextWrapping="Wrap" />
+                </Border>
+
+                <Grid Margin="0,16,0,10">
+                    <TextBlock Text="Memória e resfriamento" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                </Grid>
+                <StackPanel x:Name="BarrasGpu" />
             </StackPanel>
 
             <!-- ========================= RODAPE ========================== -->

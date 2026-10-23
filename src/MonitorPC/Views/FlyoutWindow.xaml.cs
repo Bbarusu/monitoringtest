@@ -10,7 +10,7 @@ namespace MonitorPC.Views;
 
 public partial class FlyoutWindow : Window
 {
-    private enum Aba { Geral, Cpu }
+    private enum Aba { Geral, Cpu, Gpu }
 
     private const double Raio = 100;
     private const double RaioCpu = 69;
@@ -23,6 +23,12 @@ public partial class FlyoutWindow : Window
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
     private readonly Queue<double> _historicoCpu = new();
+    private readonly Queue<double> _historicoGpu = new();
+
+    // Potencia e rotacao nao tem limite informado por sensor, entao a barra usa
+    // como escala o maior valor visto desde que o app abriu.
+    private double _gpuWattsMax;
+    private double _gpuRpmMax;
 
     private Aba _aba = Aba.Geral;
     private bool _pausado;
@@ -137,13 +143,20 @@ public partial class FlyoutWindow : Window
     {
         if (!IsInitialized) return;
 
-        _aba = ReferenceEquals(sender, AbaCpu) ? Aba.Cpu : Aba.Geral;
+        _aba = ReferenceEquals(sender, AbaCpu) ? Aba.Cpu
+             : ReferenceEquals(sender, AbaGpu) ? Aba.Gpu
+             : Aba.Geral;
 
-        var geral = _aba == Aba.Geral;
-        TopoGeral.Visibility = geral ? Visibility.Visible : Visibility.Collapsed;
-        BaseGeral.Visibility = geral ? Visibility.Visible : Visibility.Collapsed;
-        TopoCpu.Visibility = geral ? Visibility.Collapsed : Visibility.Visible;
-        BaseCpu.Visibility = geral ? Visibility.Collapsed : Visibility.Visible;
+        Mostrar(TopoGeral, BaseGeral, _aba == Aba.Geral);
+        Mostrar(TopoCpu, BaseCpu, _aba == Aba.Cpu);
+        Mostrar(TopoGpu, BaseGpu, _aba == Aba.Gpu);
+
+        static void Mostrar(UIElement topo, UIElement baseP, bool visivel)
+        {
+            var v = visivel ? Visibility.Visible : Visibility.Collapsed;
+            topo.Visibility = v;
+            baseP.Visibility = v;
+        }
 
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
 
@@ -166,18 +179,30 @@ public partial class FlyoutWindow : Window
 
         GuardarHistorico(s);
 
-        if (_aba == Aba.Geral) AplicarGeral(s);
-        else AplicarCpu(s);
+        switch (_aba)
+        {
+            case Aba.Cpu: AplicarCpu(s); break;
+            case Aba.Gpu: AplicarGpu(s); break;
+            default: AplicarGeral(s); break;
+        }
 
         AtualizarStatus(s);
     }
 
     private void GuardarHistorico(Snapshot s)
     {
-        if (s.CpuUso is not { } uso) return;
+        Guardar(_historicoCpu, s.CpuUso);
+        Guardar(_historicoGpu, s.GpuUso);
 
-        _historicoCpu.Enqueue(Math.Clamp(uso, 0, 100));
-        while (_historicoCpu.Count > PontosDoHistorico) _historicoCpu.Dequeue();
+        if (s.GpuWatts is { } w) _gpuWattsMax = Math.Max(_gpuWattsMax, w);
+        if (s.GpuFanRpm is { } r) _gpuRpmMax = Math.Max(_gpuRpmMax, r);
+
+        static void Guardar(Queue<double> fila, float? valor)
+        {
+            if (valor is not { } v) return;
+            fila.Enqueue(Math.Clamp(v, 0, 100));
+            while (fila.Count > PontosDoHistorico) fila.Dequeue();
+        }
     }
 
     private void AplicarGeral(Snapshot s)
@@ -226,8 +251,102 @@ public partial class FlyoutWindow : Window
         CpuWattsTexto.Text = s.CpuWatts is > 0 ? $"{s.CpuWatts:F0} W" : "n/d";
         CpuTensaoTexto.Text = s.CpuTensao is > 0 ? $"{s.CpuTensao:0.00} V" : "n/d";
 
-        DesenharHistorico(s.CpuPicoDeNucleo);
+        DesenharHistorico();
         MontarGrade(s);
+    }
+
+    private void AplicarGpu(Snapshot s)
+    {
+        Titulo.Text = s.GpuNome ?? "GPU";
+        ChipEsquerdo.Text = s.GpuTemp is > 0 ? $"{s.GpuTemp:F0} °C" : "-- °C";
+        ChipDireito.Text = s.GpuWatts is > 0 ? $"{s.GpuWatts:F0} W" : "-- W";
+
+        var uso = Math.Clamp(s.GpuUso ?? 0, 0, 100);
+        GpuUsoTexto.Text = s.GpuUso is null ? "--" : $"{uso:F0}";
+        AnelGpu.Data = ArcoDeCarga(uso, RaioCpu, 75);
+
+        var quente = s.GpuTemp is { } t && t >= _cfg.LimiteGpu;
+        AnelGpu.Stroke = quente ? Pincel("Alerta") : Pincel("Acento");
+
+        GpuTempTexto.Text = s.GpuTemp is > 0 ? $"{s.GpuTemp:F0} °C" : "n/d";
+        GpuTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
+        GpuClockTexto.Text = s.GpuClockNucleo is > 0 ? Clock(s.GpuClockNucleo!.Value) : "n/d";
+        GpuClockMemTexto.Text = s.GpuClockMemoria is > 0 ? Clock(s.GpuClockMemoria!.Value) : "n/d";
+
+        AplicarHotSpot(s);
+        DesenharHistoricoGpu();
+        MontarBarrasGpu(s);
+    }
+
+    /// <summary>
+    /// Uma diferenca grande entre o hot spot e a borda costuma indicar contato
+    /// ruim do dissipador ou pasta termica ressecada.
+    /// </summary>
+    private void AplicarHotSpot(Snapshot s)
+    {
+        if (s.GpuHotSpot is not { } hot || hot <= 0)
+        {
+            GpuHotTexto.Text = "n/d";
+            GpuHotTexto.Foreground = Pincel("Texto");
+            AvisoHotSpot.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var delta = s.GpuTemp is { } borda && borda > 0 ? hot - borda : (float?)null;
+        var preocupante = delta >= 20;
+
+        GpuHotTexto.Text = delta is { } d ? $"{hot:F0} °C  Δ{d:F0}" : $"{hot:F0} °C";
+        GpuHotTexto.Foreground = preocupante ? Pincel("AlertaTexto") : Pincel("Texto");
+
+        AvisoHotSpot.Visibility = preocupante ? Visibility.Visible : Visibility.Collapsed;
+        if (preocupante)
+            TextoHotSpot.Text = $"Hot spot {delta:F0} °C acima da borda. " +
+                                "Pode indicar pasta térmica ressecada.";
+    }
+
+    /// <summary>
+    /// VRAM tem total informado pelo sensor. Potencia e rotacao nao tem limite
+    /// publicado, entao a escala e o maior valor visto nesta sessao, o que o
+    /// tooltip deixa explicito.
+    /// </summary>
+    private void MontarBarrasGpu(Snapshot s)
+    {
+        var barras = new List<(string Rotulo, string Valor, double Pct, string? Dica)>();
+
+        if (s.VramUsadaMb is { } usada && s.VramTotalMb is { } total && total > 0)
+            barras.Add(("VRAM",
+                $"{usada / 1024:0.0} / {total / 1024:0.0} GB",
+                usada / total * 100,
+                null));
+
+        if (s.GpuWatts is { } w && w > 0)
+            barras.Add(("Potência",
+                $"{w:F0} W",
+                _gpuWattsMax > 0 ? w / _gpuWattsMax * 100 : 0,
+                $"Escala: maior valor visto nesta sessão ({_gpuWattsMax:F0} W)"));
+
+        if (s.GpuFanRpm is { } rpm)
+            barras.Add(("Ventilador",
+                rpm > 0 ? $"{rpm:F0} rpm" : "parado",
+                _gpuRpmMax > 0 ? rpm / _gpuRpmMax * 100 : 0,
+                _gpuRpmMax > 0
+                    ? $"Escala: maior valor visto nesta sessão ({_gpuRpmMax:F0} rpm)"
+                    : "A ventoinha só liga sob carga"));
+
+        if (s.GpuTempMemoria is { } tm && tm > 0)
+            barras.Add(("Temp. memória", $"{tm:F0} °C", Math.Clamp(tm / 110 * 100, 0, 100),
+                "Escala até 110 °C, o limite típico de GDDR"));
+
+        while (BarrasGpu.Children.Count > barras.Count)
+            BarrasGpu.Children.RemoveAt(BarrasGpu.Children.Count - 1);
+        while (BarrasGpu.Children.Count < barras.Count)
+            BarrasGpu.Children.Add(new BarraDeMetrica());
+
+        for (var i = 0; i < barras.Count; i++)
+        {
+            var (rotulo, valor, pct, dica) = barras[i];
+            ((BarraDeMetrica)BarrasGpu.Children[i]).Atualizar(rotulo, valor, pct, dica);
+        }
     }
 
     private void AtualizarStatus(Snapshot s)
@@ -299,7 +418,14 @@ public partial class FlyoutWindow : Window
         {
             var linha = (BarraDeNucleo)GradeNucleos.Children[i];
             var clock = prefixo == "N" && i < clocks.Count ? clocks[i] : (float?)null;
-            linha.Atualizar($"{prefixo}{i + 1}", valores[i], clock);
+
+            // O tooltip diz de onde veio o numero, para dar para conferir a
+            // media contra o Gerenciador de Tarefas.
+            var origem = prefixo == "N" && podeAgrupar
+                ? $"média de T{i * 2 + 1} e T{i * 2 + 2}"
+                : null;
+
+            linha.Atualizar($"{prefixo}{i + 1}", valores[i], clock, origem);
         }
     }
 
@@ -325,47 +451,50 @@ public partial class FlyoutWindow : Window
     // ------------------------------------------------------------------
     // Grafico do historico
 
-    private void AreaGrafico_SizeChanged(object sender, SizeChangedEventArgs e) =>
-        DesenharHistorico(_sensores.Ultimo?.CpuPicoDeNucleo);
+    private void AreaGrafico_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistorico();
 
-    private void DesenharHistorico(float? picoDeNucleo)
+    private void AreaGraficoGpu_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistoricoGpu();
+
+    private void DesenharHistorico() =>
+        Desenhar(_historicoCpu, AreaGrafico, GraficoLinha, GraficoArea, CpuPicoHistorico);
+
+    private void DesenharHistoricoGpu() =>
+        Desenhar(_historicoGpu, AreaGraficoGpu, GraficoLinhaGpu, GraficoAreaGpu, GpuPicoHistorico);
+
+    private static void Desenhar(Queue<double> historico, FrameworkElement area,
+        Polyline linha, Polygon preenchimento, TextBlock rotuloDoPico)
     {
-        var largura = AreaGrafico.ActualWidth;
-        var altura = AreaGrafico.ActualHeight;
+        var largura = area.ActualWidth;
+        var altura = area.ActualHeight;
 
-        if (largura <= 0 || altura <= 0 || _historicoCpu.Count < 2)
+        if (largura <= 0 || altura <= 0 || historico.Count < 2)
         {
-            GraficoLinha.Points = new PointCollection();
-            GraficoArea.Points = new PointCollection();
-            CpuPicoHistorico.Text = TextoDoPico(picoDeNucleo);
+            linha.Points = new PointCollection();
+            preenchimento.Points = new PointCollection();
+            rotuloDoPico.Text = "";
             return;
         }
 
-        var valores = _historicoCpu.ToArray();
+        var valores = historico.ToArray();
 
         // O grafico ocupa sempre a largura toda: com poucos pontos ele cresce da
         // esquerda para a direita conforme o historico enche.
         var passo = largura / Math.Max(valores.Length - 1, 1);
 
-        var linha = new PointCollection(valores.Length);
+        var pontos = new PointCollection(valores.Length);
         for (var i = 0; i < valores.Length; i++)
         {
             var y = altura - valores[i] / 100.0 * (altura - 4) - 2;
-            linha.Add(new Point(i * passo, y));
+            pontos.Add(new Point(i * passo, y));
         }
 
-        GraficoLinha.Points = linha;
+        linha.Points = pontos;
 
         // A area e a mesma linha fechada na base.
-        var area = new PointCollection(linha) { new(largura, altura), new(0, altura) };
-        GraficoArea.Points = area;
+        preenchimento.Points = new PointCollection(pontos) { new(largura, altura), new(0, altura) };
 
-        CpuPicoHistorico.Text = TextoDoPico(picoDeNucleo);
+        rotuloDoPico.Text = $"Pico: {valores.Max():F0}%";
     }
-
-    /// <summary>Carga da thread mais ocupada agora, nao o pico do historico.</summary>
-    private static string TextoDoPico(float? picoDeNucleo) =>
-        picoDeNucleo is { } p ? $"pico de núcleo {p:F0}%" : "";
 
     // ------------------------------------------------------------------
     // Anel
