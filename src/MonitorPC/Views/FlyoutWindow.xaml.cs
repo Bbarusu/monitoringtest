@@ -46,6 +46,7 @@ public partial class FlyoutWindow : Window
     private DateTime _recadoAte;
     private bool _posicionando;
     private bool _montandoSeletor;
+    private Alerta? _alertaNaTela;
 
     public FlyoutWindow(AppConfig cfg, SensorService sensores, AlertService alertas)
     {
@@ -212,7 +213,7 @@ public partial class FlyoutWindow : Window
     {
         AvisoDriver.Visibility = s.SensoresDeBaixoNivel ? Visibility.Collapsed : Visibility.Visible;
 
-        MostrarAviso(_alertas.Atual, _alertas.Silenciado);
+        MostrarAviso(_alertas.Atual);
         GuardarHistorico(s);
 
         switch (_aba)
@@ -655,9 +656,11 @@ public partial class FlyoutWindow : Window
     /// O aviso fica acima das abas, entao vale em qualquer uma: uma temperatura
     /// alta nao deve depender de o usuario estar na aba certa para aparecer.
     /// </summary>
-    private void MostrarAviso(Alerta? alerta, bool silenciado)
+    private void MostrarAviso(Alerta? alerta)
     {
-        if (alerta is null || silenciado)
+        _alertaNaTela = alerta;
+
+        if (alerta is null)
         {
             AvisoTemperatura.Visibility = Visibility.Collapsed;
             return;
@@ -687,11 +690,24 @@ public partial class FlyoutWindow : Window
         Recado("Não foi possível trocar o plano de energia");
     }
 
+    /// <summary>
+    /// Silencia so o componente do aviso em tela: silenciar o disco nao pode
+    /// esconder um aviso da CPU, que e outro problema.
+    /// </summary>
     private void AvisoSilenciar_Click(object sender, RoutedEventArgs e)
     {
-        _alertas.Silenciar();
+        if (_alertaNaTela is not { } alerta) return;
+
+        _alertas.Silenciar(alerta.Componente);
         AvisoTemperatura.Visibility = Visibility.Collapsed;
-        Recado("Aviso silenciado por 10 minutos");
+        Recado($"Aviso de {alerta.Componente} silenciado por 10 minutos");
+
+        // Outro componente pode estar acima do limite e assumir o aviso agora.
+        if (_sensores.Ultimo is { } ultimo)
+        {
+            _alertas.Avaliar(ultimo);
+            MostrarAviso(_alertas.Atual);
+        }
     }
 
     private void AtualizarStatus(Snapshot s)

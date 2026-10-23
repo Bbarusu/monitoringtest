@@ -45,7 +45,8 @@ processos a cada segundo o tempo todo contrariaria a meta de não pesar no siste
 Processos protegidos do sistema não permitem a leitura e ficam de fora.
 
 Passado o limite, um aviso aparece no topo do painel, em qualquer aba, com os botões
-"Ativar Econômico" e "Silenciar 10 min". Com a notificação ligada, o Windows também
+"Ativar Econômico" e "Silenciar 10 min". O silêncio vale só para aquele componente:
+silenciar o disco não esconde um aviso da CPU. Com a notificação ligada, o Windows também
 avisa — uma vez por episódio, não a cada leitura — e clicar nela abre o painel. O aviso
 só some quando a temperatura cai alguns graus abaixo do limite, para não piscar em volta
 dele.
