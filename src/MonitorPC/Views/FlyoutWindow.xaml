@@ -154,9 +154,9 @@
                         </Grid>
                         <Border Height="1" Background="{StaticResource Borda}" />
                         <Grid Height="36">
-                            <TextBlock Text="Pico de núcleo" FontSize="12" VerticalAlignment="Center"
+                            <TextBlock Text="Tensão" FontSize="12" VerticalAlignment="Center"
                                        Foreground="{StaticResource TextoFraco}" />
-                            <TextBlock x:Name="CpuPicoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                            <TextBlock x:Name="CpuTensaoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
                                        Foreground="{StaticResource Texto}" />
                         </Grid>
@@ -239,7 +239,7 @@
                 <UniformGrid x:Name="GradeNucleos" Columns="2" />
 
                 <Grid Margin="0,10,0,0">
-                    <TextBlock Text="Grade montada pelo que o PC informa" FontSize="11"
+                    <TextBlock Text="Grade" FontSize="11"
                                VerticalAlignment="Center" Foreground="{StaticResource TextoMuitoFraco}" />
                     <Border CornerRadius="10" Background="{StaticResource Cartao}" Width="168"
                             BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="3"

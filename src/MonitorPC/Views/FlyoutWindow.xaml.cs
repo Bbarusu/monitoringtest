@@ -28,6 +28,7 @@ public partial class FlyoutWindow : Window
     private bool _pausado;
     private bool _trocandoPerfil;
     private DateTime _recadoAte;
+    private bool _posicionando;
 
     public FlyoutWindow(AppConfig cfg, SensorService sensores)
     {
@@ -37,6 +38,11 @@ public partial class FlyoutWindow : Window
 
         AplicarTransparencia();
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() => Aplicar(snap));
+
+        // O painel e ancorado pela base: crescendo, ele sobe, em vez de avancar
+        // sobre a barra de tarefas. Vale para troca de aba e para qualquer
+        // conteudo que mude de altura.
+        SizeChanged += (_, _) => Posicionar();
 
         // Por padrao o painel fica aberto mesmo sem foco, para dar para olhar,
         // trocar de janela e tirar print. Quem fecha e o botao de minimizar
@@ -56,10 +62,22 @@ public partial class FlyoutWindow : Window
     /// </summary>
     private void Posicionar()
     {
-        UpdateLayout();
-        var area = SystemParameters.WorkArea;
-        Left = area.Right - ActualWidth;
-        Top = area.Bottom - ActualHeight;
+        // UpdateLayout dispara SizeChanged, que chama este metodo de novo:
+        // a guarda evita a recursao.
+        if (_posicionando) return;
+        _posicionando = true;
+
+        try
+        {
+            UpdateLayout();
+            var area = SystemParameters.WorkArea;
+            Left = area.Right - ActualWidth;
+            Top = area.Bottom - ActualHeight;
+        }
+        finally
+        {
+            _posicionando = false;
+        }
     }
 
     public void Mostrar()
@@ -206,9 +224,9 @@ public partial class FlyoutWindow : Window
         CpuTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
         CpuClockTexto.Text = s.CpuClockMhz is > 0 ? Clock(s.CpuClockMhz!.Value) : "n/d";
         CpuWattsTexto.Text = s.CpuWatts is > 0 ? $"{s.CpuWatts:F0} W" : "n/d";
-        CpuPicoTexto.Text = s.CpuPicoDeNucleo is { } pico ? $"{pico:F0}%" : "n/d";
+        CpuTensaoTexto.Text = s.CpuTensao is > 0 ? $"{s.CpuTensao:0.00} V" : "n/d";
 
-        DesenharHistorico();
+        DesenharHistorico(s.CpuPicoDeNucleo);
         MontarGrade(s);
     }
 
@@ -293,14 +311,24 @@ public partial class FlyoutWindow : Window
 
         while (GradeNucleos.Children.Count < quantidade)
             GradeNucleos.Children.Add(new BarraDeNucleo());
+
+        // Sem folga entre as duas colunas a porcentagem de uma encosta no
+        // rotulo da seguinte.
+        for (var i = 0; i < GradeNucleos.Children.Count; i++)
+        {
+            var par = i % 2 == 0;
+            ((BarraDeNucleo)GradeNucleos.Children[i]).Margin =
+                new Thickness(0, 0, par ? 18 : 0, 8);
+        }
     }
 
     // ------------------------------------------------------------------
     // Grafico do historico
 
-    private void AreaGrafico_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistorico();
+    private void AreaGrafico_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        DesenharHistorico(_sensores.Ultimo?.CpuPicoDeNucleo);
 
-    private void DesenharHistorico()
+    private void DesenharHistorico(float? picoDeNucleo)
     {
         var largura = AreaGrafico.ActualWidth;
         var altura = AreaGrafico.ActualHeight;
@@ -309,7 +337,7 @@ public partial class FlyoutWindow : Window
         {
             GraficoLinha.Points = new PointCollection();
             GraficoArea.Points = new PointCollection();
-            CpuPicoHistorico.Text = "";
+            CpuPicoHistorico.Text = TextoDoPico(picoDeNucleo);
             return;
         }
 
@@ -332,8 +360,12 @@ public partial class FlyoutWindow : Window
         var area = new PointCollection(linha) { new(largura, altura), new(0, altura) };
         GraficoArea.Points = area;
 
-        CpuPicoHistorico.Text = $"pico {valores.Max():F0}%";
+        CpuPicoHistorico.Text = TextoDoPico(picoDeNucleo);
     }
+
+    /// <summary>Carga da thread mais ocupada agora, nao o pico do historico.</summary>
+    private static string TextoDoPico(float? picoDeNucleo) =>
+        picoDeNucleo is { } p ? $"pico de núcleo {p:F0}%" : "";
 
     // ------------------------------------------------------------------
     // Anel

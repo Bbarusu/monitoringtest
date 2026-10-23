@@ -19,6 +19,9 @@ public sealed class Snapshot
     /// <summary>Carga da thread mais ocupada.</summary>
     public float? CpuPicoDeNucleo { get; init; }
 
+    /// <summary>Tensao do nucleo, em volts.</summary>
+    public float? CpuTensao { get; init; }
+
     // GPU
     public string? GpuNome { get; init; }
     public float? GpuTemp { get; init; }

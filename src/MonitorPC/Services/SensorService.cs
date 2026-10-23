@@ -129,6 +129,7 @@ public sealed class SensorService : IDisposable
             CpuClocksPorNucleo = ClocksPorNucleo(),
             CpuCargaPorThread = CargasPorThread(),
             CpuPicoDeNucleo = Pegar(h => h == HardwareType.Cpu, SensorType.Load, "CPU Core Max"),
+            CpuTensao = Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN", "Vcore", "VID"),
 
             GpuNome = _pc.Hardware.FirstOrDefault(h => EhGpu(h.HardwareType))?.Name,
             GpuTemp = Pegar(EhGpu, SensorType.Temperature, "GPU Core", "Core"),
