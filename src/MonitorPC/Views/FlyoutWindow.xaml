@@ -29,13 +29,25 @@
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5" Margin="0,0,8,0">
-                            <TextBlock x:Name="ChipEsquerdo" Text="-- °C" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Texto}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Path x:Name="IconeEsquerdo" Stroke="{StaticResource TextoFraco}"
+                                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round" Width="12" Height="12" Stretch="Uniform"
+                                      Margin="0,0,6,0" VerticalAlignment="Center" Visibility="Collapsed" />
+                                <TextBlock x:Name="ChipEsquerdo" Text="-- °C" FontSize="12" FontWeight="SemiBold"
+                                           VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                            </StackPanel>
                         </Border>
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5">
-                            <TextBlock x:Name="ChipDireito" Text="RAM --%" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Texto}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Path x:Name="IconeDireito" Stroke="{StaticResource TextoFraco}"
+                                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round" Width="12" Height="12" Stretch="Uniform"
+                                      Margin="0,0,6,0" VerticalAlignment="Center" Visibility="Collapsed" />
+                                <TextBlock x:Name="ChipDireito" Text="RAM --%" FontSize="12" FontWeight="SemiBold"
+                                           VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </StackPanel>

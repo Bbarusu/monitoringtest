@@ -249,8 +249,8 @@ public partial class FlyoutWindow : Window
     private void AplicarGeral(Snapshot s)
     {
         Titulo.Text = "Meu PC";
-        ChipEsquerdo.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C";
-        ChipDireito.Text = s.RamUso is { } r ? $"RAM {r:F0}%" : "RAM --";
+        Chips(Icone.Termometro, s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C",
+              Icone.Memoria, s.RamUso is { } r ? $"{r:F0}%" : "--");
 
         ValorPrincipal.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0}" : "--";
         LegendaPrincipal.Text = s.CpuUso is { } uso ? $"CPU · {uso:F0}% de carga" : "CPU";
@@ -276,8 +276,8 @@ public partial class FlyoutWindow : Window
     private void AplicarCpu(Snapshot s)
     {
         Titulo.Text = "CPU";
-        ChipEsquerdo.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C";
-        ChipDireito.Text = s.CpuClockMhz is > 0 ? Clock(s.CpuClockMhz!.Value) : "-- GHz";
+        Chips(Icone.Termometro, s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C",
+              Icone.Relogio, s.CpuClockMhz is > 0 ? Clock(s.CpuClockMhz!.Value) : "-- GHz");
 
         var uso = Math.Clamp(s.CpuUso ?? 0, 0, 100);
         CpuUsoTexto.Text = s.CpuUso is null ? "--" : $"{uso:F0}";
@@ -299,8 +299,8 @@ public partial class FlyoutWindow : Window
     private void AplicarGpu(Snapshot s)
     {
         Titulo.Text = s.GpuNome ?? "GPU";
-        ChipEsquerdo.Text = s.GpuTemp is > 0 ? $"{s.GpuTemp:F0} °C" : "-- °C";
-        ChipDireito.Text = s.GpuWatts is > 0 ? $"{s.GpuWatts:F0} W" : "-- W";
+        Chips(Icone.Termometro, s.GpuTemp is > 0 ? $"{s.GpuTemp:F0} °C" : "-- °C",
+              Icone.Raio, s.GpuWatts is > 0 ? $"{s.GpuWatts:F0} W" : "-- W");
 
         var uso = Math.Clamp(s.GpuUso ?? 0, 0, 100);
         GpuUsoTexto.Text = s.GpuUso is null ? "--" : $"{uso:F0}";
@@ -413,8 +413,8 @@ public partial class FlyoutWindow : Window
             ? "Disco"
             : s.Discos.Count == 1 ? "Disco" : $"Discos · {s.Discos.Count} unidades";
 
-        ChipEsquerdo.Text = temperatura is > 0 ? $"{temperatura:F0} °C" : "-- °C";
-        ChipDireito.Text = vida is { } v ? $"Vida {v:F0}%" : "Vida --";
+        Chips(Icone.Termometro, temperatura is > 0 ? $"{temperatura:F0} °C" : "-- °C",
+              Icone.Escudo, vida is { } v ? $"Vida {v:F0}%" : "Vida --");
 
         DiscoUsoTexto.Text = escolhido?.Atividade is null && s.DiscoAtividade is null
             ? "--"
@@ -565,10 +565,8 @@ public partial class FlyoutWindow : Window
     private void AplicarEnergia(Snapshot s)
     {
         Titulo.Text = "Energia";
-        ChipEsquerdo.Text = $"{s.WattsTotais:F0} W";
-        ChipDireito.Text = s.WhAcumulado >= 1000
-            ? $"{s.WhAcumulado / 1000:0.00} kWh"
-            : $"{s.WhAcumulado:0.0} Wh";
+        Chips(Icone.Raio, $"{s.WattsTotais:F0} W",
+              Icone.Relogio, $"{Kwh(s.WhAcumulado)} na sessão");
 
         EnergiaWattsTexto.Text = $"{s.WattsTotais:F0}";
 
@@ -581,9 +579,7 @@ public partial class FlyoutWindow : Window
             ? $"de {_cfg.CapacidadeFonteW} W"
             : "Potência agora";
 
-        EnergiaSessaoTexto.Text = s.WhAcumulado >= 1000
-            ? $"{s.WhAcumulado / 1000:0.00} kWh"
-            : $"{s.WhAcumulado:0.0} Wh";
+        EnergiaSessaoTexto.Text = Kwh(s.WhAcumulado);
         EnergiaMediaTexto.Text = $"{s.WattsMedia:F0} W";
         EnergiaPicoTexto.Text = $"{s.WattsPico:F0} W";
         EnergiaTomadaTexto.Text = _cfg.EficienciaFonte > 0
@@ -632,6 +628,16 @@ public partial class FlyoutWindow : Window
                            "Ajuste as quantidades e os watts por unidade no config.json.";
     }
 
+    /// <summary>
+    /// Sempre em kWh, que e a unidade da conta de luz. Nos primeiros minutos o
+    /// valor e pequeno, entao as casas decimais acompanham a grandeza.
+    /// </summary>
+    private static string Kwh(double wh)
+    {
+        var kwh = wh / 1000.0;
+        return kwh < 0.01 ? $"{kwh:0.000} kWh" : $"{kwh:0.00} kWh";
+    }
+
     private static string DescricaoDosOutros(Snapshot s)
     {
         var partes = new List<string>();
@@ -658,6 +664,38 @@ public partial class FlyoutWindow : Window
         mhz >= 1000 ? $"{mhz / 1000:0.00} GHz" : $"{mhz:F0} MHz";
 
     private static Brush Pincel(string chave) => (Brush)Application.Current.Resources[chave];
+
+    /// <summary>Desenhos dos icones dos chips, num quadro de 24 por 24.</summary>
+    private static class Icone
+    {
+        public const string Termometro = "M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z";
+        public const string Memoria = "M3,8 L21,8 L21,16 L3,16 Z M7,16 L7,19 M12,16 L12,19 M17,16 L17,19";
+        public const string Raio = "M13,2 L4,14 L11,14 L10,22 L19,10 L12,10 Z";
+        public const string Relogio = "M12,3 A9,9 0 1,0 12,21 A9,9 0 1,0 12,3 Z M12,7 L12,12 L15,14";
+        public const string Disco = "M3,6 L21,6 L21,18 L3,18 Z M7,14 L11,14";
+        public const string Escudo = "M12,3 L20,6 L20,12 C20,17 16.5,20 12,21 C7.5,20 4,17 4,12 L4,6 Z";
+    }
+
+    /// <summary>Preenche os dois chips do cabecalho; sem desenho, o icone some.</summary>
+    private void Chips(string? iconeEsq, string textoEsq, string? iconeDir, string textoDir)
+    {
+        Aplicar(IconeEsquerdo, iconeEsq);
+        Aplicar(IconeDireito, iconeDir);
+        ChipEsquerdo.Text = textoEsq;
+        ChipDireito.Text = textoDir;
+
+        static void Aplicar(Path alvo, string? desenho)
+        {
+            if (desenho is null)
+            {
+                alvo.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            alvo.Data = Geometry.Parse(desenho);
+            alvo.Visibility = Visibility.Visible;
+        }
+    }
 
     // ------------------------------------------------------------------
     // Grade de nucleos
