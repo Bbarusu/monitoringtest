@@ -27,6 +27,12 @@ public partial class FlyoutWindow : Window
     private readonly Queue<double> _historicoDisco = new();
     private readonly DiskProcessService _processos = new();
 
+    /// <summary>Quantas linhas a lista de processos reserva, para a altura nao oscilar.</summary>
+    private const int LinhasDeProcesso = 3;
+
+    /// <summary>-1 mostra o conjunto; acima disso, o indice da unidade escolhida.</summary>
+    private int _discoEscolhido = -1;
+
     // Potencia e rotacao nao tem limite informado por sensor, entao a barra usa
     // como escala o maior valor visto desde que o app abriu.
     private double _gpuWattsMax;
@@ -37,6 +43,7 @@ public partial class FlyoutWindow : Window
     private bool _trocandoPerfil;
     private DateTime _recadoAte;
     private bool _posicionando;
+    private bool _montandoSeletor;
 
     public FlyoutWindow(AppConfig cfg, SensorService sensores)
     {
@@ -158,6 +165,7 @@ public partial class FlyoutWindow : Window
         Mostrar(TopoCpu, BaseCpu, _aba == Aba.Cpu);
         Mostrar(TopoGpu, BaseGpu, _aba == Aba.Gpu);
         Mostrar(TopoDisco, BaseDisco, _aba == Aba.Disco);
+        SeletorDisco.Visibility = _aba == Aba.Disco ? Visibility.Visible : Visibility.Collapsed;
 
         static void Mostrar(UIElement topo, UIElement baseP, bool visivel)
         {
@@ -170,6 +178,14 @@ public partial class FlyoutWindow : Window
 
         // A altura muda com a aba, entao o painel precisa se reancorar no canto.
         if (IsVisible) Posicionar();
+    }
+
+    private void SeletorDisco_Alterado(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsInitialized || _montandoSeletor) return;
+
+        _discoEscolhido = SeletorDisco.SelectedIndex - 1;
+        if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
     }
 
     private void ModoDisco_Alterado(object sender, RoutedEventArgs e)
@@ -367,29 +383,81 @@ public partial class FlyoutWindow : Window
 
     private void AplicarDisco(Snapshot s)
     {
-        var unidades = s.Discos.Count;
-        Titulo.Text = unidades == 1 ? "Disco" : $"Discos · {unidades} unidades";
-        ChipEsquerdo.Text = s.DiscoTempMaior is > 0 ? $"{s.DiscoTempMaior:F0} °C" : "-- °C";
-        ChipDireito.Text = s.DiscoVidaMenor is { } vida ? $"Vida {vida:F0}%" : "Vida --";
+        MontarSeletor(s);
 
-        var atividade = Math.Clamp(s.DiscoAtividade ?? 0, 0, 100);
-        DiscoUsoTexto.Text = s.DiscoAtividade is null ? "--" : $"{atividade:F0}";
+        // -1 e o conjunto; acima disso, uma unidade so.
+        var escolhido = _discoEscolhido >= 0 && _discoEscolhido < s.Discos.Count
+            ? s.Discos[_discoEscolhido]
+            : null;
+
+        var atividade = Math.Clamp(escolhido?.Atividade ?? s.DiscoAtividade ?? 0, 0, 100);
+        var temperatura = escolhido?.TemperaturaC ?? s.DiscoTempMaior;
+        var vida = escolhido?.VidaPct ?? s.DiscoVidaMenor;
+        var leitura = escolhido?.LeituraMbs ?? s.DiscoLeituraMbs;
+        var escrita = escolhido?.EscritaMbs ?? s.DiscoEscritaMbs;
+
+        Titulo.Text = escolhido is not null
+            ? "Disco"
+            : s.Discos.Count == 1 ? "Disco" : $"Discos · {s.Discos.Count} unidades";
+
+        ChipEsquerdo.Text = temperatura is > 0 ? $"{temperatura:F0} °C" : "-- °C";
+        ChipDireito.Text = vida is { } v ? $"Vida {v:F0}%" : "Vida --";
+
+        DiscoUsoTexto.Text = escolhido?.Atividade is null && s.DiscoAtividade is null
+            ? "--"
+            : $"{atividade:F0}";
         AnelDisco.Data = ArcoDeCarga(atividade, RaioCpu, 75);
 
-        var quente = s.DiscoTempMaior is { } t && t >= _cfg.LimiteDisco;
+        var quente = temperatura is { } t && t >= _cfg.LimiteDisco;
         AnelDisco.Stroke = quente ? Pincel("Alerta") : Pincel("Acento");
 
-        DiscoLeituraTexto.Text = Taxa(s.DiscoLeituraMbs);
-        DiscoEscritaTexto.Text = Taxa(s.DiscoEscritaMbs);
-        DiscoTempTexto.Text = s.DiscoTempMaior is > 0 ? $"{s.DiscoTempMaior:F0} °C" : "n/d";
+        DiscoLeituraTexto.Text = Taxa(leitura);
+        DiscoEscritaTexto.Text = Taxa(escrita);
+        DiscoTempTexto.Text = temperatura is > 0 ? $"{temperatura:F0} °C" : "n/d";
         DiscoTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
-        DiscoVidaTexto.Text = s.DiscoVidaMenor is { } v ? $"{v:F0}%" : "n/d";
 
+        // Numa unidade so, as horas ligado cabem ao lado da vida util.
+        DiscoVidaTexto.Text = escolhido is { VidaPct: { } vp, HorasLigado: { } h }
+            ? $"{vp:F0}% · {h:N0} h"
+            : vida is { } vm ? $"{vm:F0}%" : "n/d";
+
+        // O historico e sempre do conjunto: trocar de unidade nao apaga o grafico.
         DesenharHistoricoDisco();
 
         if (ModoUnidades.IsChecked == true) MontarUnidades(s);
         else MontarProcessos();
     }
+
+    /// <summary>
+    /// A lista do seletor so e refeita quando as unidades mudam, para nao
+    /// descartar a escolha do usuario a cada leitura.
+    /// </summary>
+    private void MontarSeletor(Snapshot s)
+    {
+        var desejado = new List<string> { s.Discos.Count == 1 ? "a unidade" : "todas" };
+        desejado.AddRange(s.Discos.Select(d => Encurtar(d.Nome)));
+
+        var atual = SeletorDisco.Items.Cast<object>().Select(x => x?.ToString()).ToList();
+        if (atual.SequenceEqual(desejado)) return;
+
+        _montandoSeletor = true;
+        try
+        {
+            SeletorDisco.Items.Clear();
+            foreach (var item in desejado) SeletorDisco.Items.Add(item);
+
+            if (_discoEscolhido >= s.Discos.Count) _discoEscolhido = -1;
+            SeletorDisco.SelectedIndex = _discoEscolhido + 1;
+        }
+        finally
+        {
+            _montandoSeletor = false;
+        }
+    }
+
+    /// <summary>Nomes de modelo sao longos demais para o cabecalho.</summary>
+    private static string Encurtar(string nome) =>
+        nome.Length <= 22 ? nome : nome[..21].TrimEnd() + "…";
 
     private static string Taxa(float? mbs) =>
         mbs is null ? "n/d" : mbs < 0.1f ? "—" : $"{mbs:0.0} MB/s";
@@ -425,28 +493,31 @@ public partial class FlyoutWindow : Window
     /// <summary>
     /// Os processos que mais usam disco agora. A medicao so corre com esta aba
     /// aberta, para nao varrer a lista de processos o tempo todo.
+    ///
+    /// As linhas sao sempre as mesmas: com a quantidade variando, o painel
+    /// mudava de altura a cada leitura.
     /// </summary>
     private void MontarProcessos()
     {
         RotuloListaDisco.Text = "Consumindo o disco agora";
 
-        var processos = _processos.Medir();
+        var processos = _processos.Medir(LinhasDeProcesso);
+        var maior = processos.Count > 0 ? processos.Max(p => p.TotalMbs) : 0;
 
-        if (processos.Count == 0)
+        SincronizarLinhas(LinhasDeProcesso);
+
+        for (var i = 0; i < LinhasDeProcesso; i++)
         {
-            SincronizarLinhas(1);
-            ((LinhaDeDisco)ListaDisco.Children[0]).Atualizar(
-                "Nenhum processo lendo ou escrevendo", "", "", 0);
-            return;
-        }
+            var linha = (LinhaDeDisco)ListaDisco.Children[i];
 
-        var maior = processos.Max(p => p.TotalMbs);
-        SincronizarLinhas(processos.Count);
+            if (i >= processos.Count)
+            {
+                linha.Vazia(i == 0 ? "Nenhum processo lendo ou escrevendo" : "");
+                continue;
+            }
 
-        for (var i = 0; i < processos.Count; i++)
-        {
             var p = processos[i];
-            ((LinhaDeDisco)ListaDisco.Children[i]).Atualizar(
+            linha.Atualizar(
                 p.Nome,
                 $"PID {p.Pid} · leitura {p.LeituraMbs:0.0} · escrita {p.EscritaMbs:0.0} MB/s",
                 $"{p.TotalMbs:0.0} MB/s",

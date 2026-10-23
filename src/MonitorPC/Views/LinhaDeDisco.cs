@@ -81,8 +81,26 @@ public sealed class LinhaDeDisco : StackPanel
         Children.Add(trilho);
     }
 
+    /// <summary>
+    /// Mantem a linha ocupando o mesmo espaco quando nao ha o que mostrar, para
+    /// a lista nao mudar de altura a cada leitura.
+    /// </summary>
+    public void Vazia(string texto)
+    {
+        _nome.Text = texto;
+        _nome.Foreground = (Brush)Application.Current.Resources["TextoMuitoFraco"];
+        _detalhe.Text = " ";
+        _detalhe.Visibility = Visibility.Visible;
+        _valor.Text = "";
+        _cheia.Width = new GridLength(0, GridUnitType.Star);
+        _vazia.Width = new GridLength(100, GridUnitType.Star);
+        ToolTip = null;
+    }
+
     public void Atualizar(string nome, string detalhe, string valor, double porcentagem)
     {
+        _nome.Foreground = (Brush)Application.Current.Resources["Texto"];
+
         var p = Math.Clamp(porcentagem, 0, 100);
 
         _nome.Text = nome;

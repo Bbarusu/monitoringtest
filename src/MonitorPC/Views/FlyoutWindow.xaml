@@ -19,8 +19,13 @@
             <!-- Cabecalho: o titulo e os chips mudam conforme a aba -->
             <Grid>
                 <StackPanel>
-                    <TextBlock x:Name="Titulo" Text="Meu PC" FontSize="15" FontWeight="SemiBold"
-                               Foreground="{StaticResource Texto}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="Titulo" Text="Meu PC" FontSize="15" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" Foreground="{StaticResource Texto}" />
+                        <ComboBox x:Name="SeletorDisco" Style="{StaticResource Seletor}"
+                                  Visibility="Collapsed" Margin="10,1,0,0" MaxWidth="150"
+                                  SelectionChanged="SeletorDisco_Alterado" />
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5" Margin="0,0,8,0">
