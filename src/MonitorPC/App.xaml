@@ -123,7 +123,10 @@
                             <Setter.Value>
                                 <ControlTemplate TargetType="ComboBoxItem">
                                     <Border x:Name="bg" Background="Transparent" CornerRadius="8"
-                                            Padding="{TemplateBinding Padding}">
+                                            Padding="{TemplateBinding Padding}"
+                                            TextElement.Foreground="{TemplateBinding Foreground}"
+                                            TextElement.FontFamily="{StaticResource FonteUI}"
+                                            TextElement.FontSize="12">
                                         <ContentPresenter />
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -165,7 +168,13 @@
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </ToggleButton.Template>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <!-- O ContentPresenter nao herda a formatacao do ComboBox:
+                                     sem isto o texto sai preto e na fonte padrao. -->
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
+                                            TextElement.Foreground="{StaticResource Texto}"
+                                            TextElement.FontFamily="{StaticResource FonteUI}"
+                                            TextElement.FontSize="12"
+                                            TextElement.FontWeight="Medium">
                                     <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
                                                       VerticalAlignment="Center" />
                                     <Path Data="M6,9 L12,15 L18,9" Stroke="#8B94A3" StrokeThickness="2"
