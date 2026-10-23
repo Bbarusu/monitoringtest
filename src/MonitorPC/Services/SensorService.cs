@@ -119,6 +119,7 @@ public sealed class SensorService : IDisposable
         }
 
         var cpuTemp = Pegar(h => h == HardwareType.Cpu, SensorType.Temperature, "Tctl", "Tdie", "Package");
+        var discos = MontarDiscos();
 
         return new Snapshot
         {
@@ -149,6 +150,13 @@ public sealed class SensorService : IDisposable
 
             DiscoTempMaior = TemperaturaDeDisco(),
             DiscoAtividade = AtividadeDeDisco(),
+            DiscoLeituraMbs = SomaDeDiscos(SensorType.Throughput, "Read Rate"),
+            DiscoEscritaMbs = SomaDeDiscos(SensorType.Throughput, "Write Rate"),
+            DiscoVidaMenor = discos.Where(d => d.VidaPct.HasValue)
+                                   .Select(d => d.VidaPct)
+                                   .DefaultIfEmpty(null)
+                                   .Min(),
+            Discos = discos,
 
             Ventoinhas = ventoinhas,
 
@@ -277,6 +285,66 @@ public sealed class SensorService : IDisposable
 
         return vids ?? Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN")
                     ?? Pegar(_ => true, SensorType.Voltage, "Vcore");
+    }
+
+    /// <summary>Taxas vem em bytes por segundo; o painel mostra em MB/s.</summary>
+    private float? SomaDeDiscos(SensorType tipo, string nome)
+    {
+        var valores = Todos()
+            .Where(x => x.Hardware.HardwareType == HardwareType.Storage
+                        && x.Sensor.SensorType == tipo
+                        && x.Sensor.Name.Contains(nome, StringComparison.OrdinalIgnoreCase)
+                        && x.Sensor.Value.HasValue)
+            .Select(x => x.Sensor.Value!.Value)
+            .ToList();
+
+        return valores.Count == 0 ? null : valores.Sum() / 1_048_576f;
+    }
+
+    private List<DiscoInfo> MontarDiscos()
+    {
+        var lista = new List<DiscoInfo>();
+
+        foreach (var h in _pc.Hardware.Where(h => h.HardwareType == HardwareType.Storage))
+        {
+            float? Sensor(SensorType tipo, params string[] nomes)
+            {
+                foreach (var nome in nomes)
+                    foreach (var s in h.Sensors)
+                        if (s.SensorType == tipo && s.Value.HasValue &&
+                            s.Name.Contains(nome, StringComparison.OrdinalIgnoreCase))
+                            return s.Value;
+                return null;
+            }
+
+            // Descarta os limiares do fabricante e os sensores secundarios do
+            // controlador, que sao valores fixos e altos.
+            var temp = h.Sensors
+                .Where(s => s.SensorType == SensorType.Temperature && s.Value.HasValue
+                            && !s.Name.Contains("Warning", StringComparison.OrdinalIgnoreCase)
+                            && !s.Name.Contains("Critical", StringComparison.OrdinalIgnoreCase)
+                            && !s.Name.Contains('#'))
+                .Select(s => s.Value)
+                .DefaultIfEmpty(null)
+                .Max();
+
+            var leitura = Sensor(SensorType.Throughput, "Read Rate");
+            var escrita = Sensor(SensorType.Throughput, "Write Rate");
+
+            lista.Add(new DiscoInfo(
+                h.Name.Trim(),
+                temp,
+                Sensor(SensorType.Load, "Total Activity"),
+                leitura / 1_048_576f,
+                escrita / 1_048_576f,
+                Sensor(SensorType.Level, "Life"),
+                Sensor(SensorType.Factor, "Power On Hours"),
+                Sensor(SensorType.Load, "Used Space"),
+                Sensor(SensorType.Data, "Free Space"),
+                Sensor(SensorType.Data, "Total Space")));
+        }
+
+        return lista;
     }
 
     private float? TotalRamGb()

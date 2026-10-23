@@ -4,7 +4,7 @@ Painel de monitoramento que vive na bandeja do Windows. Abre no canto inferior d
 ancorado ao ícone da barra de tarefas, e mostra temperatura, carga, memória e energia
 do PC sem pesar no sistema.
 
-**Estado atual:** abas Geral, CPU e GPU funcionais, com leitura real dos sensores,
+**Estado atual:** abas Geral, CPU, GPU e Disco funcionais, com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
 ## Requisitos
@@ -39,6 +39,11 @@ passam a valer sobre a detecção.
 Os **watts por unidade**, a capacidade e a eficiência da fonte, e os limites de
 temperatura também ficam nesse arquivo.
 
+A aba Disco mede o uso por processo pelos contadores do próprio Windows, comparando
+duas amostras. Essa medição só roda enquanto a aba está aberta: varrer a lista de
+processos a cada segundo o tempo todo contrariaria a meta de não pesar no sistema.
+Processos protegidos do sistema não permitem a leitura e ficam de fora.
+
 Os perfis de energia trocam o plano do Windows pelo `powercfg`. Quando o plano de
 alto desempenho vem oculto na instalação, o app o duplica antes de ativar. Se a troca
 falhar, o painel volta a marcar o plano que está realmente em vigor.
@@ -57,6 +62,8 @@ src/MonitorPC/
   Views/FlyoutWindow.xaml   o painel e suas abas
   Views/BarraDeNucleo.cs    uma linha da grade de núcleos
   Views/BarraDeMetrica.cs   barra rotulada com valor (VRAM, potência, ventoinha)
+  Views/LinhaDeDisco.cs     uma linha da lista de processos ou unidades
+  Services/DiskProcessService.cs  uso de disco por processo
   Views/PersonalizacaoWindow.xaml  cor e transparência
   Services/PowerService.cs  perfis de energia
   App.xaml.cs               ícone da bandeja e ciclo de vida

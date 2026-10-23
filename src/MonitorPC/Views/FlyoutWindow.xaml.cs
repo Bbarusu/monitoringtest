@@ -10,7 +10,7 @@ namespace MonitorPC.Views;
 
 public partial class FlyoutWindow : Window
 {
-    private enum Aba { Geral, Cpu, Gpu }
+    private enum Aba { Geral, Cpu, Gpu, Disco }
 
     private const double Raio = 100;
     private const double RaioCpu = 69;
@@ -24,6 +24,8 @@ public partial class FlyoutWindow : Window
     private readonly SensorService _sensores;
     private readonly Queue<double> _historicoCpu = new();
     private readonly Queue<double> _historicoGpu = new();
+    private readonly Queue<double> _historicoDisco = new();
+    private readonly DiskProcessService _processos = new();
 
     // Potencia e rotacao nao tem limite informado por sensor, entao a barra usa
     // como escala o maior valor visto desde que o app abriu.
@@ -145,11 +147,17 @@ public partial class FlyoutWindow : Window
 
         _aba = ReferenceEquals(sender, AbaCpu) ? Aba.Cpu
              : ReferenceEquals(sender, AbaGpu) ? Aba.Gpu
+             : ReferenceEquals(sender, AbaDisco) ? Aba.Disco
              : Aba.Geral;
+
+        // A medicao por processo so corre com a aba Disco aberta. Ao voltar, as
+        // amostras antigas viram um pico falso, entao sao descartadas.
+        _processos.Reiniciar();
 
         Mostrar(TopoGeral, BaseGeral, _aba == Aba.Geral);
         Mostrar(TopoCpu, BaseCpu, _aba == Aba.Cpu);
         Mostrar(TopoGpu, BaseGpu, _aba == Aba.Gpu);
+        Mostrar(TopoDisco, BaseDisco, _aba == Aba.Disco);
 
         static void Mostrar(UIElement topo, UIElement baseP, bool visivel)
         {
@@ -162,6 +170,12 @@ public partial class FlyoutWindow : Window
 
         // A altura muda com a aba, entao o painel precisa se reancorar no canto.
         if (IsVisible) Posicionar();
+    }
+
+    private void ModoDisco_Alterado(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized) return;
+        if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
     }
 
     private void ModoGrade_Alterado(object sender, RoutedEventArgs e)
@@ -183,6 +197,7 @@ public partial class FlyoutWindow : Window
         {
             case Aba.Cpu: AplicarCpu(s); break;
             case Aba.Gpu: AplicarGpu(s); break;
+            case Aba.Disco: AplicarDisco(s); break;
             default: AplicarGeral(s); break;
         }
 
@@ -193,6 +208,7 @@ public partial class FlyoutWindow : Window
     {
         Guardar(_historicoCpu, s.CpuUso);
         Guardar(_historicoGpu, s.GpuUso);
+        Guardar(_historicoDisco, s.DiscoAtividade);
 
         if (s.GpuWatts is { } w) _gpuWattsMax = Math.Max(_gpuWattsMax, w);
         if (s.GpuFanRpm is { } r) _gpuRpmMax = Math.Max(_gpuRpmMax, r);
@@ -349,6 +365,103 @@ public partial class FlyoutWindow : Window
         }
     }
 
+    private void AplicarDisco(Snapshot s)
+    {
+        var unidades = s.Discos.Count;
+        Titulo.Text = unidades == 1 ? "Disco" : $"Discos · {unidades} unidades";
+        ChipEsquerdo.Text = s.DiscoTempMaior is > 0 ? $"{s.DiscoTempMaior:F0} °C" : "-- °C";
+        ChipDireito.Text = s.DiscoVidaMenor is { } vida ? $"Vida {vida:F0}%" : "Vida --";
+
+        var atividade = Math.Clamp(s.DiscoAtividade ?? 0, 0, 100);
+        DiscoUsoTexto.Text = s.DiscoAtividade is null ? "--" : $"{atividade:F0}";
+        AnelDisco.Data = ArcoDeCarga(atividade, RaioCpu, 75);
+
+        var quente = s.DiscoTempMaior is { } t && t >= _cfg.LimiteDisco;
+        AnelDisco.Stroke = quente ? Pincel("Alerta") : Pincel("Acento");
+
+        DiscoLeituraTexto.Text = Taxa(s.DiscoLeituraMbs);
+        DiscoEscritaTexto.Text = Taxa(s.DiscoEscritaMbs);
+        DiscoTempTexto.Text = s.DiscoTempMaior is > 0 ? $"{s.DiscoTempMaior:F0} °C" : "n/d";
+        DiscoTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
+        DiscoVidaTexto.Text = s.DiscoVidaMenor is { } v ? $"{v:F0}%" : "n/d";
+
+        DesenharHistoricoDisco();
+
+        if (ModoUnidades.IsChecked == true) MontarUnidades(s);
+        else MontarProcessos();
+    }
+
+    private static string Taxa(float? mbs) =>
+        mbs is null ? "n/d" : mbs < 0.1f ? "—" : $"{mbs:0.0} MB/s";
+
+    /// <summary>Uma linha por unidade, com o que o SMART informa.</summary>
+    private void MontarUnidades(Snapshot s)
+    {
+        RotuloListaDisco.Text = "Unidades";
+
+        SincronizarLinhas(s.Discos.Count);
+
+        for (var i = 0; i < s.Discos.Count; i++)
+        {
+            var d = s.Discos[i];
+
+            var detalhe = new List<string>();
+            if (d.TemperaturaC is > 0) detalhe.Add($"{d.TemperaturaC:F0} °C");
+            if (d.VidaPct is { } vida) detalhe.Add($"vida {vida:F0}%");
+            if (d.HorasLigado is { } horas) detalhe.Add($"{horas:N0} h");
+
+            var espaco = d.TotalGb is { } total && total > 0 && d.UsadoPct is { } usado
+                ? $"{total * usado / 100:N0} / {total:N0} GB"
+                : d.TotalGb is { } t ? $"{t:N0} GB" : "";
+
+            ((LinhaDeDisco)ListaDisco.Children[i]).Atualizar(
+                d.Nome,
+                string.Join(" · ", detalhe),
+                espaco,
+                d.UsadoPct ?? 0);
+        }
+    }
+
+    /// <summary>
+    /// Os processos que mais usam disco agora. A medicao so corre com esta aba
+    /// aberta, para nao varrer a lista de processos o tempo todo.
+    /// </summary>
+    private void MontarProcessos()
+    {
+        RotuloListaDisco.Text = "Consumindo o disco agora";
+
+        var processos = _processos.Medir();
+
+        if (processos.Count == 0)
+        {
+            SincronizarLinhas(1);
+            ((LinhaDeDisco)ListaDisco.Children[0]).Atualizar(
+                "Nenhum processo lendo ou escrevendo", "", "", 0);
+            return;
+        }
+
+        var maior = processos.Max(p => p.TotalMbs);
+        SincronizarLinhas(processos.Count);
+
+        for (var i = 0; i < processos.Count; i++)
+        {
+            var p = processos[i];
+            ((LinhaDeDisco)ListaDisco.Children[i]).Atualizar(
+                p.Nome,
+                $"PID {p.Pid} · leitura {p.LeituraMbs:0.0} · escrita {p.EscritaMbs:0.0} MB/s",
+                $"{p.TotalMbs:0.0} MB/s",
+                maior > 0 ? p.TotalMbs / maior * 100 : 0);
+        }
+    }
+
+    private void SincronizarLinhas(int quantidade)
+    {
+        while (ListaDisco.Children.Count > quantidade)
+            ListaDisco.Children.RemoveAt(ListaDisco.Children.Count - 1);
+        while (ListaDisco.Children.Count < quantidade)
+            ListaDisco.Children.Add(new LinhaDeDisco());
+    }
+
     private void AtualizarStatus(Snapshot s)
     {
         // Um recado recente sobre o plano de energia segura o rodape por alguns
@@ -455,11 +568,16 @@ public partial class FlyoutWindow : Window
 
     private void AreaGraficoGpu_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistoricoGpu();
 
+    private void AreaGraficoDisco_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistoricoDisco();
+
     private void DesenharHistorico() =>
         Desenhar(_historicoCpu, AreaGrafico, GraficoLinha, GraficoArea, CpuPicoHistorico);
 
     private void DesenharHistoricoGpu() =>
         Desenhar(_historicoGpu, AreaGraficoGpu, GraficoLinhaGpu, GraficoAreaGpu, GpuPicoHistorico);
+
+    private void DesenharHistoricoDisco() =>
+        Desenhar(_historicoDisco, AreaGraficoDisco, GraficoLinhaDisco, GraficoAreaDisco, DiscoPicoHistorico);
 
     private static void Desenhar(Queue<double> historico, FrameworkElement area,
         Polyline linha, Polygon preenchimento, TextBlock rotuloDoPico)

@@ -43,6 +43,13 @@ public sealed class Snapshot
     // Discos
     public float? DiscoTempMaior { get; init; }
     public float? DiscoAtividade { get; init; }
+    public float? DiscoLeituraMbs { get; init; }
+    public float? DiscoEscritaMbs { get; init; }
+
+    /// <summary>Menor vida util entre as unidades: a que primeiro preocupa.</summary>
+    public float? DiscoVidaMenor { get; init; }
+
+    public IReadOnlyList<DiscoInfo> Discos { get; init; } = Array.Empty<DiscoInfo>();
 
     // Ventoinhas da placa-mae, pelo nome do sensor
     public IReadOnlyDictionary<string, float> Ventoinhas { get; init; }
