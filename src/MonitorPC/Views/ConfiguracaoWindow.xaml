@@ -52,11 +52,11 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="LimiteCpu" Minimum="50" Maximum="100" Margin="0,10,0,0"
+                    <Slider x:Name="LimiteCpu" Minimum="30" Maximum="100" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}" ValueChanged="Limite_Alterado" />
                     <Grid Margin="0,4,0,0">
-                        <TextBlock Text="50 °C" FontSize="11" HorizontalAlignment="Left"
+                        <TextBlock Text="30 °C" FontSize="11" HorizontalAlignment="Left"
                                    Foreground="{StaticResource TextoMuitoFraco}" />
                         <TextBlock Text="Sugerido: 75 °C" FontSize="11" HorizontalAlignment="Center"
                                    Foreground="{StaticResource TextoMuitoFraco}" />
@@ -80,11 +80,11 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="LimiteGpu" Minimum="60" Maximum="110" Margin="0,10,0,0"
+                    <Slider x:Name="LimiteGpu" Minimum="30" Maximum="110" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}" ValueChanged="Limite_Alterado" />
                     <Grid Margin="0,4,0,0">
-                        <TextBlock Text="60 °C" FontSize="11" HorizontalAlignment="Left"
+                        <TextBlock Text="30 °C" FontSize="11" HorizontalAlignment="Left"
                                    Foreground="{StaticResource TextoMuitoFraco}" />
                         <TextBlock Text="Sugerido: 80 °C" FontSize="11" HorizontalAlignment="Center"
                                    Foreground="{StaticResource TextoMuitoFraco}" />
@@ -108,11 +108,11 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="LimiteDisco" Minimum="40" Maximum="80" Margin="0,10,0,0"
+                    <Slider x:Name="LimiteDisco" Minimum="30" Maximum="80" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}" ValueChanged="Limite_Alterado" />
                     <Grid Margin="0,4,0,0">
-                        <TextBlock Text="40 °C" FontSize="11" HorizontalAlignment="Left"
+                        <TextBlock Text="30 °C" FontSize="11" HorizontalAlignment="Left"
                                    Foreground="{StaticResource TextoMuitoFraco}" />
                         <TextBlock Text="Sugerido: 55 °C" FontSize="11" HorizontalAlignment="Center"
                                    Foreground="{StaticResource TextoMuitoFraco}" />
