@@ -12,6 +12,7 @@ public partial class App : Application
 {
     private AppConfig _cfg = null!;
     private SensorService _sensores = null!;
+    private AlertService _alertas = null!;
     private WF.NotifyIcon _bandeja = null!;
     private FlyoutWindow _painel = null!;
     private D.Icon? _iconeAtual;
@@ -25,7 +26,11 @@ public partial class App : Application
         AplicarAcento();
 
         _sensores = new SensorService(_cfg);
-        _painel = new FlyoutWindow(_cfg, _sensores);
+        _alertas = new AlertService(_cfg);
+        _painel = new FlyoutWindow(_cfg, _sensores, _alertas);
+
+        // A notificacao sai uma vez por episodio, nao a cada leitura.
+        _alertas.Comecou += alerta => Dispatcher.BeginInvoke(() => Notificar(alerta));
 
         _bandeja = new WF.NotifyIcon
         {
@@ -48,9 +53,13 @@ public partial class App : Application
         menu.Items.Add(new WF.ToolStripSeparator());
         menu.Items.Add("Sair", null, (_, _) => Shutdown());
         _bandeja.ContextMenuStrip = menu;
+        _bandeja.BalloonTipClicked += (_, _) => _painel.Mostrar();
 
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() =>
-            AtualizarBandeja(snap.CpuTemp, snap.SensoresDeBaixoNivel));
+        {
+            _alertas.Avaliar(snap);
+            AtualizarBandeja(snap.CpuTemp, snap.SensoresDeBaixoNivel);
+        });
 
         _sensores.Iniciar();
 
@@ -189,6 +198,20 @@ public partial class App : Application
             anterior.Dispose();
             DestroyIcon(antigo);
         }
+    }
+
+    /// <summary>
+    /// Aviso do Windows, para a temperatura alta aparecer mesmo com o painel
+    /// fechado. Clicar nele abre o painel.
+    /// </summary>
+    private void Notificar(Alerta alerta)
+    {
+        if (!_cfg.NotificarNoWindows) return;
+
+        _bandeja.BalloonTipTitle = alerta.Titulo;
+        _bandeja.BalloonTipText = alerta.Detalhe;
+        _bandeja.BalloonTipIcon = WF.ToolTipIcon.Warning;
+        _bandeja.ShowBalloonTip(8000);
     }
 
     [DllImport("user32.dll", SetLastError = true)]

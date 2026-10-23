@@ -44,6 +44,12 @@ duas amostras. Essa medição só roda enquanto a aba está aberta: varrer a lis
 processos a cada segundo o tempo todo contrariaria a meta de não pesar no sistema.
 Processos protegidos do sistema não permitem a leitura e ficam de fora.
 
+Passado o limite, um aviso aparece no topo do painel, em qualquer aba, com os botões
+"Ativar Econômico" e "Silenciar 10 min". Com a notificação ligada, o Windows também
+avisa — uma vez por episódio, não a cada leitura — e clicar nela abre o painel. O aviso
+só some quando a temperatura cai alguns graus abaixo do limite, para não piscar em volta
+dele.
+
 Na primeira execução o painel abre na configuração inicial, para os limites de
 temperatura não ficarem no palpite do padrão. Depois, a mesma tela fica acessível
 pelo ícone de ajustes no rodapé ou pelo menu do ícone da bandeja.
@@ -72,6 +78,7 @@ src/MonitorPC/
   Views/PersonalizacaoWindow.xaml  cor e transparência
   Views/ConfiguracaoWindow.xaml    limites de temperatura
   Services/PowerService.cs  perfis de energia
+  Services/AlertService.cs  quando a temperatura passa do limite
   App.xaml.cs               ícone da bandeja e ciclo de vida
 ```
 

@@ -22,6 +22,7 @@ public partial class FlyoutWindow : Window
 
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
+    private readonly AlertService _alertas;
     private readonly Queue<double> _historicoCpu = new();
     private readonly Queue<double> _historicoGpu = new();
     private readonly Queue<double> _historicoDisco = new();
@@ -46,11 +47,12 @@ public partial class FlyoutWindow : Window
     private bool _posicionando;
     private bool _montandoSeletor;
 
-    public FlyoutWindow(AppConfig cfg, SensorService sensores)
+    public FlyoutWindow(AppConfig cfg, SensorService sensores, AlertService alertas)
     {
         InitializeComponent();
         _cfg = cfg;
         _sensores = sensores;
+        _alertas = alertas;
 
         AplicarTransparencia();
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() => Aplicar(snap));
@@ -210,6 +212,7 @@ public partial class FlyoutWindow : Window
     {
         AvisoDriver.Visibility = s.SensoresDeBaixoNivel ? Visibility.Collapsed : Visibility.Visible;
 
+        MostrarAviso(_alertas.Atual, _alertas.Silenciado);
         GuardarHistorico(s);
 
         switch (_aba)
@@ -646,6 +649,49 @@ public partial class FlyoutWindow : Window
         if (s.VentoinhasAtivas > 0) partes.Add($"{s.VentoinhasAtivas} ventoinhas");
 
         return partes.Count == 0 ? "Outros componentes" : string.Join(", ", partes) + " e outros";
+    }
+
+    /// <summary>
+    /// O aviso fica acima das abas, entao vale em qualquer uma: uma temperatura
+    /// alta nao deve depender de o usuario estar na aba certa para aparecer.
+    /// </summary>
+    private void MostrarAviso(Alerta? alerta, bool silenciado)
+    {
+        if (alerta is null || silenciado)
+        {
+            AvisoTemperatura.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        AvisoTitulo.Text = alerta.Titulo;
+        AvisoDetalhe.Text = alerta.Detalhe;
+
+        // O botao de Economico so aparece se a pessoa pediu essa sugestao, e nao
+        // faz sentido quando o plano ja e esse.
+        var oferecer = _cfg.SugerirEconomico && PowerService.Atual() != PerfilEnergia.Economico;
+        BotaoEconomico.Visibility = oferecer ? Visibility.Visible : Visibility.Collapsed;
+
+        AvisoTemperatura.Visibility = Visibility.Visible;
+    }
+
+    private void AvisoEconomico_Click(object sender, RoutedEventArgs e)
+    {
+        if (PowerService.Aplicar(PerfilEnergia.Economico))
+        {
+            Recado("Plano de energia: Econômico");
+            SincronizarPerfil();
+            BotaoEconomico.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        Recado("Não foi possível trocar o plano de energia");
+    }
+
+    private void AvisoSilenciar_Click(object sender, RoutedEventArgs e)
+    {
+        _alertas.Silenciar();
+        AvisoTemperatura.Visibility = Visibility.Collapsed;
+        Recado("Aviso silenciado por 10 minutos");
     }
 
     private void AtualizarStatus(Snapshot s)

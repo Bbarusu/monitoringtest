@@ -77,6 +77,69 @@
                            Text="Sensores de CPU e placa-mãe indisponíveis. Abra o app como administrador." />
             </Border>
 
+
+            <!-- Aviso de temperatura -->
+            <Border x:Name="AvisoTemperatura" Visibility="Collapsed" Margin="0,16,0,0"
+                    CornerRadius="12" Background="#2A1A10" BorderBrush="#7C3A14"
+                    BorderThickness="1" Padding="12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="36" Height="36" CornerRadius="10" Background="#3A2113"
+                                VerticalAlignment="Top">
+                            <Path Data="M12,3 L22,21 L2,21 Z M12,10 L12,15 M12,18 L12,18.01"
+                                  Stroke="#FB923C" StrokeThickness="2" StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Width="18" Height="18" Stretch="Uniform" />
+                        </Border>
+                        <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="AvisoTitulo" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="White" TextWrapping="Wrap" MaxWidth="300"
+                                       HorizontalAlignment="Left" />
+                            <TextBlock x:Name="AvisoDetalhe" FontSize="12" Margin="0,2,0,0"
+                                       Foreground="{StaticResource AlertaTexto}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <UniformGrid Columns="2" Margin="0,12,0,0">
+                        <Button x:Name="BotaoEconomico" Height="40" Margin="0,0,4,0"
+                                Click="AvisoEconomico_Click" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bg" CornerRadius="10" Background="#F97316">
+                                        <TextBlock Text="Ativar Econômico" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="#1A0F08" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bg" Property="Opacity" Value="0.88" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <Button x:Name="BotaoSilenciar" Height="40" Margin="4,0,0,0"
+                                Click="AvisoSilenciar_Click" Cursor="Hand">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bg" CornerRadius="10" Background="Transparent"
+                                            BorderBrush="#7C3A14" BorderThickness="1">
+                                        <TextBlock Text="Silenciar 10 min" FontSize="13" FontWeight="Medium"
+                                                   Foreground="{StaticResource AlertaTexto}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bg" Property="Background" Value="#3A2113" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
             <!-- ======================= TOPO: GERAL ======================= -->
             <StackPanel x:Name="TopoGeral">
                 <Grid Width="220" Height="220" Margin="0,16,0,0">
