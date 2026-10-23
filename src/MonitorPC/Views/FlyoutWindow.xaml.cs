@@ -1,6 +1,8 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Shapes;
 using MonitorPC.Models;
 using MonitorPC.Services;
 
@@ -8,12 +10,21 @@ namespace MonitorPC.Views;
 
 public partial class FlyoutWindow : Window
 {
+    private enum Aba { Geral, Cpu }
+
     private const double Raio = 100;
+    private const double RaioCpu = 69;
+
+    /// <summary>5 minutos de historico a 1 s, que e o que o grafico mostra.</summary>
+    private const int PontosDoHistorico = 300;
 
     private static readonly Color FundoSolido = Color.FromRgb(0x15, 0x17, 0x1C);
 
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
+    private readonly Queue<double> _historicoCpu = new();
+
+    private Aba _aba = Aba.Geral;
     private bool _pausado;
     private bool _trocandoPerfil;
     private DateTime _recadoAte;
@@ -102,45 +113,107 @@ public partial class FlyoutWindow : Window
     }
 
     // ------------------------------------------------------------------
+    // Abas
+
+    private void Aba_Selecionada(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized) return;
+
+        _aba = ReferenceEquals(sender, AbaCpu) ? Aba.Cpu : Aba.Geral;
+
+        var geral = _aba == Aba.Geral;
+        TopoGeral.Visibility = geral ? Visibility.Visible : Visibility.Collapsed;
+        BaseGeral.Visibility = geral ? Visibility.Visible : Visibility.Collapsed;
+        TopoCpu.Visibility = geral ? Visibility.Collapsed : Visibility.Visible;
+        BaseCpu.Visibility = geral ? Visibility.Collapsed : Visibility.Visible;
+
+        if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
+
+        // A altura muda com a aba, entao o painel precisa se reancorar no canto.
+        if (IsVisible) Posicionar();
+    }
+
+    private void ModoGrade_Alterado(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized) return;
+        if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
+    }
+
+    // ------------------------------------------------------------------
     // Dados
 
     private void Aplicar(Snapshot s)
     {
         AvisoDriver.Visibility = s.SensoresDeBaixoNivel ? Visibility.Collapsed : Visibility.Visible;
 
-        // Valor principal: temperatura da CPU; o anel mostra a carga.
+        GuardarHistorico(s);
+
+        if (_aba == Aba.Geral) AplicarGeral(s);
+        else AplicarCpu(s);
+
+        AtualizarStatus(s);
+    }
+
+    private void GuardarHistorico(Snapshot s)
+    {
+        if (s.CpuUso is not { } uso) return;
+
+        _historicoCpu.Enqueue(Math.Clamp(uso, 0, 100));
+        while (_historicoCpu.Count > PontosDoHistorico) _historicoCpu.Dequeue();
+    }
+
+    private void AplicarGeral(Snapshot s)
+    {
+        Titulo.Text = "Meu PC";
+        ChipEsquerdo.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C";
+        ChipDireito.Text = s.RamUso is { } r ? $"RAM {r:F0}%" : "RAM --";
+
         ValorPrincipal.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0}" : "--";
-        LegendaPrincipal.Text = s.CpuUso is { } uso
-            ? $"CPU · {uso:F0}% de carga"
-            : "CPU";
+        LegendaPrincipal.Text = s.CpuUso is { } uso ? $"CPU · {uso:F0}% de carga" : "CPU";
 
         var carga = Math.Clamp(s.CpuUso ?? 0, 0, 100);
-        DesenharAnel(carga);
+        Anel.Data = ArcoDeCarga(carga, Raio, 110);
         ColunaCheia.Width = new GridLength(carga, GridUnitType.Star);
         ColunaVazia.Width = new GridLength(100 - carga, GridUnitType.Star);
 
         // Passar do limite configurado pinta o anel e o numero de laranja.
         var quente = s.CpuTemp is { } t && t >= _cfg.LimiteCpu;
-        var cor = quente
-            ? (Brush)Application.Current.Resources["Alerta"]
-            : (Brush)Application.Current.Resources["Acento"];
+        var cor = quente ? Pincel("Alerta") : Pincel("Acento");
         Anel.Stroke = cor;
         BarraCarga.Background = cor;
-        ValorPrincipal.Foreground = quente
-            ? (Brush)Application.Current.Resources["AlertaTexto"]
-            : Brushes.White;
+        ValorPrincipal.Foreground = quente ? Pincel("AlertaTexto") : Brushes.White;
 
-        ChipCpu.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C";
-        ChipRam.Text = s.RamUso is { } r ? $"RAM {r:F0}%" : "RAM --";
-
-        CardGpu.Text = s.GpuTemp is { } gt && s.GpuUso is { } gu
-            ? $"{gt:F0}° · {gu:F0}%"
-            : "--";
-
+        CardGpu.Text = s.GpuTemp is { } gt && s.GpuUso is { } gu ? $"{gt:F0}° · {gu:F0}%" : "--";
         CardRam.Text = s.RamUsadaGb is { } usada && s.RamTotalGb is { } total
             ? $"{usada:F1} / {total:F0} GB"
             : s.RamUso is { } ru ? $"{ru:F0}% em uso" : "--";
+    }
 
+    private void AplicarCpu(Snapshot s)
+    {
+        Titulo.Text = "CPU";
+        ChipEsquerdo.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "-- °C";
+        ChipDireito.Text = s.CpuClockMhz is > 0 ? Clock(s.CpuClockMhz!.Value) : "-- GHz";
+
+        var uso = Math.Clamp(s.CpuUso ?? 0, 0, 100);
+        CpuUsoTexto.Text = s.CpuUso is null ? "--" : $"{uso:F0}";
+        AnelCpu.Data = ArcoDeCarga(uso, RaioCpu, 75);
+
+        var quente = s.CpuTemp is { } t && t >= _cfg.LimiteCpu;
+        AnelCpu.Stroke = quente ? Pincel("Alerta") : Pincel("Acento");
+
+        CpuTempTexto.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0} °C" : "n/d";
+        CpuTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
+        CpuClockTexto.Text = s.CpuClockMhz is > 0 ? Clock(s.CpuClockMhz!.Value) : "n/d";
+        CpuWattsTexto.Text = s.CpuWatts is > 0 ? $"{s.CpuWatts:F0} W" : "n/d";
+        CpuPicoTexto.Text = s.CpuPicoDeNucleo is { } pico ? $"{pico:F0}%" : "n/d";
+
+        DesenharHistorico();
+        MontarGrade(s);
+    }
+
+    private void AtualizarStatus(Snapshot s)
+    {
         // Um recado recente sobre o plano de energia segura o rodape por alguns
         // segundos: senao a proxima leitura o apagaria antes de dar para ler.
         if (DateTime.UtcNow < _recadoAte) return;
@@ -151,48 +224,140 @@ public partial class FlyoutWindow : Window
             : $"Sensores parciais · {intervalo}";
     }
 
+    private static string Clock(float mhz) =>
+        mhz >= 1000 ? $"{mhz / 1000:0.00} GHz" : $"{mhz:F0} MHz";
+
+    private static Brush Pincel(string chave) => (Brush)Application.Current.Resources[chave];
+
+    // ------------------------------------------------------------------
+    // Grade de nucleos
+
+    /// <summary>
+    /// A contagem vem do hardware, nunca fixa. Em "Núcleos" cada barra e a media
+    /// das threads daquele nucleo, que e como a carga se distribui num CPU com
+    /// duas threads por nucleo; em "Threads" cada barra e uma thread.
+    /// </summary>
+    private void MontarGrade(Snapshot s)
+    {
+        var threads = s.CpuCargaPorThread;
+        var clocks = s.CpuClocksPorNucleo;
+
+        var porNucleo = ModoNucleos.IsChecked == true;
+        var podeAgrupar = clocks.Count > 0 && threads.Count == clocks.Count * 2;
+
+        List<double> valores;
+        string prefixo;
+
+        if (porNucleo && podeAgrupar)
+        {
+            valores = new List<double>(clocks.Count);
+            for (var i = 0; i < clocks.Count; i++)
+                valores.Add((threads[i * 2] + threads[i * 2 + 1]) / 2.0);
+            prefixo = "N";
+        }
+        else if (porNucleo && clocks.Count > 0 && threads.Count == clocks.Count)
+        {
+            // Sem SMT: thread e nucleo sao a mesma coisa.
+            valores = threads.Select(v => (double)v).ToList();
+            prefixo = "N";
+        }
+        else
+        {
+            valores = threads.Select(v => (double)v).ToList();
+            prefixo = "T";
+        }
+
+        RotuloGrade.Text = prefixo == "N" ? "Uso por núcleo" : "Uso por thread";
+        DetectadoCpu.Text = clocks.Count > 0
+            ? $"detectado: {clocks.Count} núcleos · {threads.Count} threads"
+            : $"detectado: {threads.Count} threads";
+
+        // Sem agrupamento possivel, a opcao "Núcleos" nao teria o que mostrar.
+        ModoNucleos.IsEnabled = clocks.Count > 0;
+
+        SincronizarBarras(valores.Count);
+
+        for (var i = 0; i < valores.Count; i++)
+        {
+            var linha = (BarraDeNucleo)GradeNucleos.Children[i];
+            var clock = prefixo == "N" && i < clocks.Count ? clocks[i] : (float?)null;
+            linha.Atualizar($"{prefixo}{i + 1}", valores[i], clock);
+        }
+    }
+
+    /// <summary>Cria ou remove barras so quando a contagem muda.</summary>
+    private void SincronizarBarras(int quantidade)
+    {
+        while (GradeNucleos.Children.Count > quantidade)
+            GradeNucleos.Children.RemoveAt(GradeNucleos.Children.Count - 1);
+
+        while (GradeNucleos.Children.Count < quantidade)
+            GradeNucleos.Children.Add(new BarraDeNucleo());
+    }
+
+    // ------------------------------------------------------------------
+    // Grafico do historico
+
+    private void AreaGrafico_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistorico();
+
+    private void DesenharHistorico()
+    {
+        var largura = AreaGrafico.ActualWidth;
+        var altura = AreaGrafico.ActualHeight;
+
+        if (largura <= 0 || altura <= 0 || _historicoCpu.Count < 2)
+        {
+            GraficoLinha.Points = new PointCollection();
+            GraficoArea.Points = new PointCollection();
+            CpuPicoHistorico.Text = "";
+            return;
+        }
+
+        var valores = _historicoCpu.ToArray();
+
+        // O grafico ocupa sempre a largura toda: com poucos pontos ele cresce da
+        // esquerda para a direita conforme o historico enche.
+        var passo = largura / Math.Max(valores.Length - 1, 1);
+
+        var linha = new PointCollection(valores.Length);
+        for (var i = 0; i < valores.Length; i++)
+        {
+            var y = altura - valores[i] / 100.0 * (altura - 4) - 2;
+            linha.Add(new Point(i * passo, y));
+        }
+
+        GraficoLinha.Points = linha;
+
+        // A area e a mesma linha fechada na base.
+        var area = new PointCollection(linha) { new(largura, altura), new(0, altura) };
+        GraficoArea.Points = area;
+
+        CpuPicoHistorico.Text = $"pico {valores.Max():F0}%";
+    }
+
+    // ------------------------------------------------------------------
+    // Anel
+
     /// <summary>Arco do topo no sentido horario, proporcional a carga.</summary>
-    private void DesenharAnel(double porcentagem)
+    private static Geometry? ArcoDeCarga(double porcentagem, double raio, double centro)
     {
         // Abaixo de uns 2% o arco vira um ponto solto no topo. Um minimo visual
         // mantem a leitura de "tem pouca carga" sem parecer defeito.
         var valor = Math.Clamp(porcentagem, 0, 100);
-        if (valor > 0) valor = Math.Max(valor, 1.8);
-
-        if (valor <= 0)
-        {
-            Anel.Data = null;
-            return;
-        }
+        if (valor <= 0) return null;
+        valor = Math.Max(valor, 1.8);
 
         var angulo = Math.Min(valor, 99.999) / 100.0 * 2 * Math.PI;
-        var centro = new Point(110, 110);
-        var inicio = new Point(centro.X, centro.Y - Raio);
+        var meio = new Point(centro, centro);
+        var inicio = new Point(meio.X, meio.Y - raio);
         var fim = new Point(
-            centro.X + Raio * Math.Sin(angulo),
-            centro.Y - Raio * Math.Cos(angulo));
+            meio.X + raio * Math.Sin(angulo),
+            meio.Y - raio * Math.Cos(angulo));
 
-        var arco = new ArcSegment(fim, new Size(Raio, Raio), 0,
+        var arco = new ArcSegment(fim, new Size(raio, raio), 0,
             angulo > Math.PI, SweepDirection.Clockwise, true);
 
-        var figura = new PathFigure(inicio, new[] { arco }, false);
-        Anel.Data = new PathGeometry(new[] { figura });
-    }
-
-    private void Minimizar_Click(object sender, RoutedEventArgs e) => Esconder();
-
-    private void Personalizar_Click(object sender, RoutedEventArgs e)
-    {
-        // A tela aplica cor e transparencia na hora, para dar para ver o efeito
-        // enquanto se mexe nos controles.
-        var tela = new PersonalizacaoWindow(_cfg, () =>
-        {
-            (Application.Current as App)?.AplicarAparencia();
-            AplicarTransparencia();
-        })
-        { Owner = this };
-
-        tela.ShowDialog();
+        return new PathGeometry(new[] { new PathFigure(inicio, new[] { arco }, false) });
     }
 
     // ------------------------------------------------------------------
@@ -240,6 +405,25 @@ public partial class FlyoutWindow : Window
     {
         Status.Text = texto;
         _recadoAte = DateTime.UtcNow.AddSeconds(4);
+    }
+
+    // ------------------------------------------------------------------
+    // Botoes
+
+    private void Minimizar_Click(object sender, RoutedEventArgs e) => Esconder();
+
+    private void Personalizar_Click(object sender, RoutedEventArgs e)
+    {
+        // A tela aplica cor e transparencia na hora, para dar para ver o efeito
+        // enquanto se mexe nos controles.
+        var tela = new PersonalizacaoWindow(_cfg, () =>
+        {
+            (Application.Current as App)?.AplicarAparencia();
+            AplicarTransparencia();
+        })
+        { Owner = this };
+
+        tela.ShowDialog();
     }
 
     private void Pausar_Click(object sender, RoutedEventArgs e)

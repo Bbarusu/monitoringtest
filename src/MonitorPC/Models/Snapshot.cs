@@ -10,8 +10,14 @@ public sealed class Snapshot
     public float? CpuUso { get; init; }
     public float? CpuWatts { get; init; }
     public float? CpuClockMhz { get; init; }
-    public IReadOnlyList<float> CpuNucleos { get; init; } = Array.Empty<float>();
-    public IReadOnlyList<float> CpuThreads { get; init; } = Array.Empty<float>();
+    /// <summary>Clock de cada nucleo fisico, em MHz.</summary>
+    public IReadOnlyList<float> CpuClocksPorNucleo { get; init; } = Array.Empty<float>();
+
+    /// <summary>Carga de cada thread logica, em porcentagem.</summary>
+    public IReadOnlyList<float> CpuCargaPorThread { get; init; } = Array.Empty<float>();
+
+    /// <summary>Carga da thread mais ocupada.</summary>
+    public float? CpuPicoDeNucleo { get; init; }
 
     // GPU
     public string? GpuNome { get; init; }

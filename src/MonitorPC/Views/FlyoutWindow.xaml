@@ -7,7 +7,7 @@
         ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
         FontFamily="{StaticResource FonteUI}">
 
-    <Border x:Name="Painel" Margin="20,20,20,20" CornerRadius="16"
+    <Border x:Name="Painel" Margin="20" CornerRadius="16"
             Background="{StaticResource Fundo}"
             BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="20">
         <Border.Effect>
@@ -16,20 +16,20 @@
 
         <StackPanel>
 
-            <!-- Cabecalho -->
+            <!-- Cabecalho: o titulo e os chips mudam conforme a aba -->
             <Grid>
                 <StackPanel>
-                    <TextBlock Text="Meu PC" FontSize="15" FontWeight="SemiBold"
+                    <TextBlock x:Name="Titulo" Text="Meu PC" FontSize="15" FontWeight="SemiBold"
                                Foreground="{StaticResource Texto}" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5" Margin="0,0,8,0">
-                            <TextBlock x:Name="ChipCpu" Text="-- °C" FontSize="12" FontWeight="SemiBold"
+                            <TextBlock x:Name="ChipEsquerdo" Text="-- °C" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Texto}" />
                         </Border>
                         <Border Background="{StaticResource Chip}" BorderBrush="{StaticResource Trilho}"
                                 BorderThickness="1" CornerRadius="10" Padding="10,5">
-                            <TextBlock x:Name="ChipRam" Text="RAM --%" FontSize="12" FontWeight="SemiBold"
+                            <TextBlock x:Name="ChipDireito" Text="RAM --%" FontSize="12" FontWeight="SemiBold"
                                        Foreground="{StaticResource Texto}" />
                         </Border>
                     </StackPanel>
@@ -60,93 +60,202 @@
                            Text="Sensores de CPU e placa-mãe indisponíveis. Abra o app como administrador." />
             </Border>
 
-            <!-- Anel com o valor principal -->
-            <Grid Width="220" Height="220" Margin="0,16,0,0">
-                <Ellipse Width="200" Height="200" Stroke="{StaticResource Trilho}" StrokeThickness="10" />
-                <Path x:Name="Anel" Stroke="{DynamicResource Acento}" StrokeThickness="10"
-                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBlock x:Name="ValorPrincipal" Text="--" FontSize="76" FontWeight="Light"
-                                   FontFamily="{StaticResource FonteNumero}" Foreground="White"
-                                   LineHeight="78" />
-                        <TextBlock Text="°C" FontSize="24" Foreground="{StaticResource TextoFraco}"
-                                   Margin="4,10,0,0" />
+            <!-- ======================= TOPO: GERAL ======================= -->
+            <StackPanel x:Name="TopoGeral">
+                <Grid Width="220" Height="220" Margin="0,16,0,0">
+                    <Ellipse Width="200" Height="200" Stroke="{StaticResource Trilho}" StrokeThickness="10" />
+                    <Path x:Name="Anel" Stroke="{DynamicResource Acento}" StrokeThickness="10"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock x:Name="ValorPrincipal" Text="--" FontSize="76" FontWeight="Light"
+                                       FontFamily="{StaticResource FonteNumero}" Foreground="White"
+                                       LineHeight="78" />
+                            <TextBlock Text="°C" FontSize="24" Foreground="{StaticResource TextoFraco}"
+                                       Margin="4,10,0,0" />
+                        </StackPanel>
+                        <TextBlock x:Name="LegendaPrincipal" Text="CPU" FontSize="12" Margin="0,8,0,0"
+                                   HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
                     </StackPanel>
-                    <TextBlock x:Name="LegendaPrincipal" Text="CPU" FontSize="12" Margin="0,8,0,0"
-                               HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
-                </StackPanel>
-            </Grid>
-
-            <!-- Barra de carga -->
-            <!-- As duas colunas se dividem pela carga: o preenchimento acompanha a
-                 largura real do painel, sem conta em pixels que possa dar negativa. -->
-            <Grid Margin="0,8,0,0">
-                <Border Height="6" CornerRadius="3" Background="{StaticResource Trilho}"
-                        VerticalAlignment="Center" />
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="ColunaCheia" Width="0*" />
-                        <ColumnDefinition x:Name="ColunaVazia" Width="100*" />
-                    </Grid.ColumnDefinitions>
-                    <Border x:Name="BarraCarga" Grid.Column="0" Height="6" CornerRadius="3"
-                            Background="{DynamicResource Acento}" VerticalAlignment="Center" />
                 </Grid>
-            </Grid>
-            <Grid Margin="0,6,0,0">
-                <TextBlock Text="0%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
-                           HorizontalAlignment="Left" />
-                <TextBlock Text="50%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="100%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
-                           HorizontalAlignment="Right" />
-            </Grid>
 
-            <!-- Abas -->
+                <!-- As duas colunas se dividem pela carga: o preenchimento acompanha a
+                     largura real do painel, sem conta em pixels que possa dar negativa. -->
+                <Grid Margin="0,8,0,0">
+                    <Border Height="6" CornerRadius="3" Background="{StaticResource Trilho}"
+                            VerticalAlignment="Center" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="ColunaCheia" Width="0*" />
+                            <ColumnDefinition x:Name="ColunaVazia" Width="100*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="BarraCarga" Grid.Column="0" Height="6" CornerRadius="3"
+                                Background="{DynamicResource Acento}" VerticalAlignment="Center" />
+                    </Grid>
+                </Grid>
+                <Grid Margin="0,6,0,0">
+                    <TextBlock Text="0%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
+                               HorizontalAlignment="Left" />
+                    <TextBlock Text="50%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="100%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"
+                               HorizontalAlignment="Right" />
+                </Grid>
+            </StackPanel>
+
+            <!-- ======================== TOPO: CPU ======================== -->
+            <StackPanel x:Name="TopoCpu" Visibility="Collapsed" Margin="0,16,0,0">
+                <Grid Height="150">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0">
+                        <Ellipse Width="138" Height="138" Stroke="{StaticResource Trilho}" StrokeThickness="9" />
+                        <Path x:Name="AnelCpu" Stroke="{DynamicResource Acento}" StrokeThickness="9"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock x:Name="CpuUsoTexto" Text="--" FontSize="48" FontWeight="Light"
+                                           FontFamily="{StaticResource FonteNumero}" Foreground="White"
+                                           LineHeight="50" />
+                                <TextBlock Text="%" FontSize="18" Foreground="{StaticResource TextoFraco}"
+                                           Margin="2,6,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="Uso total" FontSize="11" Margin="0,4,0,0"
+                                       HorizontalAlignment="Center" Foreground="{StaticResource TextoFraco}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
+                        <Grid Height="36">
+                            <TextBlock Text="Temperatura" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="CpuTempTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Clock" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="CpuClockTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Potência" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="CpuWattsTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource Borda}" />
+                        <Grid Height="36">
+                            <TextBlock Text="Pico de núcleo" FontSize="12" VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="CpuPicoTexto" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{StaticResource Texto}" />
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Historico da carga -->
+                <Grid Margin="0,16,0,0">
+                    <TextBlock Text="Carga · últimos 5 min" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="CpuPicoHistorico" Text="" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                </Grid>
+                <Grid x:Name="AreaGrafico" Height="80" Margin="0,6,0,0" ClipToBounds="True"
+                      SizeChanged="AreaGrafico_SizeChanged">
+                    <Border Height="1" Background="{StaticResource Borda}" VerticalAlignment="Bottom" />
+                    <Polygon x:Name="GraficoArea" Fill="{DynamicResource Acento}" Opacity="0.14" />
+                    <Polyline x:Name="GraficoLinha" Stroke="{DynamicResource Acento}" StrokeThickness="2"
+                              StrokeLineJoin="Round" />
+                </Grid>
+            </StackPanel>
+
+            <!-- ========================== ABAS =========================== -->
             <Border Margin="0,16,0,0" CornerRadius="14" Background="{StaticResource Cartao}"
                     BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="4">
                 <UniformGrid Columns="5">
-                    <RadioButton Style="{StaticResource Aba}" Content="Geral" IsChecked="True" />
-                    <RadioButton Style="{StaticResource Aba}" Content="CPU" IsEnabled="False" />
+                    <RadioButton x:Name="AbaGeral" Style="{StaticResource Aba}" Content="Geral"
+                                 IsChecked="True" Checked="Aba_Selecionada" />
+                    <RadioButton x:Name="AbaCpu" Style="{StaticResource Aba}" Content="CPU"
+                                 Checked="Aba_Selecionada" />
                     <RadioButton Style="{StaticResource Aba}" Content="GPU" IsEnabled="False" />
                     <RadioButton Style="{StaticResource Aba}" Content="Disco" IsEnabled="False" />
                     <RadioButton Style="{StaticResource Aba}" Content="Energia" IsEnabled="False" />
                 </UniformGrid>
             </Border>
 
-            <!-- Cards GPU e RAM -->
-            <UniformGrid Columns="2" Margin="0,16,0,0">
-                <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                        BorderBrush="{StaticResource Borda}" BorderThickness="1"
-                        Height="56" Padding="12,0" Margin="0,0,6,0">
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="GPU" FontSize="11" Foreground="{StaticResource TextoFraco}" />
-                        <TextBlock x:Name="CardGpu" Text="--" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Texto}" Margin="0,2,0,0" />
-                    </StackPanel>
-                </Border>
-                <Border CornerRadius="12" Background="{StaticResource Cartao}"
-                        BorderBrush="{StaticResource Borda}" BorderThickness="1"
-                        Height="56" Padding="12,0" Margin="6,0,0,0">
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="RAM" FontSize="11" Foreground="{StaticResource TextoFraco}" />
-                        <TextBlock x:Name="CardRam" Text="--" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{StaticResource Texto}" Margin="0,2,0,0" />
-                    </StackPanel>
-                </Border>
-            </UniformGrid>
+            <!-- ======================= BASE: GERAL ======================= -->
+            <StackPanel x:Name="BaseGeral">
+                <UniformGrid Columns="2" Margin="0,16,0,0">
+                    <Border CornerRadius="12" Background="{StaticResource Cartao}"
+                            BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                            Height="56" Padding="12,0" Margin="0,0,6,0">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="GPU" FontSize="11" Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="CardGpu" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Texto}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border CornerRadius="12" Background="{StaticResource Cartao}"
+                            BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                            Height="56" Padding="12,0" Margin="6,0,0,0">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="RAM" FontSize="11" Foreground="{StaticResource TextoFraco}" />
+                            <TextBlock x:Name="CardRam" Text="--" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource Texto}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
 
-            <!-- Perfis de energia -->
-            <UniformGrid Columns="3" Margin="0,12,0,0">
-                <RadioButton x:Name="PerfilEconomico" Style="{StaticResource Perfil}"
-                             Content="Econômico" Margin="0,0,6,0" Click="Perfil_Click" />
-                <RadioButton x:Name="PerfilEquilibrado" Style="{StaticResource Perfil}"
-                             Content="Equilibrado" Margin="6,0,6,0" Click="Perfil_Click" />
-                <RadioButton x:Name="PerfilDesempenho" Style="{StaticResource Perfil}"
-                             Content="Desempenho" Margin="6,0,0,0" Click="Perfil_Click" />
-            </UniformGrid>
+                <UniformGrid Columns="3" Margin="0,12,0,0">
+                    <RadioButton x:Name="PerfilEconomico" Style="{StaticResource Perfil}"
+                                 Content="Econômico" Margin="0,0,6,0" Click="Perfil_Click" />
+                    <RadioButton x:Name="PerfilEquilibrado" Style="{StaticResource Perfil}"
+                                 Content="Equilibrado" Margin="6,0,6,0" Click="Perfil_Click" />
+                    <RadioButton x:Name="PerfilDesempenho" Style="{StaticResource Perfil}"
+                                 Content="Desempenho" Margin="6,0,0,0" Click="Perfil_Click" />
+                </UniformGrid>
+            </StackPanel>
 
-            <!-- Rodape -->
+            <!-- ======================== BASE: CPU ======================== -->
+            <StackPanel x:Name="BaseCpu" Visibility="Collapsed">
+                <Grid Margin="0,16,0,8">
+                    <TextBlock x:Name="RotuloGrade" Text="Uso por núcleo" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Left" />
+                    <TextBlock x:Name="DetectadoCpu" Text="" FontSize="11"
+                               Foreground="{StaticResource TextoFraco}" HorizontalAlignment="Right" />
+                </Grid>
+
+                <!-- A grade e montada em codigo: a contagem vem do hardware -->
+                <UniformGrid x:Name="GradeNucleos" Columns="2" />
+
+                <Grid Margin="0,10,0,0">
+                    <TextBlock Text="Grade montada pelo que o PC informa" FontSize="11"
+                               VerticalAlignment="Center" Foreground="{StaticResource TextoMuitoFraco}" />
+                    <Border CornerRadius="10" Background="{StaticResource Cartao}" Width="168"
+                            BorderBrush="{StaticResource Borda}" BorderThickness="1" Padding="3"
+                            HorizontalAlignment="Right">
+                        <UniformGrid Columns="2">
+                            <RadioButton x:Name="ModoNucleos" Style="{StaticResource Aba}" Height="28"
+                                         FontSize="11" Content="Núcleos" IsChecked="True"
+                                         Checked="ModoGrade_Alterado" />
+                            <RadioButton x:Name="ModoThreads" Style="{StaticResource Aba}" Height="28"
+                                         FontSize="11" Content="Threads" Checked="ModoGrade_Alterado" />
+                        </UniformGrid>
+                    </Border>
+                </Grid>
+            </StackPanel>
+
+            <!-- ========================= RODAPE ========================== -->
             <Grid Margin="0,16,0,0">
                 <TextBlock x:Name="Status" VerticalAlignment="Center" FontSize="12"
                            Foreground="#C4CAD6" Text="Sensores ativos" />
