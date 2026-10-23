@@ -55,6 +55,10 @@ Na primeira execução o painel abre na configuração inicial, para os limites 
 temperatura não ficarem no palpite do padrão. Depois, a mesma tela fica acessível
 pelo ícone de ajustes no rodapé ou pelo menu do ícone da bandeja.
 
+O botão **Ver log detalhado**, na aba Disco, abre o log: registra quem passou do
+limite de MB/s que você definir, guarda os últimos 15 minutos e exporta em `.txt` com
+nome e caminho de cada processo. O registro corre enquanto a tela está aberta.
+
 O botão **Desempenho** abre uma tela com o que será feito, em vez de agir sozinho:
 trocar o plano de energia, limpar arquivos temporários e fechar programas escolhidos
 na lista. Cada programa recebe o mesmo pedido de fechar que o botão X da janela, então
@@ -87,6 +91,8 @@ src/MonitorPC/
   Services/PowerService.cs  perfis de energia
   Services/AlertService.cs  quando a temperatura passa do limite
   Services/PerformanceService.cs  ações do Modo Desempenho
+  Services/DiskLogService.cs      registro de picos de disco
+  Views/LogDiscoWindow.xaml       a tela do log
   Views/DesempenhoWindow.xaml     a tela do Modo Desempenho
   App.xaml.cs               ícone da bandeja e ciclo de vida
 ```

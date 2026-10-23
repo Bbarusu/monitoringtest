@@ -602,6 +602,16 @@
                     </Border>
                 </Grid>
                 <StackPanel x:Name="ListaDisco" />
+                <Button x:Name="BotaoLog" Style="{StaticResource BotaoLargo}" Height="40"
+                        Margin="0,4,0,0" Click="Log_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="M8,6 L20,6 M8,12 L20,12 M8,18 L20,18 M4,6 L4.01,6 M4,12 L4.01,12 M4,18 L4.01,18"
+                              Stroke="#C4CAD6" StrokeThickness="1.8" StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round" Width="16" Height="16" Stretch="Uniform"
+                              Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Ver log detalhado" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
 

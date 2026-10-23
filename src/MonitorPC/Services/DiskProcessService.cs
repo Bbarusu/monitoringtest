@@ -16,6 +16,10 @@ namespace MonitorPC.Services;
 public sealed class DiskProcessService
 {
     private readonly Dictionary<int, (ulong Lidos, ulong Escritos)> _anterior = new();
+
+    // O caminho do executavel nao muda enquanto o processo vive, e busca-lo e
+    // caro: fica guardado por PID.
+    private readonly Dictionary<int, string?> _caminhos = new();
     private DateTime _ultimaAmostra = DateTime.MinValue;
 
     /// <summary>Esquece as amostras, para a proxima leitura nao virar um pico falso.</summary>
@@ -24,6 +28,9 @@ public sealed class DiskProcessService
         _anterior.Clear();
         _ultimaAmostra = DateTime.MinValue;
     }
+
+    /// <summary>Sem limite, devolve tudo que se mexeu no intervalo.</summary>
+    public IReadOnlyList<ProcessoDisco> MedirTudo() => Medir(int.MaxValue);
 
     public IReadOnlyList<ProcessoDisco> Medir(int quantos = 3)
     {
@@ -41,6 +48,12 @@ public sealed class DiskProcessService
                 if (!GetProcessIoCounters(p.Handle, out var c)) continue;
                 atual[p.Id] = (c.ReadTransferCount, c.WriteTransferCount);
                 nomes[p.Id] = p.ProcessName;
+
+                if (!_caminhos.ContainsKey(p.Id))
+                {
+                    try { _caminhos[p.Id] = p.MainModule?.FileName; }
+                    catch { _caminhos[p.Id] = null; }
+                }
             }
             catch
             {
@@ -74,7 +87,8 @@ public sealed class DiskProcessService
 
             if (leitura + escrita < 0.05) continue;
 
-            lista.Add(new ProcessoDisco(pid, nomes.GetValueOrDefault(pid, "?"), leitura, escrita));
+            lista.Add(new ProcessoDisco(pid, nomes.GetValueOrDefault(pid, "?"), leitura, escrita,
+                                        _caminhos.GetValueOrDefault(pid)));
         }
 
         Guardar(atual);
@@ -86,6 +100,10 @@ public sealed class DiskProcessService
     {
         _anterior.Clear();
         foreach (var (pid, valores) in atual) _anterior[pid] = valores;
+
+        // PIDs que sumiram nao voltam: o cache de caminhos cresceria sem parar.
+        foreach (var pid in _caminhos.Keys.Where(k => !atual.ContainsKey(k)).ToList())
+            _caminhos.Remove(pid);
     }
 
     [StructLayout(LayoutKind.Sequential)]

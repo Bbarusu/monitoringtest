@@ -86,7 +86,7 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="Opacidade" Minimum="15" Maximum="100" Margin="0,10,0,0"
+                    <Slider x:Name="Opacidade" IsMoveToPointEnabled="True" Minimum="15" Maximum="100" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}"
                             ValueChanged="Opacidade_Alterada" />

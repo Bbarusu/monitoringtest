@@ -61,6 +61,13 @@ public sealed class AppConfig
     public int IntervaloPainelFechado { get; set; } = 3000;
     public int IntervaloSensoresLentos { get; set; } = 30000;
 
+    // --- Log de disco ---
+    /// <summary>A partir de quantos MB/s um processo entra no log.</summary>
+    public double LimiteLogMbs { get; set; } = 10;
+
+    /// <summary>Vazio usa Documentos\MonitorPC\logs.</summary>
+    public string PastaDosLogs { get; set; } = "";
+
     public bool ConfiguracaoInicialFeita { get; set; }
 
     // ------------------------------------------------------------------

@@ -52,7 +52,7 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="LimiteCpu" Minimum="30" Maximum="100" Margin="0,10,0,0"
+                    <Slider x:Name="LimiteCpu" IsMoveToPointEnabled="True" Minimum="30" Maximum="100" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}" ValueChanged="Limite_Alterado" />
                     <Grid Margin="0,4,0,0">
@@ -80,7 +80,7 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="LimiteGpu" Minimum="30" Maximum="110" Margin="0,10,0,0"
+                    <Slider x:Name="LimiteGpu" IsMoveToPointEnabled="True" Minimum="30" Maximum="110" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}" ValueChanged="Limite_Alterado" />
                     <Grid Margin="0,4,0,0">
@@ -108,7 +108,7 @@
                                    FontFamily="{StaticResource FonteNumero}" Foreground="White"
                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
                     </Grid>
-                    <Slider x:Name="LimiteDisco" Minimum="30" Maximum="80" Margin="0,10,0,0"
+                    <Slider x:Name="LimiteDisco" IsMoveToPointEnabled="True" Minimum="30" Maximum="80" Margin="0,10,0,0"
                             IsSnapToTickEnabled="True" TickFrequency="1"
                             Foreground="{DynamicResource Acento}" ValueChanged="Limite_Alterado" />
                     <Grid Margin="0,4,0,0">

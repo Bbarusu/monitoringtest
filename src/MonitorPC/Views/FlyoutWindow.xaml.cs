@@ -1008,6 +1008,15 @@ public partial class FlyoutWindow : Window
 
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
 
+    private void Log_Click(object sender, RoutedEventArgs e)
+    {
+        new LogDiscoWindow(_cfg) { Owner = this }.ShowDialog();
+
+        // O log usa a mesma medicao por processo; ao voltar, as amostras antigas
+        // virariam um pico falso.
+        _processos.Reiniciar();
+    }
+
     private void AbrirDesempenho()
     {
         new DesempenhoWindow { Owner = this }.ShowDialog();
