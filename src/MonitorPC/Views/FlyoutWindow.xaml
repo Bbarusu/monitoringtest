@@ -79,12 +79,19 @@
             </Grid>
 
             <!-- Barra de carga -->
+            <!-- As duas colunas se dividem pela carga: o preenchimento acompanha a
+                 largura real do painel, sem conta em pixels que possa dar negativa. -->
             <Grid Margin="0,8,0,0">
                 <Border Height="6" CornerRadius="3" Background="{StaticResource Trilho}"
                         VerticalAlignment="Center" />
-                <Border x:Name="BarraCarga" Height="6" CornerRadius="3" Width="0"
-                        Background="{DynamicResource Acento}" HorizontalAlignment="Left"
-                        VerticalAlignment="Center" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="ColunaCheia" Width="0*" />
+                        <ColumnDefinition x:Name="ColunaVazia" Width="100*" />
+                    </Grid.ColumnDefinitions>
+                    <Border x:Name="BarraCarga" Grid.Column="0" Height="6" CornerRadius="3"
+                            Background="{DynamicResource Acento}" VerticalAlignment="Center" />
+                </Grid>
             </Grid>
             <Grid Margin="0,6,0,0">
                 <TextBlock Text="0%" FontSize="11" Foreground="{StaticResource TextoMuitoFraco}"

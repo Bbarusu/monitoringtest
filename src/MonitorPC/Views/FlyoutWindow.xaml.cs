@@ -9,7 +9,6 @@ namespace MonitorPC.Views;
 public partial class FlyoutWindow : Window
 {
     private const double Raio = 100;
-    private const double Margem = 20;
 
     private static readonly Color FundoSolido = Color.FromRgb(0x15, 0x17, 0x1C);
 
@@ -117,7 +116,8 @@ public partial class FlyoutWindow : Window
 
         var carga = Math.Clamp(s.CpuUso ?? 0, 0, 100);
         DesenharAnel(carga);
-        BarraCarga.Width = (ActualWidth - 2 * Margem - 42) * carga / 100.0;
+        ColunaCheia.Width = new GridLength(carga, GridUnitType.Star);
+        ColunaVazia.Width = new GridLength(100 - carga, GridUnitType.Star);
 
         // Passar do limite configurado pinta o anel e o numero de laranja.
         var quente = s.CpuTemp is { } t && t >= _cfg.LimiteCpu;
