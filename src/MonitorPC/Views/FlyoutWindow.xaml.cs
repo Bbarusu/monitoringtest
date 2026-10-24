@@ -42,7 +42,6 @@ public partial class FlyoutWindow : Window
     private double _gpuRpmMax;
 
     private Aba _aba = Aba.Geral;
-    private bool _pausado;
     private bool _trocandoPerfil;
     private DateTime _recadoAte;
     private bool _posicionando;
@@ -773,10 +772,9 @@ public partial class FlyoutWindow : Window
         // segundos: senao a proxima leitura o apagaria antes de dar para ler.
         if (DateTime.UtcNow < _recadoAte) return;
 
-        var intervalo = _pausado ? "pausado" : "atualiza a cada 1 s";
         Status.Text = s.SensoresDeBaixoNivel
-            ? $"Sensores ativos · {intervalo}"
-            : $"Sensores parciais · {intervalo}";
+            ? "Sensores ativos · atualiza a cada 1 s"
+            : "Sensores parciais · atualiza a cada 1 s";
     }
 
     private static string Clock(float mhz) =>
@@ -1114,10 +1112,10 @@ public partial class FlyoutWindow : Window
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
     }
 
-    private void Pausar_Click(object sender, RoutedEventArgs e)
-    {
-        _pausado = !_pausado;
-        BotaoPausar.Opacity = _pausado ? 0.45 : 1.0;
-        BotaoPausar.ToolTip = _pausado ? "Retomar monitoramento" : "Pausar monitoramento";
-    }
+    /// <summary>
+    /// Encerra o app de vez: solta os sensores, tira o icone da bandeja e sai.
+    /// Nao ha trabalho a perder, entao nao pede confirmacao.
+    /// </summary>
+    private void Encerrar_Click(object sender, RoutedEventArgs e) =>
+        Application.Current.Shutdown();
 }

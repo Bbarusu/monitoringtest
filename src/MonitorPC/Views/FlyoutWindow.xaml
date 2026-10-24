@@ -61,8 +61,8 @@
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               Width="18" Height="18" Stretch="Uniform" />
                     </Button>
-                    <Button x:Name="BotaoPausar" Style="{StaticResource BotaoRedondo}"
-                            ToolTip="Pausar monitoramento" Click="Pausar_Click">
+                    <Button Style="{StaticResource BotaoRedondo}"
+                            ToolTip="Encerrar o Monitor de PC" Click="Encerrar_Click">
                         <Path Data="M12,3 L12,11 M6.5,6.5 A8,8 0 1,0 17.5,6.5"
                               Stroke="White" StrokeThickness="2" StrokeStartLineCap="Round"
                               StrokeEndLineCap="Round" Width="20" Height="20" Stretch="Uniform" />

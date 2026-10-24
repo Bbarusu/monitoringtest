@@ -189,6 +189,8 @@ public partial class App : Application
             ? $"Monitor de PC — CPU {texto} °C"
             : "Monitor de PC — sensores de baixo nível indisponíveis";
 
+        // 32 por 32 e desenhado para ser reduzido a 16 na bandeja: quanto mais
+        // area o numero ocupar, mais legivel ele fica depois da reducao.
         using var bmp = new D.Bitmap(32, 32, D.Imaging.PixelFormat.Format32bppArgb);
         using (var g = D.Graphics.FromImage(bmp))
         {
@@ -197,17 +199,28 @@ public partial class App : Application
             g.Clear(D.Color.Transparent);
 
             var acento = ((SolidColorBrush)Resources["Acento"]).Color;
-            using var fundo = new D.SolidBrush(D.Color.FromArgb(230, 21, 23, 28));
+            using var fundo = new D.SolidBrush(D.Color.FromArgb(235, 18, 20, 24));
             using var contorno = new D.Pen(
-                D.Color.FromArgb(temSensores ? 255 : 90, acento.R, acento.G, acento.B), 2.5f);
+                D.Color.FromArgb(temSensores ? 255 : 90, acento.R, acento.G, acento.B), 2f);
 
-            g.FillEllipse(fundo, 1, 1, 30, 30);
-            g.DrawEllipse(contorno, 2, 2, 28, 28);
+            using var quadro = Quadrado(new D.RectangleF(1, 1, 30, 30), 6);
+            g.FillPath(fundo, quadro);
+            g.DrawPath(contorno, quadro);
 
-            using var fonte = new D.Font("Segoe UI", texto.Length > 2 ? 11f : 13f, D.FontStyle.Bold);
+            // O tamanho acompanha a quantidade de digitos, para o numero ocupar
+            // a largura toda sem estourar a borda.
+            var tamanho = texto.Length >= 3 ? 16f : 21f;
+
+            using var fonte = new D.Font("Segoe UI", tamanho, D.FontStyle.Bold,
+                                         D.GraphicsUnit.Pixel);
             using var branco = new D.SolidBrush(D.Color.White);
-            var tam = g.MeasureString(texto, fonte);
-            g.DrawString(texto, fonte, branco, (32 - tam.Width) / 2, (32 - tam.Height) / 2);
+            using var centro = new D.StringFormat
+            {
+                Alignment = D.StringAlignment.Center,
+                LineAlignment = D.StringAlignment.Center
+            };
+
+            g.DrawString(texto, fonte, branco, new D.RectangleF(0, 0, 32, 33), centro);
         }
 
         var anterior = _iconeAtual;
@@ -238,15 +251,43 @@ public partial class App : Application
         _bandeja.ShowBalloonTip(8000);
     }
 
+    /// <summary>Quadrado de cantos arredondados, que o GDI+ nao desenha direto.</summary>
+    private static D.Drawing2D.GraphicsPath Quadrado(D.RectangleF area, float raio)
+    {
+        var caminho = new D.Drawing2D.GraphicsPath();
+        var d = raio * 2;
+
+        caminho.AddArc(area.X, area.Y, d, d, 180, 90);
+        caminho.AddArc(area.Right - d, area.Y, d, d, 270, 90);
+        caminho.AddArc(area.Right - d, area.Bottom - d, d, d, 0, 90);
+        caminho.AddArc(area.X, area.Bottom - d, d, d, 90, 90);
+        caminho.CloseFigure();
+
+        return caminho;
+    }
+
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr handle);
 
+    /// <summary>
+    /// Encerramento completo: o laco de leitura para, o driver e liberado e o
+    /// icone sai da bandeja. Cada passo e isolado, para uma falha num deles nao
+    /// deixar os outros por fazer.
+    /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
-        _bandeja.Visible = false;
-        _bandeja.Dispose();
-        _sensores.Dispose();
-        _cfg.Salvar();
+        Tentar(() => _bandeja.Visible = false);
+        Tentar(() => _bandeja.Dispose());
+        Tentar(() => _sensores.Dispose());
+        Tentar(() => _cfg.Salvar());
+        Tentar(() => { if (_iconeAtual is not null) DestroyIcon(_iconeAtual.Handle); });
+
         base.OnExit(e);
+
+        static void Tentar(Action acao)
+        {
+            try { acao(); }
+            catch (Exception ex) { Log.Erro("Encerrar", ex); }
+        }
     }
 }
