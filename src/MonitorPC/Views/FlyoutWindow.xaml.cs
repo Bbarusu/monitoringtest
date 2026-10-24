@@ -1071,6 +1071,9 @@ public partial class FlyoutWindow : Window
 
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
 
+    private void Estresse_Click(object sender, RoutedEventArgs e) =>
+        new EstresseWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
+
     private void Componentes_Click(object sender, RoutedEventArgs e)
     {
         new ComponentesWindow(_cfg, _sensores) { Owner = this }.ShowDialog();

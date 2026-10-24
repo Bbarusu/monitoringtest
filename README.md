@@ -101,6 +101,17 @@ na lista. Cada programa recebe o mesmo pedido de fechar que o botão X da janela
 ainda dá para salvar o que estiver aberto; nada é forçado. Antivírus, drivers e
 processos do Windows nunca entram na lista.
 
+O botão **Teste de estresse**, na aba CPU, põe carga controlada no processador para ver
+como ele se comporta sob pressão. Você escolhe quantas threads e por quanto tempo; o teste
+para sozinho ao chegar perto do limite de temperatura configurado, ao fim do tempo, ou
+quando você mandar. No fim ele relata temperatura e potência máximas e a faixa de clock —
+e, se o clock caiu mais de 10% com a carga constante, aponta redução térmica, que é o
+achado que justifica um teste desses viver dentro de um monitor.
+
+Só a CPU é testada. GPU exigiria uma carga gráfica real, com dependência de renderização,
+e um teste de RAM que apenas aloca blocos empurra o sistema para o arquivo de paginação
+sem medir nada útil.
+
 Os perfis Econômico e Equilibrado trocam o plano do Windows pelo `powercfg`. Quando o plano de
 alto desempenho vem oculto na instalação, o app o duplica antes de ativar. Se a troca
 falhar, o painel volta a marcar o plano que está realmente em vigor.
@@ -133,6 +144,8 @@ src/MonitorPC/
   Views/ComponentesWindow.xaml  quantidades e watts por unidade
   Views/LinhaDeAjuste.cs    uma linha de ajuste (contador ou número)
   Services/PerformanceService.cs  ações do Modo Desempenho
+  Services/StressService.cs       carga de CPU controlada
+  Views/EstresseWindow.xaml       a tela do teste de estresse
   Services/DiskLogService.cs      registro de picos de disco
   Views/LogDiscoWindow.xaml       a tela do log
   Views/DesempenhoWindow.xaml     a tela do Modo Desempenho
