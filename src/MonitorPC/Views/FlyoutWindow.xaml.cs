@@ -68,7 +68,13 @@ public partial class FlyoutWindow : Window
         // ou o icone da bandeja.
         Deactivated += (_, _) =>
         {
-            if (_cfg.FecharAoPerderFoco) Esconder();
+            if (!_cfg.FecharAoPerderFoco) return;
+
+            // Abrir uma tela filha tira o foco do painel: esconde-lo aqui faria
+            // a tela perder a referencia de onde se posicionar.
+            if (OwnedWindows.Count > 0) return;
+
+            Esconder();
         };
     }
 

@@ -46,7 +46,10 @@ public static class Janelas
             var area = SystemParameters.WorkArea;
             double direita, baixo;
 
-            if (dono is { IsVisible: true, ActualHeight: > 0 })
+            // Nao exige que o dono esteja visivel: uma janela escondida mantem
+            // posicao e tamanho, e e por eles que a tela deve se guiar.
+            if (dono is { ActualWidth: > 0, ActualHeight: > 0 } &&
+                !double.IsNaN(dono.Left) && !double.IsNaN(dono.Top))
             {
                 direita = dono.Left + dono.ActualWidth;
                 baixo = dono.Top + dono.ActualHeight;
