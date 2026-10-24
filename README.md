@@ -159,6 +159,7 @@ src/MonitorPC/
   Services/ConsumoService.cs      registro de consumo por dia, em txt
   Services/GpuProcessService.cs   uso da placa de vídeo por programa
   Views/GpuProcessosWindow.xaml   a tela de GPU por programa
+  Views/LinhaDeProcessoGpu.cs     uma linha dessa tela, com o botão de fechar
   Models/Teto.cs                  um valor máximo e a procedência dele
   Models/CurvaDeVentoinha.cs      curva rotação x PWM aprendida
   Services/CatalogoService.cs     ficha técnica por modelo, embutida e atualizável
@@ -296,6 +297,17 @@ A leitura é feita com PDH, uma consulta só com instância curinga, e os nomes 
 contadores são pedidos em inglês via `PdhAddEnglishCounter`: num Windows em
 português os objetos aparecem traduzidos, e um caminho montado com o nome
 traduzido só funcionaria naquele idioma.
+
+A tela abre pelo cartão **GPU** na aba Geral, ao lado do de RAM: são a mesma
+pergunta sobre peças diferentes. Cada linha tem um X que pede ao programa para
+fechar, como o X da janela dele — nada é forçado, e um jogo em tela cheia
+costuma ignorar o pedido. O pedido vai pelo PID, e não pelo nome: um navegador
+tem muitos processos e só um costuma estar usando a placa. Processos do sistema
+e de segurança aparecem na lista, para a conta fechar, mas sem o botão.
+
+A lista congela enquanto o cursor está sobre ela. A ordem muda a cada leitura, e
+um botão de fechar que se move debaixo do cursor faria o clique cair no programa
+errado.
 
 A porcentagem mostrada é a do motor mais ocupado por aquele programa, não a soma
 de todos — somar daria mais de 100% num jogo que usa 3D e Copy ao mesmo tempo, e

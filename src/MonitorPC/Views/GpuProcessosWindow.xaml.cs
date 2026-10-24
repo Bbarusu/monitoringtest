@@ -14,7 +14,7 @@ namespace MonitorPC.Views;
 public partial class GpuProcessosWindow : Window
 {
     /// <summary>
-    /// Uma linha a mais que o costume: aqui a lista e a tela inteira, e cortar
+    /// Uma lista mais longa que o costume: aqui ela e a tela inteira, e cortar
     /// em tres esconderia justamente o processo inesperado.
     /// </summary>
     private const int Linhas = 8;
@@ -38,7 +38,7 @@ public partial class GpuProcessosWindow : Window
 
         _gpu = new GpuProcessService();
 
-        Sincronizar(Linhas);
+        Sincronizar();
 
         if (!_gpu.Disponivel)
         {
@@ -46,18 +46,15 @@ public partial class GpuProcessosWindow : Window
             Aviso.Visibility = Visibility.Visible;
             Aviso.Text = _gpu.Motivo ?? "Os contadores de GPU não responderam.";
 
-            ((LinhaDeDisco)Lista.Children[0]).Vazia("Sem leitura");
-            for (var i = 1; i < Linhas; i++) ((LinhaDeDisco)Lista.Children[i]).Vazia("");
+            Linha(0).Vazia("Sem leitura");
 
             _relogio = new DispatcherTimerLeve(TimeSpan.FromDays(1), () => { });
             Closed += (_, _) => { _fechada = true; _relogio.Parar(); _gpu.Dispose(); };
             return;
         }
 
-        ((LinhaDeDisco)Lista.Children[0]).Vazia("Medindo…");
-        for (var i = 1; i < Linhas; i++) ((LinhaDeDisco)Lista.Children[i]).Vazia("");
-
         Subtitulo.Text = "Quem está ocupando a placa agora, atualizado a cada segundo.";
+        Linha(0).Vazia("Medindo…");
 
         // Um segundo: a ocupação é medida por tempo, e um intervalo mais curto
         // daria um número que pula sem querer dizer nada.
@@ -71,9 +68,17 @@ public partial class GpuProcessosWindow : Window
         };
     }
 
+    private LinhaDeProcessoGpu Linha(int i) => (LinhaDeProcessoGpu)Lista.Children[i];
+
     private async void Atualizar()
     {
         if (_medindo) return;
+
+        // Enquanto o cursor está sobre a lista, ela congela. A ordem muda a cada
+        // leitura, e um botão de fechar que se move debaixo do cursor faria o
+        // clique cair no programa errado.
+        if (Lista.IsMouseOver) return;
+
         _medindo = true;
 
         IReadOnlyList<ProcessoGpu> processos;
@@ -110,11 +115,9 @@ public partial class GpuProcessosWindow : Window
 
     private void Mostrar(IReadOnlyList<ProcessoGpu> processos)
     {
-        var maior = processos.Count > 0 ? processos.Max(p => p.UsoPct) : 0;
-
         for (var i = 0; i < Linhas; i++)
         {
-            var linha = (LinhaDeDisco)Lista.Children[i];
+            var linha = Linha(i);
 
             if (i >= processos.Count)
             {
@@ -123,30 +126,38 @@ public partial class GpuProcessosWindow : Window
             }
 
             var p = processos[i];
-
-            var detalhe = $"PID {p.Pid}";
-            if (p.Motor is { } motor) detalhe += $" · {motor}";
-            if (p.VramMb >= 1) detalhe += $" · {p.VramMb:F0} MB de VRAM";
-
-            linha.Atualizar(
-                p.Nome,
-                detalhe,
-                p.UsoPct >= 0.1 ? $"{p.UsoPct:0.0}%" : "—",
-
-                // A barra compara com o maior da lista, e não com 100%: assim a
-                // diferença entre o primeiro e o segundo fica visível mesmo
-                // quando todos estão em poucos por cento.
-                maior > 0 ? p.UsoPct / maior * 100 : 0);
+            linha.Atualizar(p, PerformanceService.EhProtegido(p.Nome, p.Pid));
         }
     }
 
-    private void Sincronizar(int quantidade)
+    private void Sincronizar()
     {
-        while (Lista.Children.Count > quantidade)
+        while (Lista.Children.Count > Linhas)
             Lista.Children.RemoveAt(Lista.Children.Count - 1);
 
-        while (Lista.Children.Count < quantidade)
-            Lista.Children.Add(new LinhaDeDisco());
+        while (Lista.Children.Count < Linhas)
+        {
+            var linha = new LinhaDeProcessoGpu();
+            linha.PediuParaFechar += Fechar;
+            Lista.Children.Add(linha);
+        }
+
+        for (var i = 0; i < Linhas; i++) Linha(i).Vazia("");
+    }
+
+    /// <summary>
+    /// Pede para o programa fechar, pelo PID e nao pelo nome: um navegador tem
+    /// muitos processos, e so um deles costuma estar usando a placa. Fechar
+    /// todos com o mesmo nome levaria o navegador inteiro junto.
+    /// </summary>
+    private void Fechar(ProcessoGpu p)
+    {
+        var (fechados, _) = PerformanceService.Fechar(new[] { p.Pid });
+
+        Rodape.Text = fechados == 0
+            ? $"{p.Nome} não aceitou fechar. Pode estar em tela cheia, sem janela " +
+              "ou aguardando resposta."
+            : $"{p.Nome}: pedido de fechar enviado.";
     }
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();

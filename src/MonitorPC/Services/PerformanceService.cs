@@ -83,6 +83,14 @@ public static class PerformanceService
     }
 
     /// <summary>
+    /// Se este processo e um dos que nunca podem ser fechados pelo app, ou o
+    /// proprio app. As telas usam isto para nao oferecer um botao que o
+    /// <see cref="Fechar"/> recusaria em silencio.
+    /// </summary>
+    public static bool EhProtegido(string nome, int pid) =>
+        pid == Environment.ProcessId || Protegidos.Contains(nome);
+
+    /// <summary>
     /// Pede para o processo fechar pela janela, como se o usuario clicasse no X,
     /// para ele poder salvar o que estiver aberto. Nada e forcado.
     /// </summary>

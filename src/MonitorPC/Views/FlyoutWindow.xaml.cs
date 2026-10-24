@@ -1406,10 +1406,11 @@ public partial class FlyoutWindow : Window
     }
 
     /// <summary>
-    /// A mesma ideia do cartão de RAM, do outro lado: ali é quem ocupa a
-    /// memória, aqui é quem ocupa a placa de vídeo.
+    /// O par do cartão de RAM: ali é quem ocupa a memória, aqui é quem ocupa a
+    /// placa de vídeo. Os dois ficam lado a lado na aba Geral e abrem do mesmo
+    /// jeito, porque são a mesma pergunta sobre peças diferentes.
     /// </summary>
-    private void GpuProcessos_Click(object sender, RoutedEventArgs e) =>
+    private void CardGpu_Click(object sender, RoutedEventArgs e) =>
         new GpuProcessosWindow { Owner = this }.ShowDialog();
 
     private void CardRam_Click(object sender, RoutedEventArgs e) =>

@@ -62,11 +62,30 @@
                 </StackPanel>
             </Border>
 
+            <!-- Risco de fechar -->
+            <Border Margin="0,10,0,0" CornerRadius="12" Background="{DynamicResource AvisoFundo}"
+                    BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1" Padding="12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Path Grid.Column="0" Data="M12,3 L22,21 L2,21 Z M12,10 L12,15 M12,18 L12,18.01"
+                          Stroke="{DynamicResource AvisoIcone}" StrokeThickness="2" StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                          Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Top"
+                          Margin="0,2,10,0" />
+                    <TextBlock Grid.Column="1" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource AlertaTexto}"
+                               Text="O X pede para o programa fechar, como o X da janela dele — nada é forçado, e trabalho não salvo ainda pode se perder. Um jogo em tela cheia costuma ignorar o pedido. Faça por sua conta e risco." />
+                </Grid>
+            </Border>
+
             <Button Style="{StaticResource BotaoLargo}" Margin="0,16,0,0"
                     Content="Fechar" Click="Voltar_Click" />
 
-            <TextBlock FontSize="11" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap"
-                       Foreground="{DynamicResource TextoMuitoFraco}"
+            <TextBlock x:Name="Rodape" FontSize="11" Margin="0,8,0,0" TextAlignment="Center"
+                       TextWrapping="Wrap" Foreground="{DynamicResource TextoMuitoFraco}"
                        Text="Os números vêm dos contadores do Windows, não de um sensor da placa: é o agendador gráfico que sabe repartir o uso por programa." />
 
         </StackPanel>
