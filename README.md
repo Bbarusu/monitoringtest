@@ -156,6 +156,7 @@ src/MonitorPC/
   Services/PerformanceService.cs  ações do Modo Desempenho
   Services/StressService.cs       carga de CPU controlada
   Views/SensoresWindow.xaml       lista de todos os sensores
+  Services/ConsumoService.cs      registro de consumo por dia, em txt
   Services/GpuProcessService.cs   uso da placa de vídeo por programa
   Views/GpuProcessosWindow.xaml   a tela de GPU por programa
   Models/Teto.cs                  um valor máximo e a procedência dele
@@ -260,6 +261,28 @@ sai dos próprios sensores, de duas formas:
 
 Ventoinhas em controladora externa ou travadas pela BIOS aparecem na lista como
 não comandáveis: a rotação é visível, mas o teto não pode ser medido.
+
+## Registro de consumo
+
+`%APPDATA%\MonitorPC\consumo.txt` guarda o consumo de cada dia: kWh, tempo com o
+app aberto, média e pico. O botão na aba Energia abre o arquivo. Ele é gravado
+junto com os sensores lentos, de 30 em 30 segundos, e de novo ao fechar o app.
+
+É um arquivo só, com a parte de cima para ler e a de baixo para o app reabrir na
+próxima sessão. Dois arquivos seriam mais fáceis de programar e um deles ficaria
+desatualizado sem ninguém perceber.
+
+Duas ressalvas que o arquivo e a tela repetem, porque sem elas o número engana:
+
+- **É estimativa.** Só CPU e placa de vídeo vêm de sensor. Pentes de RAM,
+  discos, ventoinhas, placa-mãe e LEDs entram pelos watts por unidade
+  configurados em Componentes de energia.
+- **Só conta com o app aberto.** O que o PC gasta com ele fechado não entra e
+  não há como recuperar depois. Por isso a coluna "aberto" fica ao lado do kWh:
+  sem ela, 0,8 kWh não diz se foram três horas ou doze.
+
+O valor é o consumo dos componentes. Para a tomada, divida pela eficiência da
+fonte — é o que o campo "Na tomada" faz.
 
 ## GPU por programa
 

@@ -327,6 +327,9 @@ public partial class App : Application
         Tentar(() => _bandeja.Dispose());
         Tentar(() => _sensores.Dispose());
         Tentar(() => _painel.GravarMaximos());
+
+        // O ultimo trecho de consumo, entre a gravacao de 30 s e agora.
+        Tentar(() => _sensores.Consumo.Gravar());
         Tentar(() => _cfg.Salvar());
         Tentar(() => { if (_iconeAtual is not null) DestroyIcon(_iconeAtual.Handle); });
 

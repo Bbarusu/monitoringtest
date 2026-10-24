@@ -912,7 +912,7 @@ public partial class FlyoutWindow : Window
     {
         Titulo.Text = "Energia";
         Chips(Icone.Raio, $"{s.WattsTotais:F0} W",
-              Icone.Relogio, $"{Kwh(s.WhAcumulado)} na sessão");
+              Icone.Relogio, $"{Energia(s.WhAcumulado)} na sessão");
 
         EnergiaWattsTexto.Text = $"{s.WattsTotais:F0}";
 
@@ -925,7 +925,13 @@ public partial class FlyoutWindow : Window
             ? $"de {_cfg.CapacidadeFonteW} W"
             : "Potência agora";
 
-        EnergiaSessaoTexto.Text = Kwh(s.WhAcumulado);
+        EnergiaSessaoTexto.Text = Energia(s.WhAcumulado);
+        EnergiaHojeTexto.Text = Energia(s.WhDeHoje);
+
+        LegendaDoConsumo.Text =
+            "Estimativa, e só com o app aberto: CPU e placa de vídeo vêm de sensor, " +
+            "o resto é a conta montada em Componentes. O tempo com o app fechado não " +
+            "entra. O registro por dia fica guardado em arquivo.";
         EnergiaMediaTexto.Text = $"{s.WattsMedia:F0} W";
         EnergiaPicoTexto.Text = $"{s.WattsPico:F0} W";
         EnergiaTomadaTexto.Text = _cfg.EficienciaFonte > 0
@@ -975,14 +981,16 @@ public partial class FlyoutWindow : Window
     }
 
     /// <summary>
-    /// Sempre em kWh, que e a unidade da conta de luz. Nos primeiros minutos o
-    /// valor e pequeno, entao as casas decimais acompanham a grandeza.
+    /// Watt-hora enquanto o número é pequeno, kWh depois.
+    ///
+    /// Antes era sempre kWh com duas casas, e isso fazia o contador parecer
+    /// travado: a 90 W, um PC leva quase sete minutos para andar de 0,01 para
+    /// 0,02 kWh, e nesse meio tempo o número não mexia. Em Wh com uma casa ele
+    /// anda a cada poucos segundos, que é o que se espera de um contador.
+    /// O kWh volta a partir de 1 kWh, que é a unidade da conta de luz.
     /// </summary>
-    private static string Kwh(double wh)
-    {
-        var kwh = wh / 1000.0;
-        return kwh < 0.01 ? $"{kwh:0.000} kWh" : $"{kwh:0.00} kWh";
-    }
+    private static string Energia(double wh) =>
+        wh < 1000 ? $"{wh:0.0} Wh" : $"{wh / 1000.0:0.00} kWh";
 
     private static string DescricaoDosOutros(Snapshot s)
     {
@@ -1372,6 +1380,29 @@ public partial class FlyoutWindow : Window
         if (sender is not LinhaDeDisco { Pid: { } pid, NomeDoProcesso: { } nome }) return;
 
         new ArquivosWindow(pid, nome) { Owner = this }.ShowDialog();
+    }
+
+    /// <summary>
+    /// Abre o registro de consumo no bloco de notas, ou no que o Windows tiver
+    /// associado a .txt. Grava antes: senão o arquivo mostraria o estado de até
+    /// trinta segundos atrás, ou nem existiria na primeira vez.
+    /// </summary>
+    private void RegistroDeConsumo_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _sensores.Consumo.Gravar();
+
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = ConsumoService.Caminho,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Abrir registro de consumo", ex);
+        }
     }
 
     /// <summary>

@@ -73,6 +73,12 @@ public sealed class Snapshot
     public IReadOnlyDictionary<string, string> ChavesDeVentoinha { get; init; }
         = new Dictionary<string, string>();
 
+    /// <summary>Consumo registrado hoje, somando as sessoes anteriores.</summary>
+    public double WhDeHoje { get; init; }
+
+    /// <summary>Tudo que o registro acumulou, desde o primeiro dia gravado.</summary>
+    public double WhRegistrado { get; init; }
+
     // Energia
     public double WattsEstimados { get; init; }
     public double WattsTotais { get; init; }

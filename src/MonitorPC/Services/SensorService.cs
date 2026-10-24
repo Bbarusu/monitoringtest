@@ -46,6 +46,12 @@ public sealed class SensorService : IDisposable
     /// </summary>
     public EspecificacaoService Especificacoes { get; }
 
+    /// <summary>
+    /// Registro de consumo por dia, em arquivo. Fica aqui porque e aqui que o
+    /// intervalo entre duas leituras e conhecido, e e dele que sai o watt-hora.
+    /// </summary>
+    public ConsumoService Consumo { get; } = new();
+
     private CalibracaoService? _calibracao;
 
     /// <summary>
@@ -227,6 +233,8 @@ public sealed class SensorService : IDisposable
             _wattsSoma += total;
             _wattsPico = Math.Max(_wattsPico, total);
             _leiturasDeEnergia++;
+
+            Consumo.Somar(total, dt);
         }
 
         // Sensores lentos: vida util e espaco livre nao precisam de 1 s.
@@ -235,6 +243,11 @@ public sealed class SensorService : IDisposable
             _ultimoLento = agora;
             DetectarQuantidades();
             RecalcularEstimativa();
+
+            // Grava junto com os sensores lentos, nao a cada leitura: um arquivo
+            // de poucos kilobytes reescrito de 30 em 30 segundos nao se nota, e
+            // uma queda de energia perde no maximo meio minuto de registro.
+            Consumo.Gravar();
         }
 
         var pares = ParesDeVentoinha();
@@ -314,6 +327,8 @@ public sealed class SensorService : IDisposable
             WattsEstimados = _wattsEstimados,
             WattsTotais = total,
             WhAcumulado = _whAcumulado,
+            WhDeHoje = Consumo.WhDeHoje,
+            WhRegistrado = Consumo.WhTotal,
             WattsMedia = _leiturasDeEnergia > 0 ? _wattsSoma / _leiturasDeEnergia : 0,
             WattsPico = _wattsPico,
             ModulosRam = ModulosRam.Valor,
