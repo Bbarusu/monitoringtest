@@ -545,11 +545,18 @@ public partial class FlyoutWindow : Window
 
             if (i >= processos.Count)
             {
+                linha.Pid = null;
+                linha.Cursor = null;
+                linha.ToolTip = null;
                 linha.Vazia(i == 0 ? "Nenhum processo lendo ou escrevendo" : "");
                 continue;
             }
 
             var p = processos[i];
+            linha.Pid = p.Pid;
+            linha.NomeDoProcesso = p.Nome;
+            linha.Cursor = System.Windows.Input.Cursors.Hand;
+            linha.ToolTip = "Clique para ver os arquivos abertos";
             linha.Atualizar(
                 p.Nome,
                 $"PID {p.Pid} · leitura {p.LeituraMbs:0.0} · escrita {p.EscritaMbs:0.0} MB/s",
@@ -563,7 +570,11 @@ public partial class FlyoutWindow : Window
         while (ListaDisco.Children.Count > quantidade)
             ListaDisco.Children.RemoveAt(ListaDisco.Children.Count - 1);
         while (ListaDisco.Children.Count < quantidade)
-            ListaDisco.Children.Add(new LinhaDeDisco());
+        {
+            var linha = new LinhaDeDisco();
+            linha.MouseLeftButtonUp += Processo_Clicado;
+            ListaDisco.Children.Add(linha);
+        }
     }
 
     private void AplicarEnergia(Snapshot s)
@@ -1014,6 +1025,16 @@ public partial class FlyoutWindow : Window
 
         // A estimativa muda o anel e a faixa: repinta sem esperar a leitura.
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
+    }
+
+    /// <summary>
+    /// Em "Unidades" a linha nao tem processo, entao nao abre nada.
+    /// </summary>
+    private void Processo_Clicado(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is not LinhaDeDisco { Pid: { } pid, NomeDoProcesso: { } nome }) return;
+
+        new ArquivosWindow(pid, nome) { Owner = this }.ShowDialog();
     }
 
     private void CardRam_Click(object sender, RoutedEventArgs e) =>

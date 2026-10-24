@@ -99,6 +99,12 @@ public sealed class LinhaDeDisco : StackPanel
         ToolTip = null;
     }
 
+    /// <summary>PID do processo desta linha, quando houver. Nulo para unidades.</summary>
+    public int? Pid { get; set; }
+
+    /// <summary>Nome do processo desta linha, para a tela de arquivos.</summary>
+    public string? NomeDoProcesso { get; set; }
+
     public void Atualizar(string nome, string detalhe, string valor, double porcentagem)
     {
         _nome.Foreground = ThemeService.Pincel("Texto");

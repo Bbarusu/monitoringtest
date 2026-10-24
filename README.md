@@ -63,6 +63,13 @@ O botão **Ver log detalhado**, na aba Disco, abre o log: registra quem passou d
 limite de MB/s que você definir, guarda os últimos 15 minutos e exporta em `.txt` com
 nome e caminho de cada processo. O registro corre enquanto a tela está aberta.
 
+Clicar em um processo — no log, na aba Disco ou na lista de memória — mostra **quais
+arquivos ele tem abertos agora**. É a via leve: em vez de acompanhar cada leitura e
+escrita pelo rastreamento de eventos do Windows, que gera milhares de eventos por segundo
+e deixa uma sessão ativa no sistema, a consulta olha a tabela de descritores sob demanda.
+Não dá a vazão por arquivo, mas responde qual arquivo o processo está mexendo. Processos
+protegidos não permitem a inspeção.
+
 Cada evento traz também a unidade que estava **mais ativa naquele momento**, e o seletor
 filtra por ela. É uma pista, não uma atribuição exata: os contadores por processo do
 Windows informam quantos bytes cada programa leu e escreveu, mas não em qual disco. Saber
@@ -103,6 +110,8 @@ src/MonitorPC/
   Services/PowerService.cs  perfis de energia
   Services/AlertService.cs  quando a temperatura passa do limite
   Services/ThemeService.cs  paleta clara e escura
+  Services/OpenFilesService.cs  arquivos abertos por um processo
+  Views/ArquivosWindow.xaml     a lista de arquivos abertos
   Views/MemoriaWindow.xaml  programas por consumo de memória
   Views/ComponentesWindow.xaml  quantidades e watts por unidade
   Views/LinhaDeAjuste.cs    uma linha de ajuste (contador ou número)

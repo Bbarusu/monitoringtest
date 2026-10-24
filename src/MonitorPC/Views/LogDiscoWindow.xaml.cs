@@ -136,7 +136,7 @@ public partial class LogDiscoWindow : Window
 
     private UIElement MontarLinha(EventoDeDisco ev)
     {
-        var linha = new Grid { Margin = new Thickness(0, 8, 0, 8) };
+        var linha = new Grid();
         linha.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
         linha.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         linha.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -198,10 +198,30 @@ public partial class LogDiscoWindow : Window
             dica += $"\n\nUnidade mais ativa no momento: {ev.DiscoAtivo}\n" +
                     "Os contadores por processo não dizem em qual disco o acesso ocorreu.";
         linha.ToolTip = dica;
-        return linha;
+
+        // A linha vira botao: abre os arquivos abertos daquele processo.
+        var botao = new Button
+        {
+            Content = linha,
+            Tag = ev,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Margin = new Thickness(0, 2, 0, 2),
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Template = (ControlTemplate)FindResource("LinhaClicavel")
+        };
+        botao.Click += Evento_Click;
+
+        return botao;
     }
 
     // ------------------------------------------------------------------
+
+    private void Evento_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: EventoDeDisco ev }) return;
+
+        new ArquivosWindow(ev.Pid, ev.Nome) { Owner = this }.ShowDialog();
+    }
 
     private void Exportar_Click(object sender, RoutedEventArgs e)
     {

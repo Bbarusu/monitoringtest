@@ -104,13 +104,35 @@ public partial class MemoriaWindow : Window
             linha.Children.Add(fechar);
         }
 
-        linha.ToolTip = p.Titulo;
-        return linha;
+        linha.ToolTip = $"{p.Titulo}\n\nClique para ver os arquivos abertos";
+        linha.Cursor = System.Windows.Input.Cursors.Hand;
+
+        var botao = new Button
+        {
+            Content = linha,
+            Tag = p,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Template = (ControlTemplate)FindResource("LinhaClicavel")
+        };
+        botao.Click += Linha_Click;
+
+        return botao;
+    }
+
+    private void Linha_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: ProcessoMemoria p }) return;
+
+        new ArquivosWindow(p.Pid, p.Nome) { Owner = this }.ShowDialog();
     }
 
     private void Fechar_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: string nome }) return;
+
+        // O X fica dentro da linha clicavel: sem isto, fechar tambem abriria a
+        // tela de arquivos.
+        e.Handled = true;
 
         var fechados = PerformanceService.FecharPorNome(nome);
 
