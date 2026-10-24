@@ -377,8 +377,11 @@ public partial class FlyoutWindow : Window
     }
 
     /// <summary>
-    /// Uma diferenca grande entre o hot spot e a borda costuma indicar contato
-    /// ruim do dissipador ou pasta termica ressecada.
+    /// O hot spot fica naturalmente acima da borda: nas RDNA3 uma diferenca de
+    /// 15 a 25 °C sob carga e esperada. So passa a sugerir contato ruim do
+    /// dissipador acima disso, ou quando o proprio hot spot encosta no teto de
+    /// 110 °C — e nenhum dos dois significa muita coisa com a GPU ociosa, quando
+    /// os dois sensores quase se encontram.
     /// </summary>
     private void AplicarHotSpot(Snapshot s)
     {
@@ -391,15 +394,20 @@ public partial class FlyoutWindow : Window
         }
 
         var delta = s.GpuTemp is { } borda && borda > 0 ? hot - borda : (float?)null;
-        var preocupante = delta >= 20;
+        // So vale julgar sob carga: parado, a diferenca some sozinha.
+        var sobCarga = s.GpuUso is > 30;
+        var preocupante = sobCarga && (delta >= 30 || hot >= 100);
 
         GpuHotTexto.Text = delta is { } d ? $"{hot:F0} °C  Δ{d:F0}" : $"{hot:F0} °C";
         GpuHotTexto.Foreground = preocupante ? Pincel("AlertaTexto") : Pincel("Texto");
 
         AvisoHotSpot.Visibility = preocupante ? Visibility.Visible : Visibility.Collapsed;
         if (preocupante)
-            TextoHotSpot.Text = $"Hot spot {delta:F0} °C acima da borda. " +
-                                "Pode indicar pasta térmica ressecada.";
+            TextoHotSpot.Text = hot >= 100
+                ? $"Hot spot em {hot:F0} °C. Perto do teto de 110 °C: vale olhar o " +
+                  "fluxo de ar do gabinete."
+                : $"Hot spot {delta:F0} °C acima da borda sob carga. Acima de 30 °C de " +
+                  "diferença, costuma ser contato irregular do dissipador.";
     }
 
     /// <summary>
