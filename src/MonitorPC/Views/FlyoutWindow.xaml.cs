@@ -1008,6 +1008,14 @@ public partial class FlyoutWindow : Window
 
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
 
+    private void Componentes_Click(object sender, RoutedEventArgs e)
+    {
+        new ComponentesWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
+
+        // A estimativa muda o anel e a faixa: repinta sem esperar a leitura.
+        if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
+    }
+
     private void CardRam_Click(object sender, RoutedEventArgs e) =>
         new MemoriaWindow(_sensores) { Owner = this }.ShowDialog();
 

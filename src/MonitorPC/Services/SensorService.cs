@@ -63,6 +63,16 @@ public sealed class SensorService : IDisposable
         Task.Run(LacoAsync);
     }
 
+    /// <summary>
+    /// Relê as quantidades e refaz a estimativa. Chamada quando a configuracao
+    /// muda, para o painel nao esperar o proximo ciclo de sensores lentos.
+    /// </summary>
+    public void AplicarConfiguracao()
+    {
+        DetectarQuantidades();
+        RecalcularEstimativa();
+    }
+
     /// <summary>O painel aberto le a cada 1 s; fechado, a cada 3 s.</summary>
     public void DefinirPainelAberto(bool aberto) => _painelAberto = aberto;
 

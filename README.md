@@ -39,6 +39,10 @@ passam a valer sobre a detecção.
 Os **watts por unidade**, a capacidade e a eficiência da fonte, e os limites de
 temperatura também ficam nesse arquivo.
 
+Tudo isso é editável pela tela **Configurar componentes**, na aba Energia: cada quantidade
+mostra se veio da detecção ou da mão, e há um botão para voltar à detecção. As mudanças
+valem na hora, sem reabrir o app.
+
 A aba Disco mede o uso por processo pelos contadores do próprio Windows, comparando
 duas amostras. Essa medição só roda enquanto a aba está aberta: varrer a lista de
 processos a cada segundo o tempo todo contrariaria a meta de não pesar no sistema.
@@ -100,6 +104,8 @@ src/MonitorPC/
   Services/AlertService.cs  quando a temperatura passa do limite
   Services/ThemeService.cs  paleta clara e escura
   Views/MemoriaWindow.xaml  programas por consumo de memória
+  Views/ComponentesWindow.xaml  quantidades e watts por unidade
+  Views/LinhaDeAjuste.cs    uma linha de ajuste (contador ou número)
   Services/PerformanceService.cs  ações do Modo Desempenho
   Services/DiskLogService.cs      registro de picos de disco
   Views/LogDiscoWindow.xaml       a tela do log
