@@ -83,15 +83,21 @@ public partial class ConfiguracaoWindow : Window
     private readonly List<LinhaDeSelecaoDeVentoinha> _linhasDeVentoinha = new();
 
     /// <summary>
-    /// Monta a lista na primeira leitura que trouxer ventoinhas. Fica aqui, e
-    /// nao no construtor, porque a tela pode abrir antes da primeira leitura
-    /// completa — e porque a lista precisa ser exatamente o conjunto que vira
-    /// barra, nao todos os canais da placa: marcar um conector vazio e esperar
-    /// uma barra que nunca aparece seria pior que nao oferecer a opcao.
+    /// Acrescenta as ventoinhas que ainda nao estao na lista.
+    ///
+    /// E chamada a cada leitura, e nao uma vez so, porque o conjunto cresce: o
+    /// servico so reconhece um canal depois de ve-lo girar, entao uma ventoinha
+    /// em modo silencioso aparece na tela no momento em que acorda. Linha
+    /// nenhuma e removida — uma ventoinha que para continua conectada, e some-la
+    /// faria a lista se mexer embaixo do cursor.
+    ///
+    /// O conjunto e exatamente o que vira barra. Oferecer todos os canais da
+    /// placa deixaria o usuario marcar um conector vazio e esperar uma barra que
+    /// nunca viria.
     /// </summary>
     private void MontarVentoinhas(Snapshot s)
     {
-        if (_linhasDeVentoinha.Count > 0 || s.Ventoinhas.Count == 0) return;
+        if (s.Ventoinhas.Count == 0) return;
 
         AjudaVentoinhas.Text =
             "Marque quais aparecem na aba CPU. A rotação ao lado é a de agora — " +
@@ -99,6 +105,8 @@ public partial class ConfiguracaoWindow : Window
 
         foreach (var nome in s.Ventoinhas.Keys.OrderBy(n => n, StringComparer.Ordinal))
         {
+            if (_linhasDeVentoinha.Any(l => l.Nome == nome)) continue;
+
             var chave = s.ChavesDeVentoinha.GetValueOrDefault(nome, nome);
 
             var linha = new LinhaDeSelecaoDeVentoinha(chave, nome, !_cfg.VentoinhasOcultas.Contains(chave));
@@ -154,10 +162,17 @@ public partial class ConfiguracaoWindow : Window
         // aberta e fechada antes da primeira leitura, a lista vazia apagaria o
         // que o usuário já tinha escolhido.
         if (_linhasDeVentoinha.Count > 0)
-            _cfg.VentoinhasOcultas = _linhasDeVentoinha
-                .Where(l => !l.Marcada)
-                .Select(l => l.Chave)
-                .ToList();
+        {
+            // Uma ventoinha que não girou nesta sessão ainda não tem linha, mas
+            // pode já estar oculta de antes. Sem preservá-la, ela voltaria a
+            // aparecer sozinha na próxima vez que acordasse.
+            var comLinha = _linhasDeVentoinha.Select(l => l.Chave).ToHashSet(StringComparer.Ordinal);
+
+            var ocultas = _cfg.VentoinhasOcultas.Where(c => !comLinha.Contains(c)).ToList();
+            ocultas.AddRange(_linhasDeVentoinha.Where(l => !l.Marcada).Select(l => l.Chave));
+
+            _cfg.VentoinhasOcultas = ocultas;
+        }
 
         _cfg.ConfiguracaoInicialFeita = true;
         _cfg.Salvar();

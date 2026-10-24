@@ -304,7 +304,7 @@ public partial class ComponentesWindow : Window
     /// externa nao aparecem: por isso vale conferir a conta a olho.
     /// </summary>
     private string VentoinhasSemLeitura() =>
-        _sensores.Ventoinhas.Manual ? "" : " · só conta as que reportam rotação";
+        _sensores.Ventoinhas.Manual ? "" : " · só conta as que já giraram desde que o app abriu";
 
     // ------------------------------------------------------------------
 

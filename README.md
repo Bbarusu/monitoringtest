@@ -200,9 +200,17 @@ Barras com teto real hoje: potência e temperatura da CPU, cada ventoinha da
 placa-mãe, VRAM, potência, ventoinha e temperatura de memória da GPU, e leitura,
 escrita e temperatura por unidade de disco.
 
+Um canal da placa-mãe só é reconhecido como ventoinha depois de ser visto
+girando. Girar é a única prova de que há algo espetado no conector: a leitura do
+momento não serve, porque a primeira leitura de um chip de placa-mãe é a menos
+confiável e conectores vazios podem devolver lixo nela. O conjunto só cresce, e
+por isso uma ventoinha em modo silencioso entra assim que acorda e continua
+listada quando volta a parar — aí aparece como "parada", em vez de sumir e fazer
+a aba pular de altura.
+
 As barras de ventoinha na aba CPU são controladas em **Ajustes → No painel**. A
 chave liga a visualização, e com ela ligada aparece a lista das ventoinhas
-detectadas, cada uma com a rotação de agora — que é como se descobre qual
+reconhecidas, cada uma com a rotação de agora — que é como se descobre qual
 conector é qual, já que "Fan #3" não diz nada. Desmarcadas, elas continuam sendo
 lidas: é dessa leitura que saem as curvas de PWM, a calibração e a tela de todos
 os sensores. Só a barra some.

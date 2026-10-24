@@ -15,8 +15,9 @@ public sealed class SensorService : IDisposable
     private readonly UpdateVisitor _visitor = new();
     private readonly CancellationTokenSource _cts = new();
 
-    // Fixadas por nome na primeira leitura: a ordem dos sensores nao e estavel
-    // e as colunas trocariam entre leituras.
+    // Fixadas por nome, e nao por posicao: a ordem dos sensores nao e estavel e
+    // as colunas trocariam entre leituras. Quem alimenta esta lista e
+    // AnotarVentoinhasConectadas, conforme os canais giram.
     private List<string> _nomesVentoinhas = new();
 
     private int _ramDetectado, _discosDetectado, _ventoinhasDetectado;
@@ -244,6 +245,8 @@ public sealed class SensorService : IDisposable
         foreach (var p in pares)
             Especificacoes.ObservarVentoinha(p.Chave, p.Rpm, p.Pwm);
 
+        AnotarVentoinhasConectadas(pares);
+
         var ventoinhas = new Dictionary<string, float>();
         var controles = new Dictionary<string, float>();
         foreach (var nome in _nomesVentoinhas)
@@ -324,6 +327,49 @@ public sealed class SensorService : IDisposable
     }
 
     // ------------------------------------------------------------------
+    // Quais ventoinhas existem de verdade
+
+    /// <summary>
+    /// Canais que ja giraram desde que o app abriu. Um conector vazio nunca
+    /// entra; uma ventoinha que esta parada agora continua dentro.
+    /// </summary>
+    private readonly HashSet<string> _ventoinhasConectadas = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Decide quais canais sao ventoinhas de verdade, pelo que giraram.
+    ///
+    /// A deteccao antiga olhava a leitura do momento e congelava: rodava pela
+    /// primeira vez logo depois de abrir a biblioteca, que e justamente a
+    /// leitura menos confiavel de um chip de placa-mae — canais sem nada
+    /// espetado podem devolver lixo ali — e depois refazia a lista a cada 30
+    /// segundos, com a mesma regra. Isso trazia conector vazio para dentro e
+    /// fazia a contagem oscilar quando uma ventoinha parava.
+    ///
+    /// Girar e a unica prova de que ha ventoinha no conector, e ela nao
+    /// expira: o conjunto so cresce, e por isso uma ventoinha em modo
+    /// silencioso entra assim que acorda e nao sai quando volta a parar.
+    /// </summary>
+    private void AnotarVentoinhasConectadas(List<ParDeVentoinha> pares)
+    {
+        var novidade = false;
+
+        foreach (var p in pares)
+            if (!p.Gpu && p.Rpm > 0 && _ventoinhasConectadas.Add(p.Nome))
+                novidade = true;
+
+        if (!novidade) return;
+
+        _nomesVentoinhas = _ventoinhasConectadas.OrderBy(n => n, StringComparer.Ordinal).ToList();
+        _ventoinhasDetectado = _nomesVentoinhas.Count;
+
+        Ventoinhas = (_cfg.VentoinhasManual ?? _ventoinhasDetectado,
+                      _cfg.VentoinhasManual.HasValue,
+                      _ventoinhasDetectado);
+
+        RecalcularEstimativa();
+    }
+
+    // ------------------------------------------------------------------
     // Quantidades e estimativa
 
     private void DetectarQuantidades()
@@ -334,17 +380,8 @@ public sealed class SensorService : IDisposable
 
         _discosDetectado = _pc.Hardware.Count(h => h.HardwareType == HardwareType.Storage);
 
-        _nomesVentoinhas = Todos()
-            .Where(x => x.Sensor.SensorType == SensorType.Fan
-                        && x.Sensor.Value > 0
-                        && !EhGpu(x.Hardware.HardwareType))
-            .Select(x => x.Sensor.Name)
-            .Distinct()
-            .OrderBy(n => n, StringComparer.Ordinal)
-            .ToList();
-
-        _ventoinhasDetectado = _nomesVentoinhas.Count;
-
+        // As ventoinhas nao sao contadas aqui: quem decide quais existem e o
+        // laco de leitura, em AnotarVentoinhasConectadas.
         ModulosRam = (_cfg.ModulosRamManual ?? _ramDetectado, _cfg.ModulosRamManual.HasValue, _ramDetectado);
         Discos = (_cfg.DiscosManual ?? _discosDetectado, _cfg.DiscosManual.HasValue, _discosDetectado);
         Ventoinhas = (_cfg.VentoinhasManual ?? _ventoinhasDetectado, _cfg.VentoinhasManual.HasValue, _ventoinhasDetectado);
@@ -401,8 +438,12 @@ public sealed class SensorService : IDisposable
     /// marra daria um PWM de outro conector, e a extrapolacao sairia errada sem
     /// dar sinal de que errou.
     /// </summary>
+    /// <summary>
+    /// Inclui os canais parados: uma ventoinha ja reconhecida que esta a zero
+    /// agora continua sendo uma ventoinha, e o painel precisa do PWM e da chave
+    /// dela para desenhar "parada" com a escala certa.
+    /// </summary>
     public List<ParDeVentoinha> ParesDeVentoinha() => Canais()
-        .Where(c => c.Rotacao.Value is > 0)
         .Select(c => new ParDeVentoinha(
             Chave(c.Peca, c.Rotacao), c.Rotacao.Name, c.Peca.Name.Trim(),
             EhGpu(c.Peca.HardwareType), c.Rotacao.Value!.Value, c.Controle?.Value))

@@ -588,13 +588,13 @@ public partial class FlyoutWindow : Window
                 teto.Explicacao("°C")));
         }
 
-        // Só as que estão girando: sete canais, com quatro vazios, encheriam a
-        // aba de barras zeradas. E quem não quiser nenhuma desliga nos Ajustes,
-        // porque numa placa cheia de conectores a aba fica longa demais.
+        // Só as ventoinhas de verdade chegam aqui: o serviço só reconhece um
+        // canal depois de vê-lo girar, então conector vazio não entra. Uma
+        // ventoinha parada continua aparecendo, como "parada" — some-la faria a
+        // aba pular de altura toda vez que ela desligasse.
         foreach (var (nome, rpm) in s.Ventoinhas.OrderBy(v => v.Key, StringComparer.Ordinal))
         {
             if (!_cfg.MostrarVentoinhasNaCpu) break;
-            if (rpm <= 0) continue;
 
             var chave = s.ChavesDeVentoinha.GetValueOrDefault(nome, nome);
 
@@ -608,10 +608,11 @@ public partial class FlyoutWindow : Window
             if (s.ControlesDeVentoinha.TryGetValue(nome, out var pwm))
                 dica += $"\nPWM agora: {pwm:F0}%.";
 
-            barras.Add((nome,
-                teto.Existe ? $"{rpm:F0} / {teto.Valor:F0} rpm" : $"{rpm:F0} rpm",
-                teto.Porcentagem(rpm),
-                dica));
+            var valor = rpm <= 0
+                ? "parada"
+                : teto.Existe ? $"{rpm:F0} / {teto.Valor:F0} rpm" : $"{rpm:F0} rpm";
+
+            barras.Add((nome, valor, teto.Porcentagem(rpm), dica));
         }
 
         // Sem barra nenhuma — um PC sem sensor de potência e com as ventoinhas
