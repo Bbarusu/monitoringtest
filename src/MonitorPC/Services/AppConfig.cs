@@ -85,6 +85,13 @@ public sealed class AppConfig
     public Dictionary<string, double> EscritaMaximaPorDisco { get; set; } = new();
 
     /// <summary>
+    /// Mostrar uma barra por ventoinha da placa-mae na aba CPU. Desligado em
+    /// placas com muitos conectores, onde a aba fica longa demais — a rotacao
+    /// continua sendo lida, e aparece na tela de todos os sensores.
+    /// </summary>
+    public bool MostrarVentoinhasNaCpu { get; set; } = true;
+
+    /// <summary>
     /// Buscar o catalogo de especificacoes atualizado. Um GET de poucos
     /// kilobytes no repositorio do app, no maximo uma vez por semana. Desligado,
     /// vale a copia que veio embutida.

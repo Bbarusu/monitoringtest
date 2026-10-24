@@ -564,7 +564,7 @@
 
             <!-- ======================== BASE: CPU ======================== -->
             <StackPanel x:Name="BaseCpu" Visibility="Collapsed">
-                <Grid Margin="0,16,0,10">
+                <Grid x:Name="RotuloBarrasCpu" Margin="0,16,0,10">
                     <TextBlock Text="Potência e resfriamento" FontSize="11"
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                 </Grid>

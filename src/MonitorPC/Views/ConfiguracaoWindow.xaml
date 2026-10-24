@@ -154,6 +154,27 @@
                 </Grid>
             </Border>
 
+            <!-- No painel -->
+            <TextBlock Text="No painel" FontSize="11" Margin="0,20,0,8"
+                       Foreground="{DynamicResource TextoFraco}" />
+
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" MaxWidth="280"
+                                HorizontalAlignment="Left">
+                        <TextBlock Text="Ventoinhas na aba CPU" FontSize="13" FontWeight="Medium"
+                                   Foreground="{DynamicResource Texto}" />
+                        <TextBlock x:Name="DetalheVentoinhas" FontSize="11" Margin="0,2,0,0"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextoFraco}"
+                                   Text="Uma barra por ventoinha da placa-mãe" />
+                    </StackPanel>
+                    <CheckBox x:Name="MostrarVentoinhas" Style="{StaticResource Interruptor}"
+                              HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
             <Button x:Name="BotaoConcluir" Style="{StaticResource BotaoLargo}" Height="48"
                     Margin="0,20,0,0" Click="Concluir_Click">
                 <TextBlock x:Name="TextoConcluir" Text="Concluir configuração" FontSize="14"

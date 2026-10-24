@@ -44,6 +44,15 @@ public partial class ConfiguracaoWindow : Window
         LimiteDisco.Value = Math.Clamp(_cfg.LimiteDisco, LimiteDisco.Minimum, LimiteDisco.Maximum);
         Notificar.IsChecked = _cfg.NotificarNoWindows;
         SugerirEconomico.IsChecked = _cfg.SugerirEconomico;
+        MostrarVentoinhas.IsChecked = _cfg.MostrarVentoinhasNaCpu;
+
+        // Quantas ventoinhas estao em jogo muda o peso da escolha: com duas, a
+        // aba mal cresce; com sete, ela dobra de altura.
+        var quantas = _sensores.Ventoinhas.Valor;
+        DetalheVentoinhas.Text = quantas > 0
+            ? $"Uma barra para cada uma das {quantas} ventoinhas detectadas, " +
+              "com a rotação máxima de cada"
+            : "Nenhuma ventoinha com leitura de rotação foi detectada";
 
         _carregando = false;
         AtualizarRotulos();
@@ -100,6 +109,7 @@ public partial class ConfiguracaoWindow : Window
         _cfg.LimiteDisco = LimiteDisco.Value;
         _cfg.NotificarNoWindows = Notificar.IsChecked == true;
         _cfg.SugerirEconomico = SugerirEconomico.IsChecked == true;
+        _cfg.MostrarVentoinhasNaCpu = MostrarVentoinhas.IsChecked == true;
         _cfg.ConfiguracaoInicialFeita = true;
         _cfg.Salvar();
 

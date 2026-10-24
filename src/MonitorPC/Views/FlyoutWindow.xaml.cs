@@ -586,9 +586,11 @@ public partial class FlyoutWindow : Window
         }
 
         // Só as que estão girando: sete canais, com quatro vazios, encheriam a
-        // aba de barras zeradas.
+        // aba de barras zeradas. E quem não quiser nenhuma desliga nos Ajustes,
+        // porque numa placa cheia de conectores a aba fica longa demais.
         foreach (var (nome, rpm) in s.Ventoinhas.OrderBy(v => v.Key, StringComparer.Ordinal))
         {
+            if (!_cfg.MostrarVentoinhasNaCpu) break;
             if (rpm <= 0) continue;
 
             var teto = s.ChavesDeVentoinha.TryGetValue(nome, out var chave)
@@ -604,6 +606,10 @@ public partial class FlyoutWindow : Window
                 teto.Porcentagem(rpm),
                 dica));
         }
+
+        // Sem barra nenhuma — um PC sem sensor de potência e com as ventoinhas
+        // desligadas na configuração —, o rótulo da seção ficaria sozinho.
+        RotuloBarrasCpu.Visibility = barras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         Desenhar(BarrasCpu, barras);
     }
