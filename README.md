@@ -12,6 +12,11 @@ O menu do ícone da bandeja é desenhado pelo próprio app, e não pelo menu pad
 Windows: aquele depende de o app virar primeiro plano para aparecer, e com um jogo em tela
 cheia o Windows nega esse pedido, deixando o menu atrás da barra de tarefas.
 
+O ícone de **todos os sensores**, no rodapé do painel, lista tudo que o hardware reporta,
+agrupado por componente e com filtro por nome: as temperaturas e tensões da placa-mãe, a
+potência por núcleo, as horas de cada disco — inclusive o que as abas não mostram. Os
+nomes sem rótulo vêm assim do próprio chip da placa.
+
 O ícone da bandeja mostra a temperatura da CPU: é desenhado a cada leitura, em um quadrado
 com a cor de destaque, e some do contorno quando os sensores de baixo nível não estão
 disponíveis.
@@ -51,10 +56,10 @@ passam a valer sobre a detecção.
 Os **watts por unidade**, a capacidade e a eficiência da fonte, e os limites de
 temperatura também ficam nesse arquivo.
 
-A **potência máxima da GPU** também fica lá: nenhum sensor informa esse teto, então ele
-vem da ficha técnica da placa e serve de escala para a barra de potência da aba GPU. Sem
-ele, a barra usa o maior valor já visto na sessão, que muda conforme a GPU é exigida e
-engana a leitura.
+A **potência máxima da GPU** também fica lá, mas vazia por padrão: o app guarda entre
+sessões a maior potência que os sensores já mediram e usa esse valor como escala da barra,
+que vai se aproximando do teto real conforme a GPU é exigida. Preencher o campo é só um
+atalho para quem sabe o número da ficha técnica.
 
 Tudo isso é editável pela tela **Configurar componentes**, na aba Energia: cada quantidade
 mostra se veio da detecção ou da mão, e há um botão para voltar à detecção. As mudanças
@@ -150,6 +155,7 @@ src/MonitorPC/
   Views/LinhaDeAjuste.cs    uma linha de ajuste (contador ou número)
   Services/PerformanceService.cs  ações do Modo Desempenho
   Services/StressService.cs       carga de CPU controlada
+  Views/SensoresWindow.xaml       lista de todos os sensores
   Views/EstresseWindow.xaml       a tela do teste de estresse
   Services/DiskLogService.cs      registro de picos de disco
   Views/LogDiscoWindow.xaml       a tela do log

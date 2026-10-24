@@ -64,6 +64,66 @@ public sealed class SensorService : IDisposable
     }
 
     /// <summary>
+    /// Tudo que os sensores reportam agora, agrupado por componente.
+    ///
+    /// O painel mostra o que cabe nas abas, mas o hardware expoe bem mais:
+    /// temperaturas e tensoes da placa-mae, potencia por nucleo, horas de disco.
+    /// Isto entrega a lista inteira, sem escolher por voce.
+    /// </summary>
+    public List<GrupoDeSensores> Tudo()
+    {
+        var grupos = new List<GrupoDeSensores>();
+
+        void Visitar(IHardware h, string? prefixo = null)
+        {
+            var nome = prefixo is null ? h.Name.Trim() : $"{prefixo} › {h.Name.Trim()}";
+
+            var leituras = h.Sensors
+                .Where(x => x.Value.HasValue)
+                .OrderBy(x => x.SensorType)
+                .ThenBy(x => x.Name, StringComparer.Ordinal)
+                .Select(x => new LeituraDeSensor(x.Name, x.SensorType.ToString(),
+                                                 x.Value!.Value, Unidade(x.SensorType)))
+                .ToList();
+
+            if (leituras.Count > 0)
+                grupos.Add(new GrupoDeSensores(nome, h.HardwareType.ToString(), leituras));
+
+            foreach (var sub in h.SubHardware) Visitar(sub, nome);
+        }
+
+        foreach (var h in _pc.Hardware) Visitar(h);
+
+        return grupos;
+    }
+
+    /// <summary>A unidade que a biblioteca usa para cada tipo de sensor.</summary>
+    private static string Unidade(SensorType tipo) => tipo switch
+    {
+        SensorType.Voltage => "V",
+        SensorType.Current => "A",
+        SensorType.Power => "W",
+        SensorType.Clock => "MHz",
+        SensorType.Temperature => "°C",
+        SensorType.Load => "%",
+        SensorType.Frequency => "Hz",
+        SensorType.Fan => "rpm",
+        SensorType.Flow => "L/h",
+        SensorType.Control => "%",
+        SensorType.Level => "%",
+        SensorType.Factor => "",
+        SensorType.Data => "GB",
+        SensorType.SmallData => "MB",
+        SensorType.Throughput => "B/s",
+        SensorType.TimeSpan => "s",
+        SensorType.Energy => "mWh",
+        SensorType.Noise => "dBA",
+        SensorType.Conductivity => "µS/cm",
+        SensorType.Humidity => "%",
+        _ => ""
+    };
+
+    /// <summary>
     /// Relê as quantidades e refaz a estimativa. Chamada quando a configuracao
     /// muda, para o painel nao esperar o proximo ciclo de sensores lentos.
     /// </summary>

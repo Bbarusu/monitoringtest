@@ -36,10 +36,8 @@ public partial class FlyoutWindow : Window
     /// <summary>-1 mostra o conjunto; acima disso, o indice da unidade escolhida.</summary>
     private int _discoEscolhido = -1;
 
-    // Potencia e rotacao nao tem limite informado por sensor, entao a barra usa
-    // como escala o maior valor visto desde que o app abriu.
-    private double _gpuWattsMax;
-    private double _gpuRpmMax;
+    /// <summary>Marca que ha maximo novo a gravar; o disco so e tocado ao fechar.</summary>
+    private bool _maximosMudaram;
 
     private Aba _aba = Aba.Geral;
     private bool _trocandoPerfil;
@@ -145,6 +143,19 @@ public partial class FlyoutWindow : Window
         _cfg.PosicaoY = Top;
     }
 
+    /// <summary>
+    /// Grava os maiores valores ja medidos. Chamado ao fechar o painel, nao a
+    /// cada leitura: sao poucos bytes, mas escrever a cada segundo nao se
+    /// justifica.
+    /// </summary>
+    public void GravarMaximos()
+    {
+        if (!_maximosMudaram) return;
+
+        _maximosMudaram = false;
+        _cfg.Salvar();
+    }
+
     /// <summary>Devolve o painel ao canto, pelo menu da bandeja.</summary>
     public void VoltarAoCanto()
     {
@@ -170,6 +181,7 @@ public partial class FlyoutWindow : Window
     public void Esconder()
     {
         _sensores.DefinirPainelAberto(false);
+        GravarMaximos();
 
         var fade = new DoubleAnimation(Opacity, 0, TimeSpan.FromMilliseconds(110));
         fade.Completed += (_, _) => Hide();
@@ -292,8 +304,19 @@ public partial class FlyoutWindow : Window
         if (_cfg.CapacidadeFonteW > 0)
             Guardar(_historicoEnergia, (float)(s.WattsTotais / _cfg.CapacidadeFonteW * 100));
 
-        if (s.GpuWatts is { } w) _gpuWattsMax = Math.Max(_gpuWattsMax, w);
-        if (s.GpuFanRpm is { } r) _gpuRpmMax = Math.Max(_gpuRpmMax, r);
+        // Os maximos ficam guardados entre sessoes: a escala das barras vem do
+        // que os sensores mediram, nao de um numero digitado.
+        if (s.GpuWatts is { } w && w > _cfg.PotenciaGpuMedida)
+        {
+            _cfg.PotenciaGpuMedida = w;
+            _maximosMudaram = true;
+        }
+
+        if (s.GpuFanRpm is { } r && r > _cfg.RotacaoGpuMedida)
+        {
+            _cfg.RotacaoGpuMedida = r;
+            _maximosMudaram = true;
+        }
 
         static void Guardar(Queue<double> fila, float? valor)
         {
@@ -430,23 +453,23 @@ public partial class FlyoutWindow : Window
             // Com a potencia maxima da placa informada, a barra passa a medir o
             // quanto dela esta em uso. Sem isso, o unico teto conhecido e o maior
             // valor ja visto, que muda durante a sessao e engana a leitura.
-            var teto = _cfg.PotenciaMaximaGpuW > 0 ? _cfg.PotenciaMaximaGpuW : _gpuWattsMax;
+            var teto = _cfg.PotenciaMaximaGpuW > 0 ? _cfg.PotenciaMaximaGpuW : _cfg.PotenciaGpuMedida;
 
             barras.Add(("Potência",
                 _cfg.PotenciaMaximaGpuW > 0 ? $"{w:F0} / {teto:F0} W" : $"{w:F0} W",
                 teto > 0 ? w / teto * 100 : 0,
                 _cfg.PotenciaMaximaGpuW > 0
                     ? $"Escala: potência máxima informada da placa ({teto:F0} W)"
-                    : $"Escala: maior valor visto nesta sessão ({_gpuWattsMax:F0} W). " +
-                      "Informe a potência máxima da placa em Energia › Configurar componentes."));
+                    : $"Escala: maior valor já medido pelos sensores ({teto:F0} W). " +
+                      "Sobe sozinho conforme a GPU é exigida."));
         }
 
         if (s.GpuFanRpm is { } rpm)
             barras.Add(("Ventilador",
                 rpm > 0 ? $"{rpm:F0} rpm" : "parado",
-                _gpuRpmMax > 0 ? rpm / _gpuRpmMax * 100 : 0,
-                _gpuRpmMax > 0
-                    ? $"Escala: maior valor visto nesta sessão ({_gpuRpmMax:F0} rpm)"
+                _cfg.RotacaoGpuMedida > 0 ? rpm / _cfg.RotacaoGpuMedida * 100 : 0,
+                _cfg.RotacaoGpuMedida > 0
+                    ? $"Escala: maior rotação já medida ({_cfg.RotacaoGpuMedida:F0} rpm)"
                     : "A ventoinha só liga sob carga"));
 
         if (s.GpuTempMemoria is { } tm && tm > 0)
@@ -1088,6 +1111,9 @@ public partial class FlyoutWindow : Window
     }
 
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
+
+    private void Sensores_Click(object sender, RoutedEventArgs e) =>
+        new SensoresWindow(_sensores) { Owner = this }.ShowDialog();
 
     private void Estresse_Click(object sender, RoutedEventArgs e) =>
         new EstresseWindow(_cfg, _sensores) { Owner = this }.ShowDialog();

@@ -147,7 +147,10 @@ public partial class ComponentesWindow : Window
     {
         // Nenhum sensor informa o teto da placa: ele vem da ficha tecnica.
         Fonte.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
-            "Potência máxima da GPU", "Da ficha técnica da placa · 0 usa o maior valor visto",
+            "Potência máxima da GPU",
+            _cfg.PotenciaGpuMedida > 0
+                ? $"0 usa o maior já medido: {_cfg.PotenciaGpuMedida:F0} W"
+                : "0 deixa o app descobrir pelos sensores",
             _cfg.PotenciaMaximaGpuW, 0, 800,
             v => { _cfg.PotenciaMaximaGpuW = (int)v; Salvar(); }, "W"));
 

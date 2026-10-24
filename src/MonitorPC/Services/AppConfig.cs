@@ -34,11 +34,20 @@ public sealed class AppConfig
     public bool TemWaterCooler { get; set; }
 
     /// <summary>
-    /// Potencia maxima da placa de video, em watts, como a fabricante anuncia.
-    /// Serve de escala para a barra de potencia da aba GPU. Zero usa o maior
-    /// valor visto na sessao, que e so um recurso enquanto nao se sabe o certo.
+    /// Potencia maxima da placa de video, em watts. Zero deixa o app descobrir
+    /// sozinho: ele guarda o maior valor que os sensores ja registraram, que vai
+    /// se aproximando do teto real conforme a GPU e exigida.
     /// </summary>
     public int PotenciaMaximaGpuW { get; set; }
+
+    /// <summary>
+    /// Maior potencia de GPU ja medida, mantida entre sessoes. E daqui que sai a
+    /// escala quando o teto nao foi informado a mao.
+    /// </summary>
+    public double PotenciaGpuMedida { get; set; }
+
+    /// <summary>Maior rotacao de ventoinha da GPU ja medida.</summary>
+    public double RotacaoGpuMedida { get; set; }
 
     // --- Fonte ---
     public double EficienciaFonte { get; set; } = 0.85;

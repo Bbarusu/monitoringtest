@@ -326,6 +326,7 @@ public partial class App : Application
         Tentar(() => _bandeja.Visible = false);
         Tentar(() => _bandeja.Dispose());
         Tentar(() => _sensores.Dispose());
+        Tentar(() => _painel.GravarMaximos());
         Tentar(() => _cfg.Salvar());
         Tentar(() => { if (_iconeAtual is not null) DestroyIcon(_iconeAtual.Handle); });
 
