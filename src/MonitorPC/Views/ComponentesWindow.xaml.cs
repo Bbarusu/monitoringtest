@@ -17,6 +17,7 @@ public partial class ComponentesWindow : Window
     public ComponentesWindow(AppConfig cfg, SensorService sensores)
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
         _cfg = cfg;
         _sensores = sensores;
 
@@ -235,9 +236,4 @@ public partial class ComponentesWindow : Window
         Janelas.Ancorar(this, Owner);
     }
 
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Reposicionar();
-    }
 }

@@ -21,6 +21,7 @@ public partial class ConfiguracaoWindow : Window
     public ConfiguracaoWindow(AppConfig cfg, SensorService sensores, bool primeiraVez)
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
         _cfg = cfg;
         _sensores = sensores;
         _primeiraVez = primeiraVez;
@@ -108,9 +109,4 @@ public partial class ConfiguracaoWindow : Window
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Janelas.Ancorar(this, Owner);
-    }
 }

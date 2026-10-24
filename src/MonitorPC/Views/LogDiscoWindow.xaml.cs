@@ -19,6 +19,7 @@ public partial class LogDiscoWindow : Window
     public LogDiscoWindow(AppConfig cfg, SensorService sensores)
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
         _cfg = cfg;
         _sensores = sensores;
         _log = new DiskLogService(cfg);
@@ -231,14 +232,4 @@ public partial class LogDiscoWindow : Window
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 
-    private void Reposicionar()
-    {
-        Janelas.Ancorar(this, Owner);
-    }
-
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Reposicionar();
-    }
 }

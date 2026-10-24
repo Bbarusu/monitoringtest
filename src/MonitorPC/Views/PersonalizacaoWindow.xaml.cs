@@ -25,6 +25,7 @@ public partial class PersonalizacaoWindow : Window
     public PersonalizacaoWindow(AppConfig cfg, Action aoMudar)
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
         _cfg = cfg;
         _aoMudar = aoMudar;
 
@@ -190,9 +191,4 @@ public partial class PersonalizacaoWindow : Window
             Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
     }
 
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Janelas.Ancorar(this, Owner);
-    }
 }

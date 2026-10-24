@@ -16,6 +16,7 @@ public partial class ArquivosWindow : Window
     public ArquivosWindow(int pid, string nome)
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
         _pid = pid;
         _nome = nome;
 
@@ -125,9 +126,4 @@ public partial class ArquivosWindow : Window
         Janelas.Ancorar(this, Owner);
     }
 
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Reposicionar();
-    }
 }

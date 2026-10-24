@@ -13,6 +13,7 @@ public partial class DesempenhoWindow : Window
     public DesempenhoWindow()
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
 
         MontarProcessos();
         MedirTemporarios();
@@ -185,9 +186,4 @@ public partial class DesempenhoWindow : Window
         Janelas.Ancorar(this, Owner);
     }
 
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Reposicionar();
-    }
 }

@@ -13,6 +13,7 @@ public partial class MemoriaWindow : Window
     public MemoriaWindow(SensorService sensores)
     {
         InitializeComponent();
+        Janelas.Acompanhar(this);
         _sensores = sensores;
 
         Montar();
@@ -193,9 +194,4 @@ public partial class MemoriaWindow : Window
         Janelas.Ancorar(this, Owner);
     }
 
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        Reposicionar();
-    }
 }
