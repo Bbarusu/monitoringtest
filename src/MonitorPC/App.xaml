@@ -350,6 +350,41 @@
             </Setter>
         </Style>
 
+        <!--
+            Caixa de selecao compacta, para listas. O Interruptor tem 22 px de
+            altura e um rotulo ao lado; numa lista de oito ventoinhas isso vira
+            uma tela inteira de chaves. Aqui a linha toda e clicavel, e a caixa
+            so marca o estado.
+        -->
+        <Style x:Key="CaixaDeSelecao" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="caixa" Width="20" Height="20" CornerRadius="6"
+                                Background="{DynamicResource Chip}"
+                                BorderBrush="{DynamicResource Trilho}" BorderThickness="1">
+                            <Path x:Name="marca" Data="M5,12 L10,17 L19,7" Visibility="Collapsed"
+                                  Stroke="White" StrokeThickness="2.4"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Width="12" Height="12" Stretch="Uniform" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="caixa" Property="Background" Value="{DynamicResource Acento}" />
+                                <Setter TargetName="caixa" Property="BorderBrush" Value="{DynamicResource Acento}" />
+                                <Setter TargetName="marca" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="caixa" Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Amostra de cor -->
         <Style x:Key="Amostra" TargetType="RadioButton">
             <Setter Property="Width" Value="44" />

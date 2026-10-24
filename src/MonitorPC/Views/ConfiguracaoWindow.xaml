@@ -34,6 +34,13 @@
                 </StackPanel>
             </StackPanel>
 
+            <!--
+                O miolo rola: com a lista de ventoinhas aberta, a tela passa de
+                900 px e nao cabe num notebook.
+            -->
+            <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto" Margin="0,0,0,4">
+              <StackPanel>
+
             <!-- Limites -->
             <TextBlock Text="Limites de temperatura" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
@@ -160,20 +167,37 @@
 
             <Border CornerRadius="12" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
-                <Grid>
-                    <StackPanel VerticalAlignment="Center" MaxWidth="280"
-                                HorizontalAlignment="Left">
-                        <TextBlock Text="Ventoinhas na aba CPU" FontSize="13" FontWeight="Medium"
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="Visualizar rotação em tempo real" FontSize="13"
+                                   FontWeight="Medium" VerticalAlignment="Center"
                                    Foreground="{DynamicResource Texto}" />
-                        <TextBlock x:Name="DetalheVentoinhas" FontSize="11" Margin="0,2,0,0"
+                        <CheckBox x:Name="MostrarVentoinhas" Style="{StaticResource Interruptor}"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="MostrarVentoinhas_Alterado"
+                                  Unchecked="MostrarVentoinhas_Alterado" />
+                    </Grid>
+
+                    <!--
+                        A escolha de quais ventoinhas so faz sentido com a chave
+                        ligada, entao ela aparece junto. A rotacao de cada uma
+                        atualiza aqui dentro: "Fan #3" nao diz nada, mas o numero
+                        que muda quando o usuario encosta a mao na ventoinha diz.
+                    -->
+                    <StackPanel x:Name="BlocoVentoinhas" Visibility="Collapsed" Margin="0,12,0,0">
+                        <Border Height="1" Background="{DynamicResource Borda}" />
+                        <TextBlock x:Name="AjudaVentoinhas" FontSize="11" Margin="0,10,0,6"
                                    TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextoFraco}"
-                                   Text="Uma barra por ventoinha da placa-mãe" />
+                                   Foreground="{DynamicResource TextoFraco}" />
+                        <ScrollViewer MaxHeight="176" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="ListaVentoinhas" />
+                        </ScrollViewer>
                     </StackPanel>
-                    <CheckBox x:Name="MostrarVentoinhas" Style="{StaticResource Interruptor}"
-                              HorizontalAlignment="Right" VerticalAlignment="Center" />
-                </Grid>
+                </StackPanel>
             </Border>
+
+              </StackPanel>
+            </ScrollViewer>
 
             <Button x:Name="BotaoConcluir" Style="{StaticResource BotaoLargo}" Height="48"
                     Margin="0,20,0,0" Click="Concluir_Click">

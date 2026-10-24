@@ -45,14 +45,9 @@ public partial class ConfiguracaoWindow : Window
         Notificar.IsChecked = _cfg.NotificarNoWindows;
         SugerirEconomico.IsChecked = _cfg.SugerirEconomico;
         MostrarVentoinhas.IsChecked = _cfg.MostrarVentoinhasNaCpu;
-
-        // Quantas ventoinhas estao em jogo muda o peso da escolha: com duas, a
-        // aba mal cresce; com sete, ela dobra de altura.
-        var quantas = _sensores.Ventoinhas.Valor;
-        DetalheVentoinhas.Text = quantas > 0
-            ? $"Uma barra para cada uma das {quantas} ventoinhas detectadas, " +
-              "com a rotação máxima de cada"
-            : "Nenhuma ventoinha com leitura de rotação foi detectada";
+        BlocoVentoinhas.Visibility = _cfg.MostrarVentoinhasNaCpu
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         _carregando = false;
         AtualizarRotulos();
@@ -75,6 +70,50 @@ public partial class ConfiguracaoWindow : Window
         Alertar(AgoraCpu, s.CpuTemp, LimiteCpu.Value);
         Alertar(AgoraGpu, s.GpuTemp, LimiteGpu.Value);
         Alertar(AgoraDisco, s.DiscoTempMaior, LimiteDisco.Value);
+
+        MontarVentoinhas(s);
+
+        foreach (var linha in _linhasDeVentoinha)
+            linha.Atualizar(s.Ventoinhas.TryGetValue(linha.Nome, out var rpm) ? rpm : null);
+    }
+
+    // ------------------------------------------------------------------
+    // Quais ventoinhas aparecem na aba CPU
+
+    private readonly List<LinhaDeSelecaoDeVentoinha> _linhasDeVentoinha = new();
+
+    /// <summary>
+    /// Monta a lista na primeira leitura que trouxer ventoinhas. Fica aqui, e
+    /// nao no construtor, porque a tela pode abrir antes da primeira leitura
+    /// completa — e porque a lista precisa ser exatamente o conjunto que vira
+    /// barra, nao todos os canais da placa: marcar um conector vazio e esperar
+    /// uma barra que nunca aparece seria pior que nao oferecer a opcao.
+    /// </summary>
+    private void MontarVentoinhas(Snapshot s)
+    {
+        if (_linhasDeVentoinha.Count > 0 || s.Ventoinhas.Count == 0) return;
+
+        AjudaVentoinhas.Text =
+            "Marque quais aparecem na aba CPU. A rotação ao lado é a de agora — " +
+            "serve para descobrir qual conector é qual.";
+
+        foreach (var nome in s.Ventoinhas.Keys.OrderBy(n => n, StringComparer.Ordinal))
+        {
+            var chave = s.ChavesDeVentoinha.GetValueOrDefault(nome, nome);
+
+            var linha = new LinhaDeSelecaoDeVentoinha(chave, nome, !_cfg.VentoinhasOcultas.Contains(chave));
+            _linhasDeVentoinha.Add(linha);
+            ListaVentoinhas.Children.Add(linha);
+        }
+    }
+
+    private void MostrarVentoinhas_Alterado(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized) return;
+
+        BlocoVentoinhas.Visibility = MostrarVentoinhas.IsChecked == true
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     /// <summary>Deixa visivel quando o limite escolhido ja esta sendo ultrapassado.</summary>
@@ -110,6 +149,16 @@ public partial class ConfiguracaoWindow : Window
         _cfg.NotificarNoWindows = Notificar.IsChecked == true;
         _cfg.SugerirEconomico = SugerirEconomico.IsChecked == true;
         _cfg.MostrarVentoinhasNaCpu = MostrarVentoinhas.IsChecked == true;
+
+        // Só sobrescreve a escolha se a lista chegou a ser montada: numa tela
+        // aberta e fechada antes da primeira leitura, a lista vazia apagaria o
+        // que o usuário já tinha escolhido.
+        if (_linhasDeVentoinha.Count > 0)
+            _cfg.VentoinhasOcultas = _linhasDeVentoinha
+                .Where(l => !l.Marcada)
+                .Select(l => l.Chave)
+                .ToList();
+
         _cfg.ConfiguracaoInicialFeita = true;
         _cfg.Salvar();
 

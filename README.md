@@ -198,10 +198,18 @@ ordem, e o tooltip da barra sempre diz qual delas está valendo:
 
 Barras com teto real hoje: potência e temperatura da CPU, cada ventoinha da
 placa-mãe, VRAM, potência, ventoinha e temperatura de memória da GPU, e leitura,
-escrita e temperatura por unidade de disco. As barras de ventoinha na aba CPU
-podem ser desligadas em Ajustes → No painel: numa placa com sete conectores a
-aba dobra de altura. Desligadas, a rotação continua sendo lida e aparece na tela
-de todos os sensores. A potência, o clock e a temperatura
+escrita e temperatura por unidade de disco.
+
+As barras de ventoinha na aba CPU são controladas em **Ajustes → No painel**. A
+chave liga a visualização, e com ela ligada aparece a lista das ventoinhas
+detectadas, cada uma com a rotação de agora — que é como se descobre qual
+conector é qual, já que "Fan #3" não diz nada. Desmarcadas, elas continuam sendo
+lidas: é dessa leitura que saem as curvas de PWM, a calibração e a tela de todos
+os sensores. Só a barra some.
+
+A configuração guarda as **ocultas**, não as visíveis. Assim a lista vazia
+significa "todas", uma ventoinha nova aparece sozinha, e desmarcar todas
+continua querendo dizer nenhuma. A potência, o clock e a temperatura
 nos quadrados da CPU e da GPU trazem o mesmo contexto no tooltip, porque o
 quadrado é estreito demais para `253 / 253 W` sem atropelar.
 

@@ -92,6 +92,16 @@ public sealed class AppConfig
     public bool MostrarVentoinhasNaCpu { get; set; } = true;
 
     /// <summary>
+    /// Ventoinhas que o usuario escolheu nao ver, pela chave "peca/sensor".
+    ///
+    /// Guardadas as ocultas, e nao as visiveis, de proposito: assim a lista
+    /// vazia significa "todas", uma ventoinha nova aparece sozinha, e desmarcar
+    /// todas continua querendo dizer nenhuma — o que uma lista de visiveis nao
+    /// conseguiria distinguir de "ainda nao escolhi".
+    /// </summary>
+    public List<string> VentoinhasOcultas { get; set; } = new();
+
+    /// <summary>
     /// Buscar o catalogo de especificacoes atualizado. Um GET de poucos
     /// kilobytes no repositorio do app, no maximo uma vez por semana. Desligado,
     /// vale a copia que veio embutida.

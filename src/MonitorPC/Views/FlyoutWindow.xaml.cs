@@ -596,9 +596,13 @@ public partial class FlyoutWindow : Window
             if (!_cfg.MostrarVentoinhasNaCpu) break;
             if (rpm <= 0) continue;
 
-            var teto = s.ChavesDeVentoinha.TryGetValue(nome, out var chave)
-                ? esp.TetoDeVentoinha(chave)
-                : Teto.Nenhum;
+            var chave = s.ChavesDeVentoinha.GetValueOrDefault(nome, nome);
+
+            // A escolha de quais ver fica nos Ajustes. A leitura continua
+            // acontecendo para todas: é ela que alimenta as curvas de PWM.
+            if (_cfg.VentoinhasOcultas.Contains(chave)) continue;
+
+            var teto = esp.TetoDeVentoinha(chave);
 
             var dica = teto.Explicacao("rpm");
             if (s.ControlesDeVentoinha.TryGetValue(nome, out var pwm))
