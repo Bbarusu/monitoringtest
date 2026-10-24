@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using MonitorPC.Models;
@@ -77,7 +78,8 @@ public partial class FlyoutWindow : Window
 
     /// <summary>
     /// Canto inferior direito da area de trabalho util, respeitando a barra de
-    /// tarefas em qualquer lado da tela.
+    /// tarefas em qualquer lado da tela. Depois de arrastado, o painel fica onde
+    /// o usuario deixou.
     /// </summary>
     private void Posicionar()
     {
@@ -90,13 +92,57 @@ public partial class FlyoutWindow : Window
         {
             UpdateLayout();
             var area = SystemParameters.WorkArea;
-            Left = area.Right - ActualWidth;
-            Top = area.Bottom - ActualHeight;
+
+            if (_cfg.PosicaoLivre)
+            {
+                Left = _cfg.PosicaoX;
+                Top = _cfg.PosicaoY;
+            }
+            else
+            {
+                Left = area.Right - ActualWidth;
+                Top = area.Bottom - ActualHeight;
+            }
+
+            // A resolucao pode ter mudado, ou a aba ter crescido: puxa de volta.
+            Janelas.Conter(this, area);
         }
         finally
         {
             _posicionando = false;
         }
+    }
+
+    /// <summary>
+    /// Arrastar de qualquer area livre do painel. Botoes e abas tratam o proprio
+    /// clique, entao o evento nao chega aqui vindo deles.
+    /// </summary>
+    private void Painel_Arrastar(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState != MouseButtonState.Pressed) return;
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // O botao pode ter sido solto antes de o arrasto comecar.
+            return;
+        }
+
+        _cfg.PosicaoLivre = true;
+        _cfg.PosicaoX = Left;
+        _cfg.PosicaoY = Top;
+        _cfg.Salvar();
+    }
+
+    /// <summary>Devolve o painel ao canto, pelo menu da bandeja.</summary>
+    public void VoltarAoCanto()
+    {
+        _cfg.PosicaoLivre = false;
+        _cfg.Salvar();
+        Posicionar();
     }
 
     public void Mostrar()
@@ -555,7 +601,7 @@ public partial class FlyoutWindow : Window
             var p = processos[i];
             linha.Pid = p.Pid;
             linha.NomeDoProcesso = p.Nome;
-            linha.Cursor = System.Windows.Input.Cursors.Hand;
+            linha.Cursor = Cursors.Hand;
             linha.ToolTip = "Clique para ver os arquivos abertos";
             linha.Atualizar(
                 p.Nome,
@@ -1030,7 +1076,7 @@ public partial class FlyoutWindow : Window
     /// <summary>
     /// Em "Unidades" a linha nao tem processo, entao nao abre nada.
     /// </summary>
-    private void Processo_Clicado(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void Processo_Clicado(object sender, MouseButtonEventArgs e)
     {
         if (sender is not LinhaDeDisco { Pid: { } pid, NomeDoProcesso: { } nome }) return;
 

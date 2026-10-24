@@ -182,10 +182,7 @@ public partial class DesempenhoWindow : Window
     /// <summary>A janela e ancorada pela base, para crescer para cima.</summary>
     private void Reposicionar()
     {
-        UpdateLayout();
-        var area = SystemParameters.WorkArea;
-        Left = area.Right - ActualWidth;
-        Top = area.Bottom - ActualHeight;
+        Janelas.Ancorar(this, Owner);
     }
 
     protected override void OnSourceInitialized(EventArgs e)

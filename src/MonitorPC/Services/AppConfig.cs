@@ -67,8 +67,14 @@ public sealed class AppConfig
     /// <summary>A partir de quantos MB/s um processo entra no log.</summary>
     public double LimiteLogMbs { get; set; } = 10;
 
-    /// <summary>Vazio usa Documentos\MonitorPC\logs.</summary>
-    public string PastaDosLogs { get; set; } = "";
+    // --- Posicao do painel ---
+    /// <summary>
+    /// Falso mantem o painel ancorado no canto inferior direito. Arrastar o
+    /// painel liga isto e guarda onde ele ficou.
+    /// </summary>
+    public bool PosicaoLivre { get; set; }
+    public double PosicaoX { get; set; }
+    public double PosicaoY { get; set; }
 
     public bool ConfiguracaoInicialFeita { get; set; }
 

@@ -1,5 +1,3 @@
-using System.IO;
-using System.Text;
 using MonitorPC.Models;
 
 namespace MonitorPC.Services;
@@ -121,49 +119,6 @@ public sealed class DiskLogService : IDisposable
 
         lock (_eventos)
             _eventos.RemoveAll(e => agora - e.Hora > Janela);
-    }
-
-    /// <summary>
-    /// Grava o log em texto, com nome e caminho de cada processo, na pasta
-    /// escolhida na configuracao.
-    /// </summary>
-    public string Exportar()
-    {
-        var pasta = string.IsNullOrWhiteSpace(_cfg.PastaDosLogs)
-            ? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                "MonitorPC", "logs")
-            : _cfg.PastaDosLogs;
-
-        Directory.CreateDirectory(pasta);
-
-        var arquivo = Path.Combine(pasta, $"disco-{DateTime.Now:yyyy-MM-dd-HHmmss}.txt");
-        var texto = new StringBuilder();
-
-        texto.AppendLine("Monitor de PC — log de disco");
-        texto.AppendLine($"Gerado em {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
-        texto.AppendLine($"Registra processos acima de {_cfg.LimiteLogMbs:0.#} MB/s");
-        texto.AppendLine("A unidade indicada e a que estava mais ativa no momento:");
-        texto.AppendLine("os contadores por processo nao dizem em qual disco o acesso ocorreu.");
-        texto.AppendLine();
-
-        foreach (var e in Eventos)
-        {
-            texto.AppendLine($"{e.Hora:yyyy-MM-dd HH:mm:ss} | {e.Nome}");
-            texto.AppendLine(e.Caminho ?? "caminho indisponível");
-            texto.AppendLine(
-                $"{e.Tipo} {e.TotalMbs:0.0} MB/s · leitura {e.LeituraMbs:0.0} · " +
-                $"escrita {e.EscritaMbs:0.0} · PID {e.Pid}");
-
-            if (e.DiscoAtivo is not null)
-                texto.AppendLine($"Unidade mais ativa no momento: {e.DiscoAtivo}");
-            texto.AppendLine();
-        }
-
-        if (Eventos.Count == 0) texto.AppendLine("Nenhum evento registrado.");
-
-        File.WriteAllText(arquivo, texto.ToString(), Encoding.UTF8);
-        return arquivo;
     }
 
     public void Dispose() => Parar();

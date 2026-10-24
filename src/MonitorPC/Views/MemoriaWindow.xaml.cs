@@ -190,10 +190,7 @@ public partial class MemoriaWindow : Window
 
     private void Reposicionar()
     {
-        UpdateLayout();
-        var area = SystemParameters.WorkArea;
-        Left = area.Right - ActualWidth;
-        Top = area.Bottom - ActualHeight;
+        Janelas.Ancorar(this, Owner);
     }
 
     protected override void OnSourceInitialized(EventArgs e)

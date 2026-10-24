@@ -2,7 +2,8 @@
 
 Painel de monitoramento que vive na bandeja do Windows. Abre no canto inferior direito,
 ancorado ao ícone da barra de tarefas, e mostra temperatura, carga, memória e energia
-do PC sem pesar no sistema.
+do PC sem pesar no sistema. Dá para arrastá-lo para qualquer lugar da área de trabalho:
+a posição fica salva, e "Voltar ao canto", no menu da bandeja, o traz de volta.
 
 **Estado atual:** as cinco abas funcionais (Geral, CPU, GPU, Disco e Energia), com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
@@ -60,8 +61,8 @@ temperatura não ficarem no palpite do padrão. Depois, a mesma tela fica acess�
 pelo ícone de ajustes no rodapé ou pelo menu do ícone da bandeja.
 
 O botão **Ver log detalhado**, na aba Disco, abre o log: registra quem passou do
-limite de MB/s que você definir, guarda os últimos 15 minutos e exporta em `.txt` com
-nome e caminho de cada processo. O registro corre enquanto a tela está aberta.
+limite de MB/s que você definir, guarda os últimos 15 minutos. O registro corre enquanto a
+tela está aberta.
 
 Clicar em um processo — no log, na aba Disco ou na lista de memória — mostra **quais
 arquivos ele tem abertos agora**. É a via leve: em vez de acompanhar cada leitura e

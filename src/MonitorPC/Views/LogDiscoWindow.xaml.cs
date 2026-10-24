@@ -131,7 +131,6 @@ public partial class LogDiscoWindow : Window
             ? "Nada registrado ainda. Use o PC normalmente e os picos de disco aparecem aqui."
             : "Nenhum evento com este filtro.";
 
-        BotaoExportar.IsEnabled = _log.Eventos.Count > 0;
     }
 
     private UIElement MontarLinha(EventoDeDisco ev)
@@ -223,29 +222,6 @@ public partial class LogDiscoWindow : Window
         new ArquivosWindow(ev.Pid, ev.Nome) { Owner = this }.ShowDialog();
     }
 
-    private void Exportar_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            var arquivo = _log.Exportar();
-            Rodape.Text = $"Salvo em {arquivo}";
-            Rodape.Foreground = ThemeService.Pincel("TextoFraco");
-
-            // Abrir a pasta poupa procurar o arquivo.
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{arquivo}\"")
-            {
-                UseShellExecute = true
-            });
-        }
-        catch (Exception ex)
-        {
-            Log.Erro("Exportar log", ex);
-            Rodape.Text = "Não foi possível salvar o arquivo.";
-        }
-
-        Reposicionar();
-    }
-
     private void Limpar_Click(object sender, RoutedEventArgs e)
     {
         _log.Limpar();
@@ -257,10 +233,7 @@ public partial class LogDiscoWindow : Window
 
     private void Reposicionar()
     {
-        UpdateLayout();
-        var area = SystemParameters.WorkArea;
-        Left = area.Right - ActualWidth;
-        Top = area.Bottom - ActualHeight;
+        Janelas.Ancorar(this, Owner);
     }
 
     protected override void OnSourceInitialized(EventArgs e)

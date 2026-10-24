@@ -46,6 +46,7 @@ public partial class App : Application
 
         var menu = new WF.ContextMenuStrip();
         menu.Items.Add("Abrir painel", null, (_, _) => _painel.Mostrar());
+        menu.Items.Add("Voltar ao canto", null, (_, _) => _painel.VoltarAoCanto());
         menu.Items.Add("Ajustes", null, (_, _) =>
         {
             _painel.Mostrar();
