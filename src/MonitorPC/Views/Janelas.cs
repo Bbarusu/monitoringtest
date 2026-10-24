@@ -1,11 +1,14 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace MonitorPC.Views;
 
 /// <summary>
 /// Posicionamento comum das janelas. O painel pode ter sido arrastado para
-/// qualquer canto, e as telas que ele abre precisam aparecer perto dele, nao
-/// no canto da tela.
+/// qualquer canto de qualquer monitor, e as telas que ele abre precisam
+/// aparecer perto dele.
 /// </summary>
 public static class Janelas
 {
@@ -30,7 +33,7 @@ public static class Janelas
 
     /// <summary>
     /// Alinha pela base e pela direita do dono; sem dono, pelo canto inferior
-    /// direito da area util. Sempre dentro da tela.
+    /// direito do monitor principal. Sempre dentro do monitor em que estiver.
     /// </summary>
     public static void Ancorar(Window janela, Window? dono)
     {
@@ -43,7 +46,6 @@ public static class Janelas
             // Sem altura ainda, qualquer conta pela base erra: espera o layout.
             if (janela.ActualHeight <= 0) return;
 
-            var area = SystemParameters.WorkArea;
             double direita, baixo;
 
             // Nao exige que o dono esteja visivel: uma janela escondida mantem
@@ -56,14 +58,15 @@ public static class Janelas
             }
             else
             {
-                direita = area.Right;
-                baixo = area.Bottom;
+                var principal = SystemParameters.WorkArea;
+                direita = principal.Right;
+                baixo = principal.Bottom;
             }
 
             janela.Left = direita - janela.ActualWidth;
             janela.Top = baixo - janela.ActualHeight;
 
-            Conter(janela, area);
+            Conter(janela);
         }
         finally
         {
@@ -71,10 +74,15 @@ public static class Janelas
         }
     }
 
-    /// <summary>Puxa a janela de volta quando ela passaria da area util.</summary>
-    public static void Conter(Window janela, Rect area)
+    /// <summary>
+    /// Puxa a janela de volta quando ela passaria da area util — do monitor em
+    /// que ela esta, nao do principal.
+    /// </summary>
+    public static void Conter(Window janela)
     {
         if (janela.ActualWidth <= 0 || janela.ActualHeight <= 0) return;
+
+        var area = AreaDoMonitor(janela);
 
         janela.Left = Math.Clamp(janela.Left, area.Left,
             Math.Max(area.Left, area.Right - janela.ActualWidth));
@@ -82,4 +90,70 @@ public static class Janelas
         janela.Top = Math.Clamp(janela.Top, area.Top,
             Math.Max(area.Top, area.Bottom - janela.ActualHeight));
     }
+
+    /// <summary>
+    /// Area util do monitor onde a janela esta.
+    ///
+    /// SystemParameters.WorkArea so conhece o monitor principal: usar aquilo
+    /// empurrava de volta para o principal tudo que estivesse no secundario.
+    /// </summary>
+    public static Rect AreaDoMonitor(Window janela)
+    {
+        try
+        {
+            var handle = new WindowInteropHelper(janela).Handle;
+            if (handle == IntPtr.Zero) return SystemParameters.WorkArea;
+
+            var monitor = MonitorFromWindow(handle, MonitorMaisProximo);
+            if (monitor == IntPtr.Zero) return SystemParameters.WorkArea;
+
+            var info = new InfoDoMonitor { Tamanho = Marshal.SizeOf<InfoDoMonitor>() };
+            if (!GetMonitorInfo(monitor, ref info)) return SystemParameters.WorkArea;
+
+            // A API devolve pixels; as posicoes do WPF sao em unidades que
+            // acompanham a escala do monitor.
+            var escala = VisualTreeHelper.GetDpi(janela);
+            var x = escala.DpiScaleX <= 0 ? 1 : escala.DpiScaleX;
+            var y = escala.DpiScaleY <= 0 ? 1 : escala.DpiScaleY;
+
+            return new Rect(
+                info.AreaUtil.Esquerda / x,
+                info.AreaUtil.Topo / y,
+                (info.AreaUtil.Direita - info.AreaUtil.Esquerda) / x,
+                (info.AreaUtil.Baixo - info.AreaUtil.Topo) / y);
+        }
+        catch
+        {
+            return SystemParameters.WorkArea;
+        }
+    }
+
+    // ------------------------------------------------------------------
+
+    private const int MonitorMaisProximo = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Retangulo
+    {
+        public int Esquerda;
+        public int Topo;
+        public int Direita;
+        public int Baixo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InfoDoMonitor
+    {
+        public int Tamanho;
+        public Retangulo Area;
+        public Retangulo AreaUtil;
+        public uint Sinalizadores;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr janela, int padrao);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref InfoDoMonitor info);
 }

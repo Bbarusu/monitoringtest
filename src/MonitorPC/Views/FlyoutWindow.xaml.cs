@@ -96,7 +96,6 @@ public partial class FlyoutWindow : Window
         try
         {
             UpdateLayout();
-            var area = SystemParameters.WorkArea;
 
             if (_cfg.PosicaoLivre)
             {
@@ -105,12 +104,16 @@ public partial class FlyoutWindow : Window
             }
             else
             {
-                Left = area.Right - ActualWidth;
-                Top = area.Bottom - ActualHeight;
+                // Sem posicao propria, o painel volta ao canto do monitor
+                // principal, que e onde fica a bandeja.
+                var principal = SystemParameters.WorkArea;
+                Left = principal.Right - ActualWidth;
+                Top = principal.Bottom - ActualHeight;
             }
 
-            // A resolucao pode ter mudado, ou a aba ter crescido: puxa de volta.
-            Janelas.Conter(this, area);
+            // A resolucao pode ter mudado, ou a aba ter crescido: puxa de volta,
+            // respeitando o monitor em que o painel esta.
+            Janelas.Conter(this);
         }
         finally
         {
