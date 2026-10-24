@@ -3,8 +3,9 @@
 Painel de monitoramento que vive na bandeja do Windows. Abre no canto inferior direito,
 ancorado ao ícone da barra de tarefas, e mostra temperatura, carga, memória e energia
 do PC sem pesar no sistema. Dá para arrastá-lo para qualquer lugar da área de trabalho, inclusive para um segundo
-monitor:
-a posição fica salva, e "Voltar ao canto", no menu da bandeja, o traz de volta. O botão
+monitor. A posição vale só enquanto o app estiver aberto: cada abertura começa no canto,
+saindo da bandeja. "Voltar ao canto", no menu da bandeja, o traz de volta a qualquer
+momento. O botão
 de energia, no topo do painel, encerra o app por completo.
 
 O menu do ícone da bandeja é desenhado pelo próprio app, e não pelo menu padrão do

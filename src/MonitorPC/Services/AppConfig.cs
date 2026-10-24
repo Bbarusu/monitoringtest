@@ -67,14 +67,17 @@ public sealed class AppConfig
     /// <summary>A partir de quantos MB/s um processo entra no log.</summary>
     public double LimiteLogMbs { get; set; } = 10;
 
-    // --- Posicao do painel ---
+    // --- Posicao do painel: vale so nesta sessao ---
+    // Nao vai para o arquivo de proposito: cada abertura do app comeca no canto,
+    // saindo da bandeja. Arrastar vale ate o app ser encerrado.
+
     /// <summary>
     /// Falso mantem o painel ancorado no canto inferior direito. Arrastar o
-    /// painel liga isto e guarda onde ele ficou.
+    /// painel liga isto e guarda onde ele ficou, ate encerrar.
     /// </summary>
-    public bool PosicaoLivre { get; set; }
-    public double PosicaoX { get; set; }
-    public double PosicaoY { get; set; }
+    [JsonIgnore] public bool PosicaoLivre { get; set; }
+    [JsonIgnore] public double PosicaoX { get; set; }
+    [JsonIgnore] public double PosicaoY { get; set; }
 
     public bool ConfiguracaoInicialFeita { get; set; }
 

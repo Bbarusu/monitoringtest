@@ -139,17 +139,16 @@ public partial class FlyoutWindow : Window
             return;
         }
 
+        // So nesta sessao: a proxima abertura volta ao canto, saindo da bandeja.
         _cfg.PosicaoLivre = true;
         _cfg.PosicaoX = Left;
         _cfg.PosicaoY = Top;
-        _cfg.Salvar();
     }
 
     /// <summary>Devolve o painel ao canto, pelo menu da bandeja.</summary>
     public void VoltarAoCanto()
     {
         _cfg.PosicaoLivre = false;
-        _cfg.Salvar();
         Posicionar();
     }
 
