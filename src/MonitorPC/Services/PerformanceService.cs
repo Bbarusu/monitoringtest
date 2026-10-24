@@ -192,6 +192,45 @@ public static class PerformanceService
     }
 
     // ------------------------------------------------------------------
+    // Explorer
+
+    /// <summary>
+    /// Reinicia o Explorer: encerra e sobe de novo. Util quando a barra de
+    /// tarefas trava ou a memoria dele cresce demais.
+    ///
+    /// O nosso app e outro processo, entao nao cai junto. O que some e a area de
+    /// notificacao, recriada pelo Explorer; quem chama precisa reinstalar o
+    /// icone da bandeja depois.
+    /// </summary>
+    public static bool ReiniciarExplorer()
+    {
+        try
+        {
+            var antes = Process.GetProcessesByName("explorer");
+
+            foreach (var p in antes)
+            {
+                try { p.Kill(); } catch { /* pode ja ter saido */ }
+                finally { p.Dispose(); }
+            }
+
+            // O Windows costuma subir o shell sozinho (AutoRestartShell). Da um
+            // tempo antes de decidir, senao sobem duas instancias.
+            Thread.Sleep(1500);
+
+            if (Process.GetProcessesByName("explorer").Length == 0)
+                Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Reiniciar Explorer", ex);
+            return false;
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Arquivos temporarios
 
     /// <summary>Quanto ha para limpar, sem apagar nada.</summary>

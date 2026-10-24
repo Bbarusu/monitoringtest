@@ -102,6 +102,24 @@ public partial class App : Application
     /// O acento acompanha a cor do Windows quando a configuracao pede;
     /// senao usa a cor escolhida pelo usuario.
     /// </summary>
+    /// <summary>
+    /// Reinstala o icone na bandeja. O WinForms costuma refaze-lo sozinho quando
+    /// o Explorer recria a area de notificacao, mas isto garante o caso em que
+    /// nao refaz, que deixaria o app sem porta de entrada.
+    /// </summary>
+    public void RecriarIconeDaBandeja()
+    {
+        try
+        {
+            _bandeja.Visible = false;
+            _bandeja.Visible = true;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Recriar ícone da bandeja", ex);
+        }
+    }
+
     /// <summary>Reaplica a cor de destaque. Chamada pela tela de Personalização.</summary>
     public void AplicarAparencia()
     {

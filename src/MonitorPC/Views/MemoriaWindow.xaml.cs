@@ -29,8 +29,19 @@ public partial class MemoriaWindow : Window
 
         Lista.Children.Clear();
 
-        foreach (var p in PerformanceService.PorMemoria())
+        var processos = PerformanceService.PorMemoria();
+
+        foreach (var p in processos)
             Lista.Children.Add(MontarLinha(p));
+
+        // O Explorer costuma crescer com o tempo de uso; mostrar quanto ele ocupa
+        // agora da a dimensao do que reinicia-lo devolve.
+        var explorer = processos.FirstOrDefault(x =>
+            x.Nome.Equals("explorer", StringComparison.OrdinalIgnoreCase));
+
+        DetalheExplorer.Text = explorer is null
+            ? "Fecha as janelas de pastas abertas e recria a barra de tarefas"
+            : $"Ocupa {explorer.MemoriaMb:N0} MB · fecha as janelas de pastas abertas";
     }
 
     private UIElement MontarLinha(ProcessoMemoria p)
@@ -147,6 +158,32 @@ public partial class MemoriaWindow : Window
             Montar();
             Reposicionar();
         });
+    }
+
+    /// <summary>
+    /// O Explorer nao aparece na lista para ser fechado: encerra-lo sem subir de
+    /// volta deixaria o PC sem barra de tarefas. Aqui e encerrar e subir junto.
+    /// </summary>
+    private async void Explorer_Click(object sender, RoutedEventArgs e)
+    {
+        BotaoExplorer.IsEnabled = false;
+        Rodape.Text = "Reiniciando o Explorer…";
+
+        var deuCerto = await Task.Run(PerformanceService.ReiniciarExplorer);
+
+        // A area de notificacao e recriada pelo Explorer: o icone da bandeja
+        // precisa ser reinstalado, senao o app fica sem porta de entrada.
+        (Application.Current as App)?.RecriarIconeDaBandeja();
+
+        Rodape.Text = deuCerto
+            ? "Explorer reiniciado. Janelas de pastas que estavam abertas foram fechadas."
+            : "Não foi possível reiniciar o Explorer.";
+
+        await Task.Delay(1500);
+        Montar();
+        Reposicionar();
+
+        BotaoExplorer.IsEnabled = true;
     }
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();

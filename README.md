@@ -78,6 +78,11 @@ isso com precisão exige o rastreamento por arquivo, que ainda não está implem
 O card de **RAM**, na aba Geral, abre a lista de programas por consumo de memória, de onde
 dá para fechá-los. Processos do Windows e de segurança aparecem marcados e sem o botão.
 
+Essa tela também reinicia o **Explorer**, útil quando a barra de tarefas trava ou a memória
+dele cresce demais. O app é outro processo e não cai junto; o que some é a área de
+notificação, recriada pelo Explorer, então o ícone da bandeja é reinstalado logo depois.
+Janelas de pastas abertas são fechadas.
+
 O botão **Desempenho** abre uma tela com o que será feito, em vez de agir sozinho:
 trocar o plano de energia, limpar arquivos temporários e fechar programas escolhidos
 na lista. Cada programa recebe o mesmo pedido de fechar que o botão X da janela, então
