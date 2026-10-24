@@ -623,6 +623,18 @@
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                 </Grid>
                 <StackPanel x:Name="BarrasGpu" />
+
+                <Button Style="{StaticResource BotaoLargo}" Height="40" Margin="0,4,0,0"
+                        Click="GpuProcessos_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="M4,18 L4,10 M9,18 L9,5 M14,18 L14,12 M19,18 L19,8"
+                              Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              Width="16" Height="16" Stretch="Uniform"
+                              Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Ver o que está usando a GPU" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
 

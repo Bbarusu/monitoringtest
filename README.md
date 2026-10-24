@@ -156,6 +156,8 @@ src/MonitorPC/
   Services/PerformanceService.cs  ações do Modo Desempenho
   Services/StressService.cs       carga de CPU controlada
   Views/SensoresWindow.xaml       lista de todos os sensores
+  Services/GpuProcessService.cs   uso da placa de vídeo por programa
+  Views/GpuProcessosWindow.xaml   a tela de GPU por programa
   Models/Teto.cs                  um valor máximo e a procedência dele
   Models/CurvaDeVentoinha.cs      curva rotação x PWM aprendida
   Services/CatalogoService.cs     ficha técnica por modelo, embutida e atualizável
@@ -258,6 +260,25 @@ sai dos próprios sensores, de duas formas:
 
 Ventoinhas em controladora externa ou travadas pela BIOS aparecem na lista como
 não comandáveis: a rotação é visível, mas o teto não pode ser medido.
+
+## GPU por programa
+
+Não existe sensor para isto. A placa informa a ocupação dela como um todo; quem
+sabe repartir por processo é o agendador gráfico do Windows, que publica o
+resultado nos contadores de desempenho `GPU Engine` e `GPU Process Memory` — os
+mesmos que o Gerenciador de Tarefas lê. Funciona com qualquer placa, AMD,
+NVIDIA ou integrada, sem biblioteca de fabricante e sem administrador.
+
+A leitura é feita com PDH, uma consulta só com instância curinga, e os nomes dos
+contadores são pedidos em inglês via `PdhAddEnglishCounter`: num Windows em
+português os objetos aparecem traduzidos, e um caminho montado com o nome
+traduzido só funcionaria naquele idioma.
+
+A porcentagem mostrada é a do motor mais ocupado por aquele programa, não a soma
+de todos — somar daria mais de 100% num jogo que usa 3D e Copy ao mesmo tempo, e
+é assim que o Gerenciador de Tarefas também conta. O motor aparece ao lado, e é
+ele que separa um jogo (3D) de um minerador (Compute) ou de uma chamada de vídeo
+(VideoEncode).
 
 ## Tema claro e escuro
 

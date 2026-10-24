@@ -987,7 +987,8 @@ public partial class FlyoutWindow : Window
     private static string DescricaoDosOutros(Snapshot s)
     {
         var partes = new List<string>();
-        if (s.ModulosRam > 0) partes.Add($"{s.ModulosRam} de RAM");
+        if (s.ModulosRam > 0)
+            partes.Add($"{s.ModulosRam} {(s.ModulosRam == 1 ? "pente" : "pentes")} de RAM");
         if (s.Discos2 > 0) partes.Add($"{s.Discos2} discos");
         if (s.VentoinhasAtivas > 0) partes.Add($"{s.VentoinhasAtivas} ventoinhas");
 
@@ -1372,6 +1373,13 @@ public partial class FlyoutWindow : Window
 
         new ArquivosWindow(pid, nome) { Owner = this }.ShowDialog();
     }
+
+    /// <summary>
+    /// A mesma ideia do cartão de RAM, do outro lado: ali é quem ocupa a
+    /// memória, aqui é quem ocupa a placa de vídeo.
+    /// </summary>
+    private void GpuProcessos_Click(object sender, RoutedEventArgs e) =>
+        new GpuProcessosWindow { Owner = this }.ShowDialog();
 
     private void CardRam_Click(object sender, RoutedEventArgs e) =>
         new MemoriaWindow(_sensores) { Owner = this }.ShowDialog();

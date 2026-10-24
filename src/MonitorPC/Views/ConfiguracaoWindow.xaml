@@ -169,9 +169,14 @@
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                 <StackPanel>
                     <Grid>
-                        <TextBlock Text="Visualizar rotação em tempo real" FontSize="13"
-                                   FontWeight="Medium" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource Texto}" />
+                        <StackPanel VerticalAlignment="Center" MaxWidth="300"
+                                    HorizontalAlignment="Left">
+                            <TextBlock Text="Ventoinhas" FontSize="13" FontWeight="Medium"
+                                       Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="Visualizar rotação em tempo real" FontSize="11"
+                                       Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
                         <CheckBox x:Name="MostrarVentoinhas" Style="{StaticResource Interruptor}"
                                   HorizontalAlignment="Right" VerticalAlignment="Center"
                                   Checked="MostrarVentoinhas_Alterado"
