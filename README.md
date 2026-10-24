@@ -6,6 +6,10 @@ do PC sem pesar no sistema. Dá para arrastá-lo para qualquer lugar da área de
 a posição fica salva, e "Voltar ao canto", no menu da bandeja, o traz de volta. O botão
 de energia, no topo do painel, encerra o app por completo.
 
+O menu do ícone da bandeja é desenhado pelo próprio app, e não pelo menu padrão do
+Windows: aquele depende de o app virar primeiro plano para aparecer, e com um jogo em tela
+cheia o Windows nega esse pedido, deixando o menu atrás da barra de tarefas.
+
 O ícone da bandeja mostra a temperatura da CPU: é desenhado a cada leitura, em um quadrado
 com a cor de destaque, e some do contorno quando os sensores de baixo nível não estão
 disponíveis.

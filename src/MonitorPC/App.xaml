@@ -103,6 +103,47 @@
             </Setter>
         </Style>
 
+        <!-- Menu do icone da bandeja -->
+        <Style x:Key="MenuDaBandeja" TargetType="ContextMenu">
+            <Setter Property="FontFamily" Value="{StaticResource FonteUI}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border CornerRadius="12" Padding="4" Background="{DynamicResource Cartao}"
+                                BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270"
+                                                  Opacity="0.5" Color="Black" />
+                            </Border.Effect>
+                            <StackPanel IsItemsHost="True" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ItemDoMenu" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource Texto}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="bg" CornerRadius="8" Padding="12,8" Background="Transparent">
+                            <ContentPresenter ContentSource="Header" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="bg" Property="Background"
+                                        Value="{DynamicResource Trilho}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Linha de lista clicavel: sem moldura, so realce ao passar o mouse -->
         <ControlTemplate x:Key="LinhaClicavel" TargetType="Button">
             <Border x:Name="bg" CornerRadius="8" Background="Transparent" Padding="8,6">

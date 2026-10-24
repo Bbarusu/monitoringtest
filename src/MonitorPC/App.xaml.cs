@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using MonitorPC.Services;
 using MonitorPC.Views;
@@ -16,6 +17,7 @@ public partial class App : Application
     private WF.NotifyIcon _bandeja = null!;
     private FlyoutWindow _painel = null!;
     private D.Icon? _iconeAtual;
+    private System.Windows.Controls.ContextMenu? _menu;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -42,19 +44,10 @@ public partial class App : Application
         _bandeja.MouseClick += (_, args) =>
         {
             if (args.Button == WF.MouseButtons.Left) _painel.Alternar();
+            else if (args.Button == WF.MouseButtons.Right) AbrirMenu();
         };
 
-        var menu = new WF.ContextMenuStrip();
-        menu.Items.Add("Abrir painel", null, (_, _) => _painel.Mostrar());
-        menu.Items.Add("Voltar ao canto", null, (_, _) => _painel.VoltarAoCanto());
-        menu.Items.Add("Ajustes", null, (_, _) =>
-        {
-            _painel.Mostrar();
-            _painel.AbrirConfiguracao(false);
-        });
-        menu.Items.Add(new WF.ToolStripSeparator());
-        menu.Items.Add("Sair", null, (_, _) => Shutdown());
-        _bandeja.ContextMenuStrip = menu;
+        MontarMenu();
         _bandeja.BalloonTipClicked += (_, _) => _painel.Mostrar();
 
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() =>
@@ -103,6 +96,56 @@ public partial class App : Application
     /// O acento acompanha a cor do Windows quando a configuracao pede;
     /// senao usa a cor escolhida pelo usuario.
     /// </summary>
+    /// <summary>
+    /// O menu da bandeja e do WPF, nao do WinForms: o menu do WinForms depende de
+    /// o app virar primeiro plano para aparecer, e com um jogo em tela cheia o
+    /// Windows nega isso, deixando o menu atras da barra de tarefas.
+    /// </summary>
+    private void MontarMenu()
+    {
+        _menu = new System.Windows.Controls.ContextMenu
+        {
+            Style = (Style)Resources["MenuDaBandeja"]
+        };
+
+        _menu.Items.Add(Item("Abrir painel", () => _painel.Mostrar()));
+        _menu.Items.Add(Item("Voltar ao canto", () => _painel.VoltarAoCanto()));
+        _menu.Items.Add(Item("Ajustes", () =>
+        {
+            _painel.Mostrar();
+            _painel.AbrirConfiguracao(false);
+        }));
+        _menu.Items.Add(new System.Windows.Controls.Separator());
+        _menu.Items.Add(Item("Encerrar", Shutdown));
+
+        // Sem isto o menu so fecha ao escolher algo, quando o app nao esta em
+        // primeiro plano.
+        _menu.Opened += (_, _) =>
+        {
+            if (PresentationSource.FromVisual(_menu) is HwndSource fonte)
+                SetForegroundWindow(fonte.Handle);
+        };
+
+        System.Windows.Controls.MenuItem Item(string texto, Action acao)
+        {
+            var item = new System.Windows.Controls.MenuItem
+            {
+                Header = texto,
+                Style = (Style)Resources["ItemDoMenu"]
+            };
+            item.Click += (_, _) => acao();
+            return item;
+        }
+    }
+
+    private void AbrirMenu()
+    {
+        if (_menu is null) return;
+
+        _menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
+        _menu.IsOpen = true;
+    }
+
     /// <summary>
     /// Reinstala o icone na bandeja. O WinForms costuma refaze-lo sozinho quando
     /// o Explorer recria a area de notificacao, mas isto garante o caso em que
@@ -268,6 +311,10 @@ public partial class App : Application
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool DestroyIcon(IntPtr handle);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr janela);
 
     /// <summary>
     /// Encerramento completo: o laco de leitura para, o driver e liberado e o
