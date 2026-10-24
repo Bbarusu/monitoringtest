@@ -29,4 +29,13 @@
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
   </ItemGroup>
 
+  <!--
+    O catalogo de especificacoes viaja dentro do executavel, para o app saber o
+    teto das pecas sem depender de internet. O nome logico e curto porque e por
+    ele que o CatalogoService procura o recurso.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Dados\catalogo.json" LogicalName="catalogo.json" />
+  </ItemGroup>
+
 </Project>

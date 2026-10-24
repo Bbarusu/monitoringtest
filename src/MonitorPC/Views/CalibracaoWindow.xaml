@@ -1,0 +1,84 @@
+<Window x:Class="MonitorPC.Views.CalibracaoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Calibrar ventoinhas"
+        Width="432" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
+        FontFamily="{StaticResource FonteUI}">
+
+    <Border x:Name="Painel" Margin="20" CornerRadius="16"
+            Background="{DynamicResource Fundo}"
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+
+            <!-- Cabecalho -->
+            <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
+                        Margin="0,0,12,0" Click="Voltar_Click">
+                    <Path Data="M15,6 L9,12 L15,18" Stroke="#C4CAD6" StrokeThickness="1.8"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          Width="16" Height="16" Stretch="Uniform" />
+                </Button>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Calibrar ventoinhas" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Texto}" />
+                    <TextBlock Text="Mede a rotação máxima real de cada uma, no seu PC."
+                               FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap" MaxWidth="320"
+                               HorizontalAlignment="Left" Foreground="{DynamicResource TextoFraco}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- O que vai acontecer -->
+            <Border Margin="0,18,0,0" CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="14">
+                <StackPanel>
+                    <TextBlock Text="O que vai acontecer" FontSize="12" FontWeight="Medium"
+                               Foreground="{DynamicResource Texto}" />
+                    <TextBlock Margin="0,6,0,0" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextoFraco}"
+                               Text="Todas as ventoinhas sobem a 100% ao mesmo tempo, por cerca de doze segundos, e voltam sozinhas ao controle da placa-mãe. Vai ficar barulhento nesse intervalo. Nada é alterado de forma permanente." />
+                    <TextBlock Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextoMuitoFraco}"
+                               Text="A rotação medida vira a escala das barras: 2200 de 3400 rpm passa a mostrar dois terços, e não a barra cheia." />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Ventoinhas encontradas" FontSize="11" Margin="0,16,0,8"
+                       Foreground="{DynamicResource TextoFraco}" />
+
+            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="Lista" />
+            </ScrollViewer>
+
+            <!-- Estado -->
+            <Border x:Name="CaixaEstado" Margin="0,14,0,0" CornerRadius="12" Padding="12"
+                    Visibility="Collapsed"
+                    Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                <TextBlock x:Name="Estado" FontSize="12" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Texto}" />
+            </Border>
+
+            <UniformGrid Columns="3" Margin="0,16,0,0">
+                <Button x:Name="BotaoCalibrar" Style="{StaticResource BotaoLargo}" Margin="0,0,4,0"
+                        Content="Calibrar agora" Click="Calibrar_Click" />
+                <Button x:Name="BotaoEsquecer" Style="{StaticResource BotaoLargo}" Margin="4,0,4,0"
+                        Content="Esquecer" ToolTip="Apaga as rotações medidas e projetadas, para o app aprender do zero"
+                        Click="Esquecer_Click" />
+                <Button x:Name="BotaoFechar" Style="{StaticResource BotaoLargo}" Margin="4,0,0,0"
+                        Content="Fechar" Click="Voltar_Click" />
+            </UniformGrid>
+
+            <TextBlock x:Name="Rodape" FontSize="11" Margin="0,8,0,0"
+                       TextAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextoMuitoFraco}"
+                       Text="Precisa do driver de sensores ativo. Feche o app e as ventoinhas voltam ao normal de qualquer jeito." />
+
+        </StackPanel>
+    </Border>
+</Window>

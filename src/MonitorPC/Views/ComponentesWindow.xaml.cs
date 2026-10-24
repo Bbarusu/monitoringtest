@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using MonitorPC.Models;
 using MonitorPC.Services;
 
 namespace MonitorPC.Views;
@@ -14,6 +15,10 @@ public partial class ComponentesWindow : Window
     private LinhaDeAjuste _discos = null!;
     private LinhaDeAjuste _ventoinhas = null!;
 
+    private LinhaDeAjuste _potenciaGpu = null!;
+    private LinhaDeAjuste _potenciaCpu = null!;
+    private LinhaDeAjuste _rotacaoGpu = null!;
+
     public ComponentesWindow(AppConfig cfg, SensorService sensores)
     {
         InitializeComponent();
@@ -24,6 +29,7 @@ public partial class ComponentesWindow : Window
         MontarMedidos();
         MontarQuantidades();
         MontarWatts();
+        MontarEscalas();
         MontarFonte();
 
         Atualizar();
@@ -143,17 +149,41 @@ public partial class ComponentesWindow : Window
             _cfg.WattsOutros, v => _cfg.WattsOutros = v));
     }
 
+    /// <summary>
+    /// Os tetos que viram escala das barras. Cada campo e um atalho opcional: o
+    /// padrao e o app resolver sozinho, e a explicacao de cada linha diz qual
+    /// fonte esta valendo neste PC neste momento.
+    /// </summary>
+    private void MontarEscalas()
+    {
+        _potenciaGpu = new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
+            "Potência máxima da GPU", "",
+            _cfg.PotenciaMaximaGpuW, 0, 800,
+            v => { _cfg.PotenciaMaximaGpuW = (int)v; Salvar(); }, "W");
+
+        _potenciaCpu = new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
+            "Potência máxima da CPU", "",
+            _cfg.PotenciaMaximaCpuW, 0, 500,
+            v => { _cfg.PotenciaMaximaCpuW = (int)v; Salvar(); }, "W");
+
+        _rotacaoGpu = new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
+            "Rotação máxima da ventoinha da GPU", "",
+            _cfg.RotacaoMaximaGpuRpm, 0, 8000,
+            v => { _cfg.RotacaoMaximaGpuRpm = (int)v; Salvar(); }, "rpm");
+
+        Escalas.Children.Add(_potenciaGpu);
+        Escalas.Children.Add(_potenciaCpu);
+        Escalas.Children.Add(_rotacaoGpu);
+
+        Escalas.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Contador,
+            "Buscar catálogo atualizado",
+            "Alguns kilobytes por semana, no repositório do app. 0 desliga.",
+            _cfg.AtualizarCatalogoOnline ? 1 : 0, 0, 1,
+            v => { _cfg.AtualizarCatalogoOnline = v >= 1; Salvar(); }));
+    }
+
     private void MontarFonte()
     {
-        // Nenhum sensor informa o teto da placa: ele vem da ficha tecnica.
-        Fonte.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
-            "Potência máxima da GPU",
-            _cfg.PotenciaGpuMedida > 0
-                ? $"0 usa o maior já medido: {_cfg.PotenciaGpuMedida:F0} W"
-                : "0 deixa o app descobrir pelos sensores",
-            _cfg.PotenciaMaximaGpuW, 0, 800,
-            v => { _cfg.PotenciaMaximaGpuW = (int)v; Salvar(); }, "W"));
-
         Fonte.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
             "Capacidade da fonte", "Usada como escala do anel de potência",
             _cfg.CapacidadeFonteW, 100, 2000,
@@ -181,9 +211,11 @@ public partial class ComponentesWindow : Window
 
     private void Atualizar()
     {
-        _ram.Explicar(Origem(_sensores.ModulosRam));
-        _discos.Explicar(Origem(_sensores.Discos));
-        _ventoinhas.Explicar(Origem(_sensores.Ventoinhas) + VentoinhasSemLeitura());
+        _ram.Explicar(OrigemDaQuantidade(_sensores.ModulosRam));
+        _discos.Explicar(OrigemDaQuantidade(_sensores.Discos));
+        _ventoinhas.Explicar(OrigemDaQuantidade(_sensores.Ventoinhas) + VentoinhasSemLeitura());
+
+        AtualizarEscalas();
 
         var estimado = _sensores.Ultimo?.WattsEstimados ?? 0;
         var total = _sensores.Ultimo?.WattsTotais ?? 0;
@@ -209,7 +241,62 @@ public partial class ComponentesWindow : Window
         Reposicionar();
     }
 
-    private static string Origem((int Valor, bool Manual, int Detectado) q) =>
+    /// <summary>
+    /// Diz, embaixo de cada campo, qual teto esta valendo agora e de onde ele
+    /// saiu. Sem isso o campo em 0 nao informa nada: o usuario nao tem como
+    /// saber se o app achou a ficha tecnica da peça dele ou nao.
+    /// </summary>
+    private void AtualizarEscalas()
+    {
+        var esp = _sensores.Especificacoes;
+
+        _potenciaGpu.Explicar(EmUso(esp.TetoDePotenciaGpu(), "W"));
+        _potenciaCpu.Explicar(EmUso(esp.TetoDePotenciaCpu(), "W"));
+
+        var chave = _sensores.Ultimo?.GpuFanChave;
+        _rotacaoGpu.Explicar(chave is null
+            ? "A placa de vídeo não reporta rotação de ventoinha."
+            : EmUso(esp.TetoDeVentoinha(chave, _cfg.RotacaoMaximaGpuRpm), "rpm"));
+
+        EstadoCatalogo.Text = Catalogo();
+    }
+
+    private static string EmUso(Teto teto, string unidade)
+    {
+        if (!teto.Existe) return "Sem escala ainda: o sensor não deu leitura.";
+
+        var fonte = teto.Origem switch
+        {
+            Origem.Manual => "você informou",
+            Origem.Hardware => "medido na própria peça",
+            Origem.Extrapolado => "projetado pelos sensores",
+            Origem.Catalogo => "ficha técnica do modelo",
+            _ => "maior valor já medido"
+        };
+
+        return $"Valendo agora: {teto.Valor:F0} {unidade} · {fonte}";
+    }
+
+    /// <summary>Se o catalogo reconheceu as pecas deste PC, e de que versao ele é.</summary>
+    private string Catalogo()
+    {
+        var esp = _sensores.Especificacoes;
+        var achados = new List<string>();
+
+        if (esp.Cpu is { } c) achados.Add($"CPU como {c.Nome}");
+        if (esp.Gpu is { } g) achados.Add($"GPU como {g.Nome}");
+
+        var versao = string.IsNullOrWhiteSpace(esp.Catalogo.Versao)
+            ? "versão desconhecida"
+            : $"versão {esp.Catalogo.Versao}";
+
+        return achados.Count > 0
+            ? $"Catálogo {versao}: reconheceu {string.Join(" e ", achados)}."
+            : $"Catálogo {versao}: nenhuma peça deste PC está nele, então as escalas " +
+              "vêm dos sensores e da medição.";
+    }
+
+    private static string OrigemDaQuantidade((int Valor, bool Manual, int Detectado) q) =>
         q.Manual
             ? $"Informado à mão · o PC detectou {q.Detectado}"
             : "Detectado no seu hardware";
@@ -235,6 +322,16 @@ public partial class ComponentesWindow : Window
         _discos.Definir(_sensores.Discos.Valor);
         _ventoinhas.Definir(_sensores.Ventoinhas.Valor);
 
+        Atualizar();
+    }
+
+    /// <summary>
+    /// Mede a rotacao maxima das ventoinhas. Fica aqui, junto das escalas, porque
+    /// e disso que se trata: o numero que a barra usa como cheio.
+    /// </summary>
+    private void Calibrar_Click(object sender, RoutedEventArgs e)
+    {
+        new CalibracaoWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
         Atualizar();
     }
 

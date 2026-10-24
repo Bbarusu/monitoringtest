@@ -11,4 +11,13 @@ public sealed record DiscoInfo(
     float? HorasLigado,
     float? UsadoPct,
     float? LivreGb,
-    float? TotalGb);
+    float? TotalGb,
+
+    /// <summary>
+    /// Limiares termicos que a propria unidade publica pelo SMART. As abas nao
+    /// os exibem como temperatura — sao valores fixos e altos, que ja foram
+    /// confundidos com a leitura atual — mas como escala da barra sao o numero
+    /// certo: vem do fabricante do disco.
+    /// </summary>
+    float? AvisoC = null,
+    float? CriticoC = null);

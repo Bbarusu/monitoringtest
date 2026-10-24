@@ -31,6 +31,16 @@ public sealed class Snapshot
     public float? VramUsadaMb { get; init; }
     public float? VramTotalMb { get; init; }
     public float? GpuFanRpm { get; init; }
+
+    /// <summary>
+    /// PWM da ventoinha da GPU, em porcentagem. Junto com a rotacao, permite
+    /// projetar a rotacao maxima da placa.
+    /// </summary>
+    public float? GpuFanPwm { get; init; }
+
+    /// <summary>Chave da ventoinha da GPU na curva aprendida.</summary>
+    public string? GpuFanChave { get; init; }
+
     public float? GpuClockNucleo { get; init; }
     public float? GpuClockMemoria { get; init; }
     public float? GpuTempMemoria { get; init; }
@@ -54,6 +64,14 @@ public sealed class Snapshot
     // Ventoinhas da placa-mae, pelo nome do sensor
     public IReadOnlyDictionary<string, float> Ventoinhas { get; init; }
         = new Dictionary<string, float>();
+
+    /// <summary>PWM de cada ventoinha, quando a placa reporta o canal de controle.</summary>
+    public IReadOnlyDictionary<string, float> ControlesDeVentoinha { get; init; }
+        = new Dictionary<string, float>();
+
+    /// <summary>Chave de cada ventoinha na curva aprendida, pelo nome do sensor.</summary>
+    public IReadOnlyDictionary<string, string> ChavesDeVentoinha { get; init; }
+        = new Dictionary<string, string>();
 
     // Energia
     public double WattsEstimados { get; init; }

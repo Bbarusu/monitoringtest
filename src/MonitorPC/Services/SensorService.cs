@@ -39,9 +39,25 @@ public sealed class SensorService : IDisposable
     public (int Valor, bool Manual, int Detectado) Discos { get; private set; }
     public (int Valor, bool Manual, int Detectado) Ventoinhas { get; private set; }
 
+    /// <summary>
+    /// Tetos de escala e curvas aprendidas. Fica aqui porque so este servico
+    /// toca na biblioteca de sensores, e e dela que vem a materia-prima.
+    /// </summary>
+    public EspecificacaoService Especificacoes { get; }
+
+    private CalibracaoService? _calibracao;
+
+    /// <summary>
+    /// Medicao da rotacao maxima das ventoinhas. Fica pendurada aqui para que o
+    /// descarte do servico — que acontece no fechamento do app — tambem desfaca
+    /// qualquer comando de PWM que tenha ficado pelo caminho.
+    /// </summary>
+    public CalibracaoService Calibracao => _calibracao ??= new CalibracaoService(this);
+
     public SensorService(AppConfig cfg)
     {
         _cfg = cfg;
+        Especificacoes = new EspecificacaoService(cfg);
         _pc = new Computer
         {
             IsCpuEnabled = true,
@@ -58,6 +74,9 @@ public sealed class SensorService : IDisposable
         _pc.Accept(_visitor);
 
         DetectarQuantidades();
+        Especificacoes.Identificar(
+            _pc.Hardware.FirstOrDefault(h => h.HardwareType == HardwareType.Cpu)?.Name,
+            _pc.Hardware.FirstOrDefault(h => EhGpu(h.HardwareType))?.Name);
         RecalcularEstimativa();
 
         Task.Run(LacoAsync);
@@ -136,6 +155,31 @@ public sealed class SensorService : IDisposable
     /// <summary>O painel aberto le a cada 1 s; fechado, a cada 3 s.</summary>
     public void DefinirPainelAberto(bool aberto) => _painelAberto = aberto;
 
+    private int _rapido;
+
+    /// <summary>
+    /// Leitura no intervalo curto enquanto o retorno nao for descartado, mesmo
+    /// com o painel fechado. A calibracao precisa disso: medir a aceleracao de
+    /// uma ventoinha de 3 em 3 segundos perderia o momento em que ela estabiliza.
+    /// E um contador, e nao uma chave, para dois pedidos simultaneos nao se
+    /// desligarem um ao outro.
+    /// </summary>
+    public IDisposable ModoRapido()
+    {
+        Interlocked.Increment(ref _rapido);
+        return new Devolucao(() => Interlocked.Decrement(ref _rapido));
+    }
+
+    private sealed class Devolucao(Action aoFechar) : IDisposable
+    {
+        private Action? _aoFechar = aoFechar;
+
+        public void Dispose()
+        {
+            Interlocked.Exchange(ref _aoFechar, null)?.Invoke();
+        }
+    }
+
     // ------------------------------------------------------------------
 
     private async Task LacoAsync()
@@ -158,7 +202,9 @@ public sealed class SensorService : IDisposable
                 // Uma leitura que falha nao pode parar o laco.
             }
 
-            var intervalo = _painelAberto ? _cfg.IntervaloPainelAberto : _cfg.IntervaloPainelFechado;
+            var intervalo = _painelAberto || Volatile.Read(ref _rapido) > 0
+                ? _cfg.IntervaloPainelAberto
+                : _cfg.IntervaloPainelFechado;
             try { await Task.Delay(intervalo, _cts.Token); }
             catch (OperationCanceledException) { break; }
         }
@@ -190,12 +236,26 @@ public sealed class SensorService : IDisposable
             RecalcularEstimativa();
         }
 
+        var pares = ParesDeVentoinha();
+
+        // Cada par rotacao/PWM melhora a estimativa da rotacao maxima. E a unica
+        // forma de saber o teto de um ventilador: nenhuma tabela sabe qual
+        // modelo esta espetado em qual conector da placa.
+        foreach (var p in pares)
+            Especificacoes.ObservarVentoinha(p.Chave, p.Rpm, p.Pwm);
+
         var ventoinhas = new Dictionary<string, float>();
+        var controles = new Dictionary<string, float>();
         foreach (var nome in _nomesVentoinhas)
         {
-            var v = VentoinhaPorNome(nome);
-            if (v.HasValue) ventoinhas[nome] = v.Value;
+            var par = pares.FirstOrDefault(p => !p.Gpu && p.Nome == nome);
+            if (par is null) continue;
+
+            ventoinhas[nome] = par.Rpm;
+            if (par.Pwm is { } pwm) controles[nome] = pwm;
         }
+
+        var gpuFan = pares.FirstOrDefault(p => p.Gpu);
 
         var cpuTemp = Pegar(h => h == HardwareType.Cpu, SensorType.Temperature, "Tctl", "Tdie", "Package");
         var discos = MontarDiscos();
@@ -219,6 +279,8 @@ public sealed class SensorService : IDisposable
             VramUsadaMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Used"),
             VramTotalMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Total"),
             GpuFanRpm = Pegar(EhGpu, SensorType.Fan, "Fan"),
+            GpuFanPwm = gpuFan?.Pwm,
+            GpuFanChave = gpuFan?.Chave,
             GpuClockNucleo = Pegar(EhGpu, SensorType.Clock, "GPU Core"),
             GpuClockMemoria = Pegar(EhGpu, SensorType.Clock, "GPU Memory"),
             GpuTempMemoria = Pegar(EhGpu, SensorType.Temperature, "GPU Memory"),
@@ -238,6 +300,13 @@ public sealed class SensorService : IDisposable
             Discos = discos,
 
             Ventoinhas = ventoinhas,
+            ControlesDeVentoinha = controles,
+            // Agrupado por nome porque duas controladoras podem expor sensores
+            // homonimos ("Fan #1" em cada uma), e um dicionario com chave
+            // repetida derrubaria a leitura inteira.
+            ChavesDeVentoinha = pares.Where(p => !p.Gpu)
+                                     .GroupBy(p => p.Nome)
+                                     .ToDictionary(g => g.Key, g => g.First().Chave),
 
             WattsEstimados = _wattsEstimados,
             WattsTotais = total,
@@ -318,12 +387,108 @@ public sealed class SensorService : IDisposable
         return null;
     }
 
-    private float? VentoinhaPorNome(string nome)
+    /// <summary>Uma ventoinha e o canal de PWM que a comanda, quando existe.</summary>
+    public sealed record ParDeVentoinha(
+        string Chave, string Nome, string Peca, bool Gpu, float Rpm, float? Pwm);
+
+    /// <summary>
+    /// Casa cada sensor de rotacao com o sensor de controle correspondente.
+    ///
+    /// A placa reporta os dois separados, e nada na biblioteca os liga. O que os
+    /// liga e o sufixo: "Fan #2" e "Fan Control #2" sao o mesmo conector. Em
+    /// placas de video os dois tem o mesmo nome. Quando nem um nem outro resolve,
+    /// vale a posicao, mas so com a mesma quantidade dos dois lados — parear na
+    /// marra daria um PWM de outro conector, e a extrapolacao sairia errada sem
+    /// dar sinal de que errou.
+    /// </summary>
+    public List<ParDeVentoinha> ParesDeVentoinha() => Canais()
+        .Where(c => c.Rotacao.Value is > 0)
+        .Select(c => new ParDeVentoinha(
+            Chave(c.Peca, c.Rotacao), c.Rotacao.Name, c.Peca.Name.Trim(),
+            EhGpu(c.Peca.HardwareType), c.Rotacao.Value!.Value, c.Controle?.Value))
+        .ToList();
+
+    /// <summary>
+    /// Uma ventoinha e o canal que a comanda, para a calibracao. Diferente dos
+    /// pares, inclui as que estao paradas: uma placa de video em modo silencioso
+    /// marca 0 rpm, e e justamente ela que mais precisa ser calibrada.
+    /// </summary>
+    public sealed record CanalDeVentoinha(
+        string Chave, string Nome, string Peca, bool Gpu, ISensor Rotacao, IControl? Comando)
     {
-        foreach (var (h, s) in Todos())
-            if (s.SensorType == SensorType.Fan && !EhGpu(h.HardwareType) && s.Name == nome)
-                return s.Value;
-        return null;
+        public float Rpm => Rotacao.Value ?? 0;
+        public bool Comandavel => Comando is not null;
+    }
+
+    public List<CanalDeVentoinha> CanaisDeVentoinha() => Canais()
+        .Select(c => new CanalDeVentoinha(
+            Chave(c.Peca, c.Rotacao), c.Rotacao.Name, c.Peca.Name.Trim(),
+            EhGpu(c.Peca.HardwareType), c.Rotacao, c.Controle?.Control))
+        .ToList();
+
+    /// <summary>
+    /// Casa cada sensor de rotacao com o de controle, uma vez so, para os dois
+    /// usos: aprender a curva e comandar a ventoinha.
+    /// </summary>
+    private List<(IHardware Peca, ISensor Rotacao, ISensor? Controle)> Canais()
+    {
+        var lista = new List<(IHardware, ISensor, ISensor?)>();
+        var pilha = new Stack<IHardware>(_pc.Hardware);
+
+        while (pilha.Count > 0)
+        {
+            var h = pilha.Pop();
+            foreach (var sub in h.SubHardware) pilha.Push(sub);
+
+            var rotacoes = h.Sensors
+                .Where(s => s.SensorType == SensorType.Fan && s.Value.HasValue)
+                .OrderBy(s => s.Index)
+                .ToList();
+
+            if (rotacoes.Count == 0) continue;
+
+            var controles = h.Sensors
+                .Where(s => s.SensorType == SensorType.Control && s.Value.HasValue)
+                .OrderBy(s => s.Index)
+                .ToList();
+
+            for (var i = 0; i < rotacoes.Count; i++)
+                lista.Add((h, rotacoes[i], Controle(rotacoes[i], controles, i, rotacoes.Count)));
+        }
+
+        return lista;
+    }
+
+    /// <summary>Identidade estavel de uma ventoinha entre sessoes.</summary>
+    private static string Chave(IHardware peca, ISensor fan) =>
+        $"{peca.Name.Trim()}/{fan.Name.Trim()}";
+
+    private static ISensor? Controle(ISensor fan, List<ISensor> controles, int i, int total)
+    {
+        if (controles.Count == 0) return null;
+
+        // 1. Mesmo sufixo numerico: "Fan #2" com "Fan Control #2".
+        var sufixo = Sufixo(fan.Name);
+        if (sufixo is not null)
+        {
+            var igual = controles.FirstOrDefault(c => Sufixo(c.Name) == sufixo);
+            if (igual is not null) return igual;
+        }
+
+        // 2. Mesmo nome, como nas placas de video.
+        var nome = controles.FirstOrDefault(c =>
+            string.Equals(c.Name, fan.Name, StringComparison.OrdinalIgnoreCase));
+        if (nome is not null) return nome;
+
+        // 3. Mesma posicao, e so com a mesma quantidade dos dois lados.
+        return controles.Count == total ? controles[i] : null;
+    }
+
+    /// <summary>O "#2" de "Fan Control #2". Nulo quando o sensor nao e numerado.</summary>
+    private static string? Sufixo(string nome)
+    {
+        var corte = nome.LastIndexOf('#');
+        return corte >= 0 ? nome[corte..].Trim() : null;
     }
 
     /// <summary>
@@ -425,11 +590,29 @@ public sealed class SensorService : IDisposable
                 Sensor(SensorType.Factor, "Power On Hours"),
                 Sensor(SensorType.Load, "Used Space"),
                 Sensor(SensorType.Data, "Free Space"),
-                Sensor(SensorType.Data, "Total Space")));
+                Sensor(SensorType.Data, "Total Space"),
+
+                // Os mesmos limiares que a leitura de temperatura descarta.
+                // Como temperatura atual enganam; como escala, vem do fabricante.
+                Limiar(h, "Warning"),
+                Limiar(h, "Critical")));
         }
 
         return lista;
     }
+
+    /// <summary>
+    /// Limiar termico publicado pela unidade. No NVMe sao o WCTEMP e o CCTEMP do
+    /// proprio controlador; valores plausiveis so para nao deixar um sensor
+    /// zerado ou absurdo virar escala.
+    /// </summary>
+    private static float? Limiar(IHardware h, string tipo) => h.Sensors
+        .Where(s => s.SensorType == SensorType.Temperature
+                    && s.Name.Contains(tipo, StringComparison.OrdinalIgnoreCase)
+                    && s.Value is > 40 and < 130)
+        .Select(s => s.Value)
+        .DefaultIfEmpty(null)
+        .Max();
 
     private float? TotalRamGb()
     {
@@ -460,6 +643,11 @@ public sealed class SensorService : IDisposable
     public void Dispose()
     {
         _cts.Cancel();
+
+        // Antes de fechar a biblioteca: depois dela, o comando de PWM nao chega
+        // mais a placa, e uma ventoinha ficaria em 100% ate o proximo boot.
+        try { _calibracao?.Restaurar(); } catch { }
+
         try { _pc.Close(); } catch { }
         _cts.Dispose();
     }

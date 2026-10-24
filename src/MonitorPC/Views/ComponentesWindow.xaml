@@ -48,6 +48,19 @@
                                Foreground="{DynamicResource TextoFraco}" />
                     <StackPanel x:Name="Watts" />
 
+                    <TextBlock Text="Escalas das barras" FontSize="11" Margin="0,12,0,4"
+                               Foreground="{DynamicResource TextoFraco}" />
+                    <TextBlock Margin="0,0,0,8" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextoMuitoFraco}"
+                               Text="Deixe em 0 e o app descobre sozinho: primeiro o que a peça informa, depois a ficha técnica do modelo, e só então o maior valor já medido." />
+                    <StackPanel x:Name="Escalas" />
+
+                    <Button Style="{StaticResource BotaoLargo}" Margin="0,4,0,0"
+                            Content="Calibrar ventoinhas" Click="Calibrar_Click" />
+                    <TextBlock x:Name="EstadoCatalogo" Margin="0,8,0,0" FontSize="11"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextoMuitoFraco}" />
+
                     <TextBlock Text="Fonte" FontSize="11" Margin="0,12,0,8"
                                Foreground="{DynamicResource TextoFraco}" />
                     <StackPanel x:Name="Fonte" />

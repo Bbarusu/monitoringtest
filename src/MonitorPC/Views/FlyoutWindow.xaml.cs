@@ -150,10 +150,12 @@ public partial class FlyoutWindow : Window
     /// </summary>
     public void GravarMaximos()
     {
-        if (!_maximosMudaram) return;
+        // As curvas aprendidas tambem entram aqui: sao o que o app sabe das
+        // ventoinhas, e perde-las a cada fechamento obrigaria a reaprender tudo.
+        if (_maximosMudaram) _sensores.Especificacoes.MarcarMudanca();
 
         _maximosMudaram = false;
-        _cfg.Salvar();
+        _sensores.Especificacoes.Gravar();
     }
 
     /// <summary>Devolve o painel ao canto, pelo menu da bandeja.</summary>
@@ -304,11 +306,19 @@ public partial class FlyoutWindow : Window
         if (_cfg.CapacidadeFonteW > 0)
             Guardar(_historicoEnergia, (float)(s.WattsTotais / _cfg.CapacidadeFonteW * 100));
 
-        // Os maximos ficam guardados entre sessoes: a escala das barras vem do
-        // que os sensores mediram, nao de um numero digitado.
+        // Os maximos medidos ficam guardados entre sessoes. Eles sao o ultimo
+        // recurso da escala, mas tambem servem de conferencia: uma peca que
+        // passa do numero da ficha tecnica denuncia a ficha errada para aquele
+        // exemplar, e a medicao passa a valer.
         if (s.GpuWatts is { } w && w > _cfg.PotenciaGpuMedida)
         {
             _cfg.PotenciaGpuMedida = w;
+            _maximosMudaram = true;
+        }
+
+        if (s.CpuWatts is { } cw && cw > _cfg.PotenciaCpuMedida)
+        {
+            _cfg.PotenciaCpuMedida = cw;
             _maximosMudaram = true;
         }
 
@@ -372,6 +382,17 @@ public partial class FlyoutWindow : Window
         CpuWattsTexto.Text = s.CpuWatts is > 0 ? $"{s.CpuWatts:F0} W" : "n/d";
         CpuTensaoTexto.Text = s.CpuTensao is > 0 ? $"{s.CpuTensao:0.00} V" : "n/d";
 
+        // Os quadrados sao pequenos demais para carregar "66 / 88 W" sem
+        // atropelar em um processador de tres digitos, entao o teto e a
+        // procedencia dele ficam no tooltip. Sem isso, 66 W nao diz se o
+        // processador esta folgado ou no limite.
+        var esp = _sensores.Especificacoes;
+
+        CpuWattsTexto.ToolTip = Contexto(s.CpuWatts, esp.TetoDePotenciaCpu(), "W");
+        CpuTempTexto.ToolTip = Contexto(s.CpuTemp, esp.TetoTermicoCpu(_cfg.LimiteCpu), "°C");
+        CpuClockTexto.ToolTip = Contexto(s.CpuClockMhz,
+            esp.TetoDeClockCpu(s.CpuClockMhz ?? 0), "MHz");
+
         DesenharHistorico();
         MontarGrade(s);
     }
@@ -393,6 +414,11 @@ public partial class FlyoutWindow : Window
         GpuTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
         GpuClockTexto.Text = s.GpuClockNucleo is > 0 ? Clock(s.GpuClockNucleo!.Value) : "n/d";
         GpuClockMemTexto.Text = s.GpuClockMemoria is > 0 ? Clock(s.GpuClockMemoria!.Value) : "n/d";
+
+        var esp = _sensores.Especificacoes;
+        GpuTempTexto.ToolTip = Contexto(s.GpuTemp, esp.TetoTermicoGpu(_cfg.LimiteGpu), "°C");
+        GpuClockTexto.ToolTip = Contexto(s.GpuClockNucleo,
+            esp.TetoDeClockGpu(s.GpuClockNucleo ?? 0), "MHz");
 
         AplicarHotSpot(s);
         DesenharHistoricoGpu();
@@ -434,47 +460,68 @@ public partial class FlyoutWindow : Window
     }
 
     /// <summary>
-    /// VRAM tem total informado pelo sensor. Potencia e rotacao nao tem limite
-    /// publicado, entao a escala e o maior valor visto nesta sessao, o que o
-    /// tooltip deixa explicito.
+    /// Cada barra mede o valor atual contra o maximo que aquela peca aguenta, e
+    /// nao contra o maximo que ela ja fez. O teto vem da melhor fonte
+    /// disponivel — a peca, os sensores combinados, a ficha tecnica — e o
+    /// tooltip diz qual foi, porque uma barra pela metade so informa alguma
+    /// coisa se der para saber metade do que.
     /// </summary>
+    /// <summary>
+    /// Transforma uma leitura solta em leitura com referencia: quanto e, de
+    /// quanto, e quem disse que o teto e esse. Devolve nulo quando nao ha nada a
+    /// acrescentar, para o quadrado nao ganhar um tooltip vazio.
+    /// </summary>
+    private static string? Contexto(float? valor, Teto teto, string unidade)
+    {
+        if (valor is not { } v || v <= 0) return null;
+        if (!teto.Existe) return teto.Explicacao(unidade);
+
+        return $"{v:F0} de {teto.Valor:F0} {unidade} · {teto.Porcentagem(v):F0}%\n" +
+               teto.Explicacao(unidade);
+    }
+
     private void MontarBarrasGpu(Snapshot s)
     {
+        var esp = _sensores.Especificacoes;
         var barras = new List<(string Rotulo, string Valor, double Pct, string? Dica)>();
 
         if (s.VramUsadaMb is { } usada && s.VramTotalMb is { } total && total > 0)
             barras.Add(("VRAM",
                 $"{usada / 1024:0.0} / {total / 1024:0.0} GB",
                 usada / total * 100,
-                null));
+                "Escala: total informado pela própria placa."));
 
         if (s.GpuWatts is { } w && w > 0)
         {
-            // Com a potencia maxima da placa informada, a barra passa a medir o
-            // quanto dela esta em uso. Sem isso, o unico teto conhecido e o maior
-            // valor ja visto, que muda durante a sessao e engana a leitura.
-            var teto = _cfg.PotenciaMaximaGpuW > 0 ? _cfg.PotenciaMaximaGpuW : _cfg.PotenciaGpuMedida;
+            var teto = esp.TetoDePotenciaGpu();
 
             barras.Add(("Potência",
-                _cfg.PotenciaMaximaGpuW > 0 ? $"{w:F0} / {teto:F0} W" : $"{w:F0} W",
-                teto > 0 ? w / teto * 100 : 0,
-                _cfg.PotenciaMaximaGpuW > 0
-                    ? $"Escala: potência máxima informada da placa ({teto:F0} W)"
-                    : $"Escala: maior valor já medido pelos sensores ({teto:F0} W). " +
-                      "Sobe sozinho conforme a GPU é exigida."));
+                teto.Existe ? $"{w:F0} / {teto.Valor:F0} W" : $"{w:F0} W",
+                teto.Porcentagem(w),
+                teto.Explicacao("W")));
         }
 
         if (s.GpuFanRpm is { } rpm)
-            barras.Add(("Ventilador",
-                rpm > 0 ? $"{rpm:F0} rpm" : "parado",
-                _cfg.RotacaoGpuMedida > 0 ? rpm / _cfg.RotacaoGpuMedida * 100 : 0,
-                _cfg.RotacaoGpuMedida > 0
-                    ? $"Escala: maior rotação já medida ({_cfg.RotacaoGpuMedida:F0} rpm)"
-                    : "A ventoinha só liga sob carga"));
+        {
+            var teto = s.GpuFanChave is { } chave
+                ? esp.TetoDeVentoinha(chave, _cfg.RotacaoMaximaGpuRpm)
+                : Teto.Nenhum;
+
+            var valor = rpm <= 0
+                ? "parado"
+                : teto.Existe ? $"{rpm:F0} / {teto.Valor:F0} rpm" : $"{rpm:F0} rpm";
+
+            var dica = teto.Explicacao("rpm");
+            if (s.GpuFanPwm is { } pwm)
+                dica += $"\nPWM agora: {pwm:F0}%.";
+
+            barras.Add(("Ventilador", valor, teto.Porcentagem(rpm), dica));
+        }
 
         if (s.GpuTempMemoria is { } tm && tm > 0)
             barras.Add(("Temp. memória", $"{tm:F0} °C", Math.Clamp(tm / 110 * 100, 0, 100),
-                "Escala até 110 °C, o limite típico de GDDR"));
+                "Escala até 110 °C, o limite típico de GDDR. A memória não publica " +
+                "limiar próprio, ao contrário dos discos."));
 
         while (BarrasGpu.Children.Count > barras.Count)
             BarrasGpu.Children.RemoveAt(BarrasGpu.Children.Count - 1);
@@ -529,11 +576,7 @@ public partial class FlyoutWindow : Window
         DiscoEscritaTexto.Text = Taxa(escrita);
         DiscoTempTexto.Text = temperatura is > 0 ? $"{temperatura:F0} °C" : "n/d";
         DiscoTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
-        DiscoTempTexto.ToolTip = escolhido is null && s.Discos.Count > 1
-            ? string.Join("\n", s.Discos
-                .Where(d => d.TemperaturaC is > 0)
-                .Select(d => $"{d.Nome}: {d.TemperaturaC:F0} °C"))
-            : null;
+        DiscoTempTexto.ToolTip = DicaDeTemperatura(s, escolhido);
 
         // Numa unidade so, as horas ligado cabem ao lado da vida util.
         DiscoVidaTexto.Text = escolhido is { VidaPct: { } vp, HorasLigado: { } h }
@@ -545,6 +588,41 @@ public partial class FlyoutWindow : Window
 
         if (ModoUnidades.IsChecked == true) MontarUnidades(s);
         else MontarProcessos();
+    }
+
+    /// <summary>
+    /// Os limiares que a propria unidade publica pelo SMART, ao lado da leitura.
+    /// O alerta do painel continua no limite que voce configurou: o limiar do
+    /// fabricante marca onde o disco comeca a reduzir desempenho, perto de 85 °C,
+    /// o que como aviso chegaria tarde demais.
+    /// </summary>
+    private string? DicaDeTemperatura(Snapshot s, DiscoInfo? escolhido)
+    {
+        var linhas = new List<string>();
+
+        if (escolhido is null && s.Discos.Count > 1)
+            linhas.AddRange(s.Discos
+                .Where(d => d.TemperaturaC is > 0)
+                .Select(d => $"{d.Nome}: {d.TemperaturaC:F0} °C"));
+
+        var disco = escolhido ?? s.Discos.FirstOrDefault();
+        if (disco is not null)
+        {
+            var teto = _sensores.Especificacoes.TetoDeDisco(
+                disco.CriticoC, disco.AvisoC, _cfg.LimiteDisco);
+
+            if (teto.Origem == Origem.Hardware)
+            {
+                if (linhas.Count > 0) linhas.Add("");
+                linhas.Add(disco.AvisoC is { } a && disco.CriticoC is { } c
+                    ? $"{Encurtar(disco.Nome)} avisa a partir de {a:F0} °C e marca " +
+                      $"crítico em {c:F0} °C, segundo o próprio SMART."
+                    : $"{Encurtar(disco.Nome)} publica {teto.Valor:F0} °C como limiar.");
+                linhas.Add($"Seu alerta está em {_cfg.LimiteDisco:F0} °C.");
+            }
+        }
+
+        return linhas.Count > 0 ? string.Join("\n", linhas) : null;
     }
 
     /// <summary>

@@ -156,6 +156,13 @@ src/MonitorPC/
   Services/PerformanceService.cs  ações do Modo Desempenho
   Services/StressService.cs       carga de CPU controlada
   Views/SensoresWindow.xaml       lista de todos os sensores
+  Models/Teto.cs                  um valor máximo e a procedência dele
+  Models/CurvaDeVentoinha.cs      curva rotação x PWM aprendida
+  Services/CatalogoService.cs     ficha técnica por modelo, embutida e atualizável
+  Services/EspecificacaoService.cs escolhe o teto de cada barra
+  Services/CalibracaoService.cs   mede a rotação máxima real das ventoinhas
+  Views/CalibracaoWindow.xaml     a tela da calibração
+  Dados/catalogo.json             o catálogo embutido
   Views/EstresseWindow.xaml       a tela do teste de estresse
   Services/DiskLogService.cs      registro de picos de disco
   Views/LogDiscoWindow.xaml       a tela do log
@@ -173,6 +180,53 @@ src/MonitorPC/
 
 Medido no hardware de referência: média de 0,05 a 0,07% de CPU, com a memória
 estabilizando em torno de 88 MB.
+
+## De onde vem a escala das barras
+
+Uma barra pela metade só informa alguma coisa se der para saber metade do quê.
+Por isso cada barra mede o valor de agora contra o que a peça aguenta, e não
+contra o maior valor que ela já fez. O teto vem da melhor fonte disponível, nesta
+ordem, e o tooltip da barra sempre diz qual delas está valendo:
+
+| Origem | O que é | Onde aparece |
+|---|---|---|
+| Manual | Número informado na tela de componentes | Sobrepõe todas as outras |
+| Hardware | A peça publica o limite, ou ele foi medido nela | Limiares SMART dos discos, ventoinha calibrada, VRAM total |
+| Extrapolado | Calculado a partir de dois sensores da mesma peça | Rotação máxima projetada pela curva PWM |
+| Catálogo | Ficha técnica do modelo | PPT da CPU, TBP da GPU, TjMax, clock de boost |
+| Medido | O maior valor já registrado, que sobe com o tempo | Último recurso, quando nada acima existe |
+
+### O catálogo
+
+`Dados/catalogo.json` viaja embutido no executável e guarda potência máxima,
+limite térmico e clock de boost por modelo. Ele é atualizável pela internet — um
+GET de poucos kilobytes no próprio repositório, no máximo uma vez por semana,
+com cache local e falha silenciosa. Desligado nas configurações, vale a cópia
+embutida. Não existe API pública gratuita de especificações de hardware: a
+TechPowerUp licencia a dela, então o catálogo é mantido à mão aqui.
+
+A medição também serve de conferência: uma peça que ultrapassa a ficha técnica
+denuncia que aquele exemplar tem limite elevado de fábrica, e a escala passa a
+seguir o que foi medido.
+
+### Por que ventoinha não entra no catálogo
+
+Nenhuma tabela sabe qual ventilador está espetado em qual conector da placa, e a
+rotação varia entre fabricantes da mesma placa de vídeo. Então a rotação máxima
+sai dos próprios sensores, de duas formas:
+
+- **Passiva**: o app casa cada sensor de rotação com o canal de PWM que o comanda
+  (`Fan #2` com `Fan Control #2`; nas placas de vídeo, pelo nome igual) e guarda
+  os pontos da curva entre sessões. Com o PWM acima de 60%, projeta a reta até
+  100%. Abaixo disso não projeta nada: a curva não é reta, e extrapolar de 40%
+  multiplicaria o erro por seis.
+- **Calibração**: em Componentes → Calibrar ventoinhas, todas sobem a 100% por
+  cerca de doze segundos e voltam sozinhas ao controle da placa-mãe. A rotação
+  medida aí é a resposta definitiva. A restauração é garantida por `finally`, pelo
+  cancelamento da tela e de novo no fechamento do app.
+
+Ventoinhas em controladora externa ou travadas pela BIOS aparecem na lista como
+não comandáveis: a rotação é visível, mas o teto não pode ser medido.
 
 ## Hardware de referência
 

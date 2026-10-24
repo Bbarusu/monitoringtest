@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using MonitorPC.Models;
 
 namespace MonitorPC.Services;
 
@@ -41,13 +41,43 @@ public sealed class AppConfig
     public int PotenciaMaximaGpuW { get; set; }
 
     /// <summary>
-    /// Maior potencia de GPU ja medida, mantida entre sessoes. E daqui que sai a
-    /// escala quando o teto nao foi informado a mao.
+    /// Maior potencia de GPU ja medida, mantida entre sessoes. Ultimo recurso:
+    /// so vale quando o modelo nao esta no catalogo e nada foi informado a mao.
     /// </summary>
     public double PotenciaGpuMedida { get; set; }
 
     /// <summary>Maior rotacao de ventoinha da GPU ja medida.</summary>
     public double RotacaoGpuMedida { get; set; }
+
+    /// <summary>
+    /// Rotacao maxima da ventoinha da GPU, em rpm. Zero deixa o app projetar
+    /// pela curva rotacao x PWM, que e mais confiavel que uma tabela: a rotacao
+    /// varia entre fabricantes da mesma placa.
+    /// </summary>
+    public int RotacaoMaximaGpuRpm { get; set; }
+
+    /// <summary>
+    /// Potencia maxima do processador, em watts. Zero usa o PPT ou o Maximum
+    /// Turbo Power do catalogo, e na falta dele o maior valor ja medido.
+    /// </summary>
+    public int PotenciaMaximaCpuW { get; set; }
+
+    /// <summary>Maior potencia de pacote da CPU ja medida.</summary>
+    public double PotenciaCpuMedida { get; set; }
+
+    /// <summary>
+    /// Curva rotacao x PWM de cada ventoinha, pela chave "peca/sensor". E daqui
+    /// que sai a rotacao maxima: nenhuma tabela sabe qual ventilador esta
+    /// espetado na placa, mas os dois sensores juntos respondem.
+    /// </summary>
+    public Dictionary<string, CurvaDeVentoinha> CurvasDeVentoinha { get; set; } = new();
+
+    /// <summary>
+    /// Buscar o catalogo de especificacoes atualizado. Um GET de poucos
+    /// kilobytes no repositorio do app, no maximo uma vez por semana. Desligado,
+    /// vale a copia que veio embutida.
+    /// </summary>
+    public bool AtualizarCatalogoOnline { get; set; } = true;
 
     // --- Fonte ---
     public double EficienciaFonte { get; set; } = 0.85;
