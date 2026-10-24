@@ -181,6 +181,12 @@ src/MonitorPC/
 Medido no hardware de referência: média de 0,05 a 0,07% de CPU, com a memória
 estabilizando em torno de 88 MB.
 
+A medição de disco por processo é a parte cara, e por isso só corre com a aba
+Disco aberta, fora da thread da interface e com uma varredura por vez. O caminho
+do executável sai de `QueryFullProcessImageName`, uma chamada por processo, e
+apenas para os que aparecem na lista — `Process.MainModule` enumeraria os
+módulos carregados de cada um dos trezentos processos da máquina.
+
 ## De onde vem a escala das barras
 
 Uma barra pela metade só informa alguma coisa se der para saber metade do quê.

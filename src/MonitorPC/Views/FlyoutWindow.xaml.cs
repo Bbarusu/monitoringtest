@@ -831,11 +831,41 @@ public partial class FlyoutWindow : Window
     /// As linhas sao sempre as mesmas: com a quantidade variando, o painel
     /// mudava de altura a cada leitura.
     /// </summary>
-    private void MontarProcessos()
+    /// <summary>
+    /// Fila de uma medicao por vez. Sem isto, uma varredura que demorasse mais
+    /// que o intervalo de leitura empilharia varreduras, cada uma roubando a
+    /// amostra anterior da outra e estragando as taxas.
+    /// </summary>
+    private bool _medindoProcessos;
+
+    private async void MontarProcessos()
     {
         RotuloListaDisco.Text = "Consumindo o disco agora";
 
-        var processos = _processos.Medir(LinhasDeProcesso);
+        if (_medindoProcessos) return;
+        _medindoProcessos = true;
+
+        IReadOnlyList<ProcessoDisco> processos;
+
+        // Fora da thread da interface: a varredura abre um handle por processo,
+        // e são trezentos. Mesmo rápida, não pode acontecer entre dois quadros.
+        try
+        {
+            processos = await Task.Run(() => _processos.Medir(LinhasDeProcesso));
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Medir processos de disco", ex);
+            return;
+        }
+        finally
+        {
+            _medindoProcessos = false;
+        }
+
+        // A aba pode ter mudado durante a medição.
+        if (_aba != Aba.Disco || ModoUnidades.IsChecked == true) return;
+
         var maior = processos.Count > 0 ? processos.Max(p => p.TotalMbs) : 0;
 
         SincronizarLinhas(LinhasDeProcesso);
