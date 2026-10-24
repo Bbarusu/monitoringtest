@@ -23,30 +23,35 @@ public sealed class BarraDeMetrica : StackPanel
         Margin = new Thickness(0, 0, 0, 10);
 
         var topo = new Grid();
+
+        // SetResourceReference, e nao ThemeService.Pincel: o pincel pego no
+        // construtor congela o tema daquele instante, e estas barras sao criadas
+        // na primeira vez que a aba aparece. Trocar para o tema claro depois
+        // disso deixava o trilho preto e o rotulo quase invisivel.
         _rotulo = new TextBlock
         {
             FontSize = 12,
-            Foreground = ThemeService.Pincel("TextoFraco"),
             HorizontalAlignment = HorizontalAlignment.Left
         };
+        _rotulo.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+
         _valor = new TextBlock
         {
             FontSize = 12,
             FontWeight = FontWeights.Medium,
-            Foreground = ThemeService.Pincel("Texto"),
             HorizontalAlignment = HorizontalAlignment.Right
         };
+        _valor.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
         topo.Children.Add(_rotulo);
         topo.Children.Add(_valor);
         Children.Add(topo);
 
         var trilho = new Grid { Margin = new Thickness(0, 5, 0, 0) };
-        trilho.Children.Add(new Border
-        {
-            Height = 6,
-            CornerRadius = new CornerRadius(3),
-            Background = ThemeService.Pincel("Trilho")
-        });
+
+        var fundoDoTrilho = new Border { Height = 6, CornerRadius = new CornerRadius(3) };
+        fundoDoTrilho.SetResourceReference(Border.BackgroundProperty, "Trilho");
+        trilho.Children.Add(fundoDoTrilho);
 
         _cheia = new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) };
         _vazia = new ColumnDefinition { Width = new GridLength(100, GridUnitType.Star) };

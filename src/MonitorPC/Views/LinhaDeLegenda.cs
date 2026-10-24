@@ -35,14 +35,16 @@ public sealed class LinhaDeLegenda : Grid
         SetColumn(_cor, 0);
         Children.Add(_cor);
 
+        // Referencia viva, para a legenda nao ficar presa ao tema em que foi
+        // montada quando o usuario alterna claro e escuro.
         _nome = new TextBlock
         {
             FontSize = 12,
             Margin = new Thickness(8, 0, 8, 0),
             TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeService.Pincel("Texto")
+            VerticalAlignment = VerticalAlignment.Center
         };
+        _nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
         SetColumn(_nome, 1);
         Children.Add(_nome);
 
@@ -50,9 +52,9 @@ public sealed class LinhaDeLegenda : Grid
         {
             FontSize = 12,
             FontWeight = FontWeights.SemiBold,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeService.Pincel("Texto")
+            VerticalAlignment = VerticalAlignment.Center
         };
+        _valor.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
         SetColumn(_valor, 2);
         Children.Add(_valor);
 
@@ -60,9 +62,9 @@ public sealed class LinhaDeLegenda : Grid
         {
             FontSize = 11,
             TextAlignment = TextAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeService.Pincel("TextoFraco")
+            VerticalAlignment = VerticalAlignment.Center
         };
+        _origem.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
         SetColumn(_origem, 3);
         Children.Add(_origem);
     }

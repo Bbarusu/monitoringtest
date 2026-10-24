@@ -265,6 +265,46 @@ public sealed class EspecificacaoService
             "O disco não publica limiar próprio, então vale o limite que você configurou.");
     }
 
+    // ------------------------------------------------------------------
+    // Taxas de disco
+
+    /// <summary>
+    /// Registra as taxas de uma unidade. Guardadas entre sessoes porque uma
+    /// escala que recomeca do zero toda vez que o app abre transforma qualquer
+    /// copia de arquivo na barra cheia.
+    /// </summary>
+    public void ObservarDisco(string nome, float? leitura, float? escrita)
+    {
+        Subir(_cfg.LeituraMaximaPorDisco, nome, leitura);
+        Subir(_cfg.EscritaMaximaPorDisco, nome, escrita);
+    }
+
+    private void Subir(Dictionary<string, double> onde, string nome, float? taxa)
+    {
+        if (taxa is not { } t || t <= 0) return;
+        if (t <= onde.GetValueOrDefault(nome)) return;
+
+        onde[nome] = t;
+        _mudou = true;
+    }
+
+    public Teto TetoDeLeitura(string nome) => TaxaDeDisco(_cfg.LeituraMaximaPorDisco, nome, "leitura");
+    public Teto TetoDeEscrita(string nome) => TaxaDeDisco(_cfg.EscritaMaximaPorDisco, nome, "escrita");
+
+    private static Teto TaxaDeDisco(Dictionary<string, double> onde, string nome, string qual)
+    {
+        var pico = onde.GetValueOrDefault(nome);
+
+        return pico > 0
+            ? new Teto(pico, Origem.Medido,
+                $"Maior {qual} já registrada nesta unidade, mantida entre sessões. " +
+                "A unidade não publica a velocidade de projeto dela, então esta é a " +
+                "única referência vinda do próprio hardware.")
+            : Teto.Nenhum;
+    }
+
+    // ------------------------------------------------------------------
+
     /// <summary>Limite termico da CPU ou da GPU, pelo TjMax da ficha tecnica.</summary>
     public Teto TetoTermicoCpu(double configurado) => Termico(Cpu?.TjMaxC ?? 0, configurado);
     public Teto TetoTermicoGpu(double configurado) => Termico(Gpu?.TjMaxC ?? 0, configurado);

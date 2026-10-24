@@ -73,20 +73,18 @@ public partial class ComponentesWindow : Window
         textos.Children.Add(sub);
         grade.Children.Add(textos);
 
+        var rotuloDaMarca = new TextBlock { Text = "medido", FontSize = 11 };
+        rotuloDaMarca.SetResourceReference(TextBlock.ForegroundProperty, "InfoTexto");
+
         var marca = new Border
         {
             CornerRadius = new CornerRadius(999),
             Padding = new Thickness(8, 3, 8, 3),
-            Background = new SolidColorBrush(Color.FromRgb(0x16, 0x23, 0x3D)),
             HorizontalAlignment = HorizontalAlignment.Right,
             VerticalAlignment = VerticalAlignment.Center,
-            Child = new TextBlock
-            {
-                Text = "medido",
-                FontSize = 11,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x8F, 0xBA, 0xFF))
-            }
+            Child = rotuloDaMarca
         };
+        marca.SetResourceReference(BackgroundProperty, "InfoFundo");
         grade.Children.Add(marca);
 
         caixa.Child = grade;

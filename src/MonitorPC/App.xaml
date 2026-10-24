@@ -19,6 +19,18 @@
         <SolidColorBrush x:Key="Acento" Color="{StaticResource AcentoColor}" />
         <SolidColorBrush x:Key="Alerta" Color="#F97316" />
         <SolidColorBrush x:Key="AlertaTexto" Color="#FDBA74" />
+        <SolidColorBrush x:Key="Icone" Color="#C4CAD6" />
+        <SolidColorBrush x:Key="IconeFraco" Color="#8B94A3" />
+        <SolidColorBrush x:Key="AvisoFundo" Color="#2A1A10" />
+        <SolidColorBrush x:Key="AvisoBorda" Color="#7C3A14" />
+        <SolidColorBrush x:Key="AvisoIcone" Color="#FB923C" />
+        <SolidColorBrush x:Key="AvisoChip" Color="#3A2113" />
+        <SolidColorBrush x:Key="AvisoBotao" Color="#F97316" />
+        <SolidColorBrush x:Key="AvisoBotaoTexto" Color="#1A0F08" />
+        <SolidColorBrush x:Key="SerieMedida" Color="#8FBAFF" />
+        <SolidColorBrush x:Key="SerieEstimada" Color="#4B5365" />
+        <SolidColorBrush x:Key="InfoFundo" Color="#16233D" />
+        <SolidColorBrush x:Key="InfoTexto" Color="#8FBAFF" />
 
         <FontFamily x:Key="FonteUI">Segoe UI Variable Display, Segoe UI</FontFamily>
         <FontFamily x:Key="FonteNumero">Segoe UI Light, Segoe UI</FontFamily>
@@ -57,7 +69,7 @@
 
         <!-- Botao de perfil de energia -->
         <Style x:Key="Perfil" TargetType="RadioButton">
-            <Setter Property="Foreground" Value="#C4CAD6" />
+            <Setter Property="Foreground" Value="{DynamicResource Icone}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Height" Value="44" />
@@ -72,9 +84,9 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="bg" Property="Background" Value="#16233D" />
+                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource InfoFundo}" />
                                 <Setter TargetName="bg" Property="BorderBrush" Value="{DynamicResource Acento}" />
-                                <Setter Property="Foreground" Value="#8FBAFF" />
+                                <Setter Property="Foreground" Value="{DynamicResource InfoTexto}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -114,7 +126,7 @@
                                 BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270"
-                                                  Opacity="0.5" Color="Black" />
+                                                  Opacity="0.32" Color="Black" />
                             </Border.Effect>
                             <StackPanel IsItemsHost="True" />
                         </Border>
@@ -287,7 +299,7 @@
                                             TextElement.FontWeight="Medium">
                                     <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
                                                       VerticalAlignment="Center" />
-                                    <Path Data="M6,9 L12,15 L18,9" Stroke="#8B94A3" StrokeThickness="2"
+                                    <Path Data="M6,9 L12,15 L18,9" Stroke="{DynamicResource IconeFraco}" StrokeThickness="2"
                                           StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                                           Width="11" Height="11" Stretch="Uniform" Margin="8,1,0,0" />
                                 </StackPanel>
@@ -296,12 +308,12 @@
                             <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
                                    AllowsTransparency="True" PopupAnimation="Fade" StaysOpen="False"
                                    VerticalOffset="4">
-                                <Border Background="#1A1D23" CornerRadius="12" Padding="4"
+                                <Border Background="{DynamicResource Cartao}" CornerRadius="12" Padding="4"
                                         BorderBrush="{DynamicResource Borda}" BorderThickness="1"
                                         MinWidth="{TemplateBinding ActualWidth}">
                                     <Border.Effect>
                                         <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270"
-                                                          Opacity="0.5" Color="Black" />
+                                                          Opacity="0.32" Color="Black" />
                                     </Border.Effect>
                                     <ItemsPresenter />
                                 </Border>
@@ -366,7 +378,7 @@
         <!-- Botao de acao secundaria, largura cheia -->
         <Style x:Key="BotaoLargo" TargetType="Button">
             <Setter Property="Height" Value="44" />
-            <Setter Property="Foreground" Value="#C4CAD6" />
+            <Setter Property="Foreground" Value="{DynamicResource Icone}" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Medium" />
             <Setter Property="Cursor" Value="Hand" />

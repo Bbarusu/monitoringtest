@@ -11,7 +11,7 @@
             Background="{DynamicResource Fundo}"
             BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
         <StackPanel>
@@ -20,7 +20,7 @@
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
-                    <Path Data="M15,6 L9,12 L15,18" Stroke="#C4CAD6" StrokeThickness="1.8"
+                    <Path Data="M15,6 L9,12 L15,18" Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                           Width="16" Height="16" Stretch="Uniform" />
                 </Button>

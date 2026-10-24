@@ -25,12 +25,14 @@ public sealed class BarraDeNucleo : Grid
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
 
+        // Referencia viva ao recurso: um pincel pego no construtor guardaria o
+        // tema do momento em que a grade de nucleos foi montada.
         _rotulo = new TextBlock
         {
             FontSize = 11,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeService.Pincel("TextoMuitoFraco")
+            VerticalAlignment = VerticalAlignment.Center
         };
+        _rotulo.SetResourceReference(TextBlock.ForegroundProperty, "TextoMuitoFraco");
         SetColumn(_rotulo, 0);
         Children.Add(_rotulo);
 
@@ -38,10 +40,10 @@ public sealed class BarraDeNucleo : Grid
         {
             Height = 6,
             CornerRadius = new CornerRadius(3),
-            Background = ThemeService.Pincel("Trilho"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(6, 0, 6, 0)
         };
+        trilho.SetResourceReference(Border.BackgroundProperty, "Trilho");
         SetColumn(trilho, 1);
         Children.Add(trilho);
 
@@ -71,9 +73,9 @@ public sealed class BarraDeNucleo : Grid
         {
             FontSize = 11,
             TextAlignment = TextAlignment.Right,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = ThemeService.Pincel("Texto")
+            VerticalAlignment = VerticalAlignment.Center
         };
+        _valor.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
         SetColumn(_valor, 2);
         Children.Add(_valor);
     }

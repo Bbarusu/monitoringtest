@@ -28,20 +28,26 @@ public sealed class LinhaDeDisco : StackPanel
         topo.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var textos = new StackPanel();
+
+        // Referencia viva em vez de pincel capturado: estas linhas sao criadas
+        // quando a aba Disco aparece pela primeira vez e sobrevivem a troca de
+        // tema.
         _nome = new TextBlock
         {
             FontSize = 13,
             FontWeight = FontWeights.Medium,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = ThemeService.Pincel("Texto")
+            TextTrimming = TextTrimming.CharacterEllipsis
         };
+        _nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
         _detalhe = new TextBlock
         {
             FontSize = 11,
             Margin = new Thickness(0, 2, 0, 0),
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = ThemeService.Pincel("TextoFraco")
+            TextTrimming = TextTrimming.CharacterEllipsis
         };
+        _detalhe.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+
         textos.Children.Add(_nome);
         textos.Children.Add(_detalhe);
         Grid.SetColumn(textos, 0);
@@ -52,20 +58,18 @@ public sealed class LinhaDeDisco : StackPanel
             FontSize = 13,
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new Thickness(10, 0, 0, 0),
-            Foreground = ThemeService.Pincel("Texto")
+            Margin = new Thickness(10, 0, 0, 0)
         };
+        _valor.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
         Grid.SetColumn(_valor, 1);
         topo.Children.Add(_valor);
         Children.Add(topo);
 
         var trilho = new Grid { Margin = new Thickness(0, 6, 0, 0) };
-        trilho.Children.Add(new Border
-        {
-            Height = 4,
-            CornerRadius = new CornerRadius(2),
-            Background = ThemeService.Pincel("Trilho")
-        });
+
+        var fundoDoTrilho = new Border { Height = 4, CornerRadius = new CornerRadius(2) };
+        fundoDoTrilho.SetResourceReference(Border.BackgroundProperty, "Trilho");
+        trilho.Children.Add(fundoDoTrilho);
 
         _cheia = new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) };
         _vazia = new ColumnDefinition { Width = new GridLength(100, GridUnitType.Star) };
@@ -90,7 +94,7 @@ public sealed class LinhaDeDisco : StackPanel
     public void Vazia(string texto)
     {
         _nome.Text = texto;
-        _nome.Foreground = ThemeService.Pincel("TextoMuitoFraco");
+        _nome.SetResourceReference(TextBlock.ForegroundProperty, "TextoMuitoFraco");
         _detalhe.Text = " ";
         _detalhe.Visibility = Visibility.Visible;
         _valor.Text = "";
@@ -107,7 +111,7 @@ public sealed class LinhaDeDisco : StackPanel
 
     public void Atualizar(string nome, string detalhe, string valor, double porcentagem)
     {
-        _nome.Foreground = ThemeService.Pincel("Texto");
+        _nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
 
         var p = Math.Clamp(porcentagem, 0, 100);
 

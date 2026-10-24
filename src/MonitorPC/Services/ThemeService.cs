@@ -27,7 +27,27 @@ public static class ThemeService
         ("TextoFraco",      "#9AA3B2", "#5B6370"),
         ("TextoMuitoFraco", "#8B94A3", "#767E8B"),
         ("Alerta",          "#F97316", "#D9600B"),
-        ("AlertaTexto",     "#FDBA74", "#9A4B06")
+        ("AlertaTexto",     "#FDBA74", "#9A4B06"),
+
+        // Tracos de icone. No escuro sao um cinza claro; no claro precisam
+        // escurecer, senao os contornos somem no branco do fundo.
+        ("Icone",           "#C4CAD6", "#5B6370"),
+        ("IconeFraco",      "#8B94A3", "#767E8B"),
+
+        // Cartoes de aviso. O laranja escuro de fundo viraria uma mancha preta
+        // no tema claro, entao a versao clara inverte: fundo creme, traco forte.
+        ("AvisoFundo",      "#2A1A10", "#FEF2E4"),
+        ("AvisoBorda",      "#7C3A14", "#F3C79A"),
+        ("AvisoIcone",      "#FB923C", "#C2600A"),
+        ("AvisoChip",       "#3A2113", "#FAE0C6"),
+        ("AvisoBotao",      "#F97316", "#C2600A"),
+        ("AvisoBotaoTexto", "#1A0F08", "#FFFFFF"),
+
+        // Series dos graficos e legendas: o que foi medido e o que foi estimado.
+        ("SerieMedida",     "#8FBAFF", "#2563EB"),
+        ("SerieEstimada",   "#4B5365", "#A9B0BD"),
+        ("InfoFundo",       "#16233D", "#E4EDFF"),
+        ("InfoTexto",       "#8FBAFF", "#1D4ED8")
     };
 
     /// <summary>Cor de fundo em vigor, para quem precisa dela com alpha.</summary>

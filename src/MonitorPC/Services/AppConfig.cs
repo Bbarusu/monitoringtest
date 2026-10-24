@@ -73,6 +73,18 @@ public sealed class AppConfig
     public Dictionary<string, CurvaDeVentoinha> CurvasDeVentoinha { get; set; } = new();
 
     /// <summary>
+    /// Maior taxa de leitura e de escrita ja vista em cada unidade, em MB/s,
+    /// pelo nome do disco.
+    ///
+    /// Aqui nao ha o que extrapolar nem tabela que ajude: o SMART nao publica a
+    /// velocidade de projeto da unidade, e ela depende tambem da porta em que o
+    /// disco esta. Entao vale a medicao, que ao menos para de reescalar a cada
+    /// sessao — um disco que ja chegou a 3 GB/s mantem essa referencia.
+    /// </summary>
+    public Dictionary<string, double> LeituraMaximaPorDisco { get; set; } = new();
+    public Dictionary<string, double> EscritaMaximaPorDisco { get; set; } = new();
+
+    /// <summary>
     /// Buscar o catalogo de especificacoes atualizado. Um GET de poucos
     /// kilobytes no repositorio do app, no maximo uma vez por semana. Desligado,
     /// vale a copia que veio embutida.

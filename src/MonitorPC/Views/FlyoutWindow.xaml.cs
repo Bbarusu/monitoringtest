@@ -328,6 +328,11 @@ public partial class FlyoutWindow : Window
             _maximosMudaram = true;
         }
 
+        // As taxas de disco entram aqui, e nao na aba: a maior leitura do dia
+        // pode acontecer com o painel mostrando outra coisa.
+        foreach (var d in s.Discos)
+            _sensores.Especificacoes.ObservarDisco(d.Nome, d.LeituraMbs, d.EscritaMbs);
+
         static void Guardar(Queue<double> fila, float? valor)
         {
             if (valor is not { } v) return;
@@ -395,6 +400,7 @@ public partial class FlyoutWindow : Window
 
         DesenharHistorico();
         MontarGrade(s);
+        MontarBarrasCpu(s);
     }
 
     private void AplicarGpu(Snapshot s)
@@ -523,16 +529,124 @@ public partial class FlyoutWindow : Window
                 "Escala até 110 °C, o limite típico de GDDR. A memória não publica " +
                 "limiar próprio, ao contrário dos discos."));
 
-        while (BarrasGpu.Children.Count > barras.Count)
-            BarrasGpu.Children.RemoveAt(BarrasGpu.Children.Count - 1);
-        while (BarrasGpu.Children.Count < barras.Count)
-            BarrasGpu.Children.Add(new BarraDeMetrica());
+        Desenhar(BarrasGpu, barras);
+    }
+
+    /// <summary>
+    /// Reaproveita as barras existentes em vez de recriar a lista: as abas se
+    /// redesenham a cada leitura, e recriar faria o tooltip fechar na mao do
+    /// usuario toda vez.
+    /// </summary>
+    private static void Desenhar(
+        System.Windows.Controls.Panel alvo,
+        List<(string Rotulo, string Valor, double Pct, string? Dica)> barras)
+    {
+        while (alvo.Children.Count > barras.Count)
+            alvo.Children.RemoveAt(alvo.Children.Count - 1);
+        while (alvo.Children.Count < barras.Count)
+            alvo.Children.Add(new BarraDeMetrica());
 
         for (var i = 0; i < barras.Count; i++)
         {
             var (rotulo, valor, pct, dica) = barras[i];
-            ((BarraDeMetrica)BarrasGpu.Children[i]).Atualizar(rotulo, valor, pct, dica);
+            ((BarraDeMetrica)alvo.Children[i]).Atualizar(rotulo, valor, pct, dica);
         }
+    }
+
+    /// <summary>
+    /// As barras da CPU, pela mesma régua da GPU: potência contra o PPT do
+    /// modelo, temperatura contra o TjMax, e cada ventoinha da placa-mãe contra
+    /// a rotação máxima que ela própria revelou.
+    ///
+    /// As ventoinhas do gabinete só existiam na contagem da estimativa de
+    /// energia — a rotação era lida e descartada. Agora que há teto para elas,
+    /// passam a caber numa barra.
+    /// </summary>
+    private void MontarBarrasCpu(Snapshot s)
+    {
+        var esp = _sensores.Especificacoes;
+        var barras = new List<(string Rotulo, string Valor, double Pct, string? Dica)>();
+
+        if (s.CpuWatts is { } w && w > 0)
+        {
+            var teto = esp.TetoDePotenciaCpu();
+            barras.Add(("Potência",
+                teto.Existe ? $"{w:F0} / {teto.Valor:F0} W" : $"{w:F0} W",
+                teto.Porcentagem(w),
+                teto.Explicacao("W")));
+        }
+
+        if (s.CpuTemp is { } t && t > 0)
+        {
+            var teto = esp.TetoTermicoCpu(_cfg.LimiteCpu);
+            barras.Add(("Temperatura",
+                teto.Existe ? $"{t:F0} / {teto.Valor:F0} °C" : $"{t:F0} °C",
+                teto.Porcentagem(t),
+                teto.Explicacao("°C")));
+        }
+
+        // Só as que estão girando: sete canais, com quatro vazios, encheriam a
+        // aba de barras zeradas.
+        foreach (var (nome, rpm) in s.Ventoinhas.OrderBy(v => v.Key, StringComparer.Ordinal))
+        {
+            if (rpm <= 0) continue;
+
+            var teto = s.ChavesDeVentoinha.TryGetValue(nome, out var chave)
+                ? esp.TetoDeVentoinha(chave)
+                : Teto.Nenhum;
+
+            var dica = teto.Explicacao("rpm");
+            if (s.ControlesDeVentoinha.TryGetValue(nome, out var pwm))
+                dica += $"\nPWM agora: {pwm:F0}%.";
+
+            barras.Add((nome,
+                teto.Existe ? $"{rpm:F0} / {teto.Valor:F0} rpm" : $"{rpm:F0} rpm",
+                teto.Porcentagem(rpm),
+                dica));
+        }
+
+        Desenhar(BarrasCpu, barras);
+    }
+
+    /// <summary>
+    /// Leitura e escrita contra o maior valor que a unidade já atingiu, e
+    /// temperatura contra o limiar que ela própria publica pelo SMART.
+    /// </summary>
+    private void MontarBarrasDisco(Snapshot s, DiscoInfo? escolhido)
+    {
+        var esp = _sensores.Especificacoes;
+        var barras = new List<(string Rotulo, string Valor, double Pct, string? Dica)>();
+
+        var disco = escolhido ?? s.Discos.FirstOrDefault();
+
+        if (disco is not null)
+        {
+            var leitura = disco.LeituraMbs ?? 0;
+            var escrita = disco.EscritaMbs ?? 0;
+
+            var tetoLeitura = esp.TetoDeLeitura(disco.Nome);
+            barras.Add(("Leitura",
+                tetoLeitura.Existe ? $"{Taxa(leitura)} / {Taxa((float)tetoLeitura.Valor)}" : Taxa(leitura),
+                tetoLeitura.Porcentagem(leitura),
+                tetoLeitura.Explicacao("MB/s")));
+
+            var tetoEscrita = esp.TetoDeEscrita(disco.Nome);
+            barras.Add(("Escrita",
+                tetoEscrita.Existe ? $"{Taxa(escrita)} / {Taxa((float)tetoEscrita.Valor)}" : Taxa(escrita),
+                tetoEscrita.Porcentagem(escrita),
+                tetoEscrita.Explicacao("MB/s")));
+
+            if (disco.TemperaturaC is { } t && t > 0)
+            {
+                var teto = esp.TetoDeDisco(disco.CriticoC, disco.AvisoC, _cfg.LimiteDisco);
+                barras.Add(("Temperatura",
+                    teto.Existe ? $"{t:F0} / {teto.Valor:F0} °C" : $"{t:F0} °C",
+                    teto.Porcentagem(t),
+                    teto.Explicacao("°C")));
+            }
+        }
+
+        Desenhar(BarrasDisco, barras);
     }
 
     private void AplicarDisco(Snapshot s)
@@ -585,6 +699,7 @@ public partial class FlyoutWindow : Window
 
         // O historico e sempre do conjunto: trocar de unidade nao apaga o grafico.
         DesenharHistoricoDisco();
+        MontarBarrasDisco(s, escolhido);
 
         if (ModoUnidades.IsChecked == true) MontarUnidades(s);
         else MontarProcessos();
@@ -795,8 +910,8 @@ public partial class FlyoutWindow : Window
         var itens = new (string Cor, string Nome, double Watts, string Origem)[]
         {
             ("Acento", "GPU", gpu, "medido"),
-            ("#8FBAFF", "CPU", cpu, "medido"),
-            ("#4B5365", DescricaoDosOutros(s), outros, "estimado")
+            ("SerieMedida", "CPU", cpu, "medido"),
+            ("SerieEstimada", DescricaoDosOutros(s), outros, "estimado")
         };
 
         while (LegendaEnergia.Children.Count > itens.Length)

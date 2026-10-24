@@ -194,7 +194,13 @@ ordem, e o tooltip da barra sempre diz qual delas está valendo:
 | Hardware | A peça publica o limite, ou ele foi medido nela | Limiares SMART dos discos, ventoinha calibrada, VRAM total |
 | Extrapolado | Calculado a partir de dois sensores da mesma peça | Rotação máxima projetada pela curva PWM |
 | Catálogo | Ficha técnica do modelo | PPT da CPU, TBP da GPU, TjMax, clock de boost |
-| Medido | O maior valor já registrado, que sobe com o tempo | Último recurso, quando nada acima existe |
+| Medido | O maior valor já registrado, que sobe com o tempo | Taxas de disco; último recurso para o resto |
+
+Barras com teto real hoje: potência e temperatura da CPU, cada ventoinha da
+placa-mãe, VRAM, potência, ventoinha e temperatura de memória da GPU, e leitura,
+escrita e temperatura por unidade de disco. A potência, o clock e a temperatura
+nos quadrados da CPU e da GPU trazem o mesmo contexto no tooltip, porque o
+quadrado é estreito demais para `253 / 253 W` sem atropelar.
 
 ### O catálogo
 
@@ -227,6 +233,23 @@ sai dos próprios sensores, de duas formas:
 
 Ventoinhas em controladora externa ou travadas pela BIOS aparecem na lista como
 não comandáveis: a rotação é visível, mas o teto não pode ser medido.
+
+## Tema claro e escuro
+
+Toda cor vem de uma chave de recurso trocada em tempo de execução pelo
+`ThemeService`, e as telas referenciam essas chaves por `DynamicResource`. Duas
+regras importam para quem for mexer:
+
+- Em componentes montados em código, use `SetResourceReference`, nunca
+  `ThemeService.Pincel(...)` dentro de um inicializador de objeto. O pincel pego
+  no construtor congela o tema daquele instante, e componentes de vida longa —
+  as barras, a grade de núcleos, as linhas de disco — sobrevivem à troca de tema.
+- Nada de cor literal no XAML, exceto branco sobre o acento (ícone do botão de
+  energia, texto de aba selecionada), onde o fundo é o acento nos dois temas.
+
+As chaves de aviso (`AvisoFundo`, `AvisoBorda`, `AvisoIcone`) invertem no tema
+claro: o laranja escuro que separa um cartão de alerta no escuro vira uma mancha
+preta no branco, então a versão clara usa fundo creme com traço forte.
 
 ## Hardware de referência
 

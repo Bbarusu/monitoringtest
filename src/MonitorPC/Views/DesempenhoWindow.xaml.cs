@@ -172,7 +172,7 @@ public partial class DesempenhoWindow : Window
         Resultado.Text = feito.Count == 0
             ? "Nada foi selecionado."
             : "Feito: " + string.Join("; ", feito) + ".";
-        Resultado.Foreground = ThemeService.Pincel("TextoFraco");
+        Resultado.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
 
         BotaoAtivar.IsEnabled = true;
         Reposicionar();
