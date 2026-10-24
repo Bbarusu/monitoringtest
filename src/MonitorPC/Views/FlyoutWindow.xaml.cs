@@ -360,7 +360,10 @@ public partial class FlyoutWindow : Window
         var cor = quente ? Pincel("Alerta") : Pincel("Acento");
         Anel.Stroke = cor;
         BarraCarga.Background = cor;
-        ValorPrincipal.Foreground = quente ? Pincel("AlertaTexto") : Brushes.White;
+        // Branco fixo sumia no tema claro. "Texto" é branco no escuro e quase
+        // preto no claro, que é o que este número sempre quis dizer.
+        ValorPrincipal.SetResourceReference(
+            TextBlock.ForegroundProperty, quente ? "AlertaTexto" : "Texto");
 
         CardGpu.Text = s.GpuTemp is { } gt && s.GpuUso is { } gu ? $"{gt:F0}° · {gu:F0}%" : "--";
         CardRam.Text = s.RamUsadaGb is { } usada && s.RamTotalGb is { } total
