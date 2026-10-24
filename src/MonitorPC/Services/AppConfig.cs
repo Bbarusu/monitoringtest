@@ -33,6 +33,13 @@ public sealed class AppConfig
     public int PecasComLed { get; set; }
     public bool TemWaterCooler { get; set; }
 
+    /// <summary>
+    /// Potencia maxima da placa de video, em watts, como a fabricante anuncia.
+    /// Serve de escala para a barra de potencia da aba GPU. Zero usa o maior
+    /// valor visto na sessao, que e so um recurso enquanto nao se sabe o certo.
+    /// </summary>
+    public int PotenciaMaximaGpuW { get; set; }
+
     // --- Fonte ---
     public double EficienciaFonte { get; set; } = 0.85;
     public int CapacidadeFonteW { get; set; } = 550;

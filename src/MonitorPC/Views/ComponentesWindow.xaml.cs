@@ -145,6 +145,12 @@ public partial class ComponentesWindow : Window
 
     private void MontarFonte()
     {
+        // Nenhum sensor informa o teto da placa: ele vem da ficha tecnica.
+        Fonte.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
+            "Potência máxima da GPU", "Da ficha técnica da placa · 0 usa o maior valor visto",
+            _cfg.PotenciaMaximaGpuW, 0, 800,
+            v => { _cfg.PotenciaMaximaGpuW = (int)v; Salvar(); }, "W"));
+
         Fonte.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
             "Capacidade da fonte", "Usada como escala do anel de potência",
             _cfg.CapacidadeFonteW, 100, 2000,

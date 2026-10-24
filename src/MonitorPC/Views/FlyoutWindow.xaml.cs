@@ -426,10 +426,20 @@ public partial class FlyoutWindow : Window
                 null));
 
         if (s.GpuWatts is { } w && w > 0)
+        {
+            // Com a potencia maxima da placa informada, a barra passa a medir o
+            // quanto dela esta em uso. Sem isso, o unico teto conhecido e o maior
+            // valor ja visto, que muda durante a sessao e engana a leitura.
+            var teto = _cfg.PotenciaMaximaGpuW > 0 ? _cfg.PotenciaMaximaGpuW : _gpuWattsMax;
+
             barras.Add(("Potência",
-                $"{w:F0} W",
-                _gpuWattsMax > 0 ? w / _gpuWattsMax * 100 : 0,
-                $"Escala: maior valor visto nesta sessão ({_gpuWattsMax:F0} W)"));
+                _cfg.PotenciaMaximaGpuW > 0 ? $"{w:F0} / {teto:F0} W" : $"{w:F0} W",
+                teto > 0 ? w / teto * 100 : 0,
+                _cfg.PotenciaMaximaGpuW > 0
+                    ? $"Escala: potência máxima informada da placa ({teto:F0} W)"
+                    : $"Escala: maior valor visto nesta sessão ({_gpuWattsMax:F0} W). " +
+                      "Informe a potência máxima da placa em Energia › Configurar componentes."));
+        }
 
         if (s.GpuFanRpm is { } rpm)
             barras.Add(("Ventilador",

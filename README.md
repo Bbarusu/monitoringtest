@@ -51,6 +51,11 @@ passam a valer sobre a detecção.
 Os **watts por unidade**, a capacidade e a eficiência da fonte, e os limites de
 temperatura também ficam nesse arquivo.
 
+A **potência máxima da GPU** também fica lá: nenhum sensor informa esse teto, então ele
+vem da ficha técnica da placa e serve de escala para a barra de potência da aba GPU. Sem
+ele, a barra usa o maior valor já visto na sessão, que muda conforme a GPU é exigida e
+engana a leitura.
+
 Tudo isso é editável pela tela **Configurar componentes**, na aba Energia: cada quantidade
 mostra se veio da detecção ou da mão, e há um botão para voltar à detecção. As mudanças
 valem na hora, sem reabrir o app.
