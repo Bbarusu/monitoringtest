@@ -24,6 +24,51 @@ disponíveis.
 **Estado atual:** as cinco abas funcionais (Geral, CPU, GPU, Disco e Energia), com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
+## Instalador
+
+`publicar.cmd` na raiz gera um instalador de arquivo único em
+`dist\instalador\MonitorPC-Setup.exe`. Sem argumento, o .NET viaja dentro e o
+instalador roda em qualquer Windows 10 ou 11 de 64 bits (~130 MB);
+`publicar.cmd leve` gera a versão de poucos megabytes, que exige o .NET 8
+Desktop Runtime na máquina de destino.
+
+O instalador tem a mesma cara do app — painel escuro arredondado, mesma paleta e
+tipografia — e faz quatro coisas:
+
+- Copia o app para `C:\Program Files\Monitor de PC`
+- Registra uma **tarefa do Windows com privilégio elevado**, que é o que resolve
+  o problema do driver (abaixo)
+- Cria os atalhos e, opcionalmente, o início junto com o Windows
+- Registra a desinstalação no Painel de Controle. O próprio instalador é o
+  desinstalador, copiado para a pasta de instalação
+
+### O driver, e por que a tarefa agendada
+
+Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só carrega
+com privilégio elevado. O driver vem dentro da `LibreHardwareMonitorLib` e é
+carregado apenas enquanto o app está aberto — não fica um driver residente no
+boot, o que seria um risco de segurança desnecessário.
+
+Pedir elevação pelo manifesto do app resolveria, mas cobraria a confirmação do
+Windows **toda vez** que o app abrisse — e este app abre junto com a sessão. Em
+vez disso, o instalador registra uma tarefa agendada com `RunLevel
+HighestAvailable`, autorizada uma única vez durante a instalação. Quando o app
+percebe que abriu sem privilégio e que a tarefa existe, ele pede à tarefa para
+subir uma cópia elevada e sai. Sem instalação não há tarefa, e aí o app roda como
+sempre rodou — `dotnet run` no desenvolvimento continua igual.
+
+O argumento `--elevado`, que a tarefa passa, impede laço infinito: com ele o app
+nunca tenta se relançar.
+
+### Windows Defender
+
+O Defender marca a família de drivers WinRing0 como `HackTool:Win32/Winring0`, e
+é esse driver que a biblioteca de sensores carrega. Ele é capaz de pôr a
+`LibreHardwareMonitorLib.dll` em quarentena, e aí o app simplesmente para de
+abrir, sem nenhuma mensagem que ligue uma coisa à outra. Por isso o instalador
+oferece abrir uma exceção para a pasta de instalação, e o `publicar.cmd` falha
+com uma mensagem explícita se a DLL não aparecer na publicação.
+
 ## Requisitos
 
 - Windows 10 ou 11

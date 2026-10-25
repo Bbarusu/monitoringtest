@@ -11,6 +11,85 @@ namespace MonitorPC;
 
 public partial class App : Application
 {
+    /// <summary>
+    /// Passado pela tarefa agendada que o instalador registra. Com ele, o app
+    /// nunca tenta se relancar — e a garantia contra um laco infinito, caso a
+    /// tarefa exista mas por algum motivo nao eleve de verdade.
+    /// </summary>
+    private const string ArgumentoElevado = "--elevado";
+
+    private const string NomeDaTarefa = "Monitor de PC";
+
+    /// <summary>
+    /// Quando o app foi instalado e abriu sem privilegio, pede para a tarefa do
+    /// Windows subir uma copia elevada e sai.
+    ///
+    /// Sem elevacao, o driver de sensores nao carrega e temperatura de CPU e
+    /// placa-mae voltam zeradas. Pedir elevacao pelo manifesto resolveria, mas
+    /// cobraria a confirmacao do Windows toda vez que o app abrisse — e este
+    /// app abre junto com a sessao. A tarefa foi autorizada uma vez, na
+    /// instalacao, e nao pergunta de novo.
+    ///
+    /// Sem instalacao nao ha tarefa: ai o app segue como esta, rodando com o
+    /// que conseguir ler. Rodar direto do dotnet run, no desenvolvimento,
+    /// continua funcionando igual.
+    /// </summary>
+    private bool SubirPelaTarefa(string[] argumentos)
+    {
+        try
+        {
+            if (argumentos.Any(a => a.Equals(ArgumentoElevado, StringComparison.OrdinalIgnoreCase)))
+                return false;
+
+            if (Elevado() || !TarefaExiste()) return false;
+
+            using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "schtasks.exe",
+                Arguments = $"/Run /TN \"{NomeDaTarefa}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+
+            p?.WaitForExit(10000);
+
+            // Mesmo que a tarefa falhe, sair e melhor que seguir: duas copias
+            // disputando o driver dao leitura zerada nas duas.
+            Shutdown();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Subir pela tarefa", ex);
+            return false;
+        }
+    }
+
+    private static bool Elevado()
+    {
+        using var identidade = System.Security.Principal.WindowsIdentity.GetCurrent();
+        return new System.Security.Principal.WindowsPrincipal(identidade)
+            .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+    }
+
+    private static bool TarefaExiste()
+    {
+        using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            Arguments = $"/Query /TN \"{NomeDaTarefa}\"",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        });
+
+        if (p is null) return false;
+
+        p.WaitForExit(10000);
+        return p.ExitCode == 0;
+    }
+
     private AppConfig _cfg = null!;
     private SensorService _sensores = null!;
     private AlertService _alertas = null!;
@@ -23,6 +102,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
         InstalarCapturaDeErros();
+
+        if (SubirPelaTarefa(e.Args)) return;
 
         _cfg = AppConfig.Carregar();
         ThemeService.Aplicar(_cfg.Tema);

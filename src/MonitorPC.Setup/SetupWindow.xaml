@@ -1,0 +1,203 @@
+<Window x:Class="MonitorPC.Setup.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Monitor de PC"
+        Width="480" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize"
+        FontFamily="{StaticResource FonteUI}">
+
+    <Border Margin="20" CornerRadius="16"
+            Background="{DynamicResource Fundo}"
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="24"
+            MouseLeftButtonDown="Painel_Arrastar">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+
+            <!-- Cabecalho -->
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="44" Height="44" CornerRadius="12"
+                            Background="{DynamicResource Acento}" Margin="0,0,14,0">
+                        <TextBlock x:Name="Simbolo" Text="65" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="White" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="Titulo" Text="Monitor de PC" FontSize="17"
+                                   FontWeight="SemiBold" Foreground="{DynamicResource Texto}" />
+                        <TextBlock x:Name="Subtitulo" FontSize="12" Margin="0,3,0,0"
+                                   TextWrapping="Wrap" MaxWidth="320" HorizontalAlignment="Left"
+                                   Foreground="{DynamicResource TextoFraco}"
+                                   Text="Monitoramento de hardware na bandeja do Windows." />
+                    </StackPanel>
+                </StackPanel>
+
+                <Button x:Name="BotaoFecharJanela" Width="32" Height="32" Cursor="Hand"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Click="FecharJanela_Click" ToolTip="Sair">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bg" CornerRadius="10" Background="Transparent">
+                                <Path Data="M6,6 L18,18 M18,6 L6,18"
+                                      Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Width="14" Height="14" Stretch="Uniform" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bg" Property="Background"
+                                            Value="{DynamicResource Cartao}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+
+            <!-- ===================== PASSO: OPÇÕES ===================== -->
+            <StackPanel x:Name="PassoOpcoes" Margin="0,22,0,0">
+
+              <!-- Some inteiro na desinstalação: não há o que escolher ao sair. -->
+              <StackPanel x:Name="BlocoDeOpcoes">
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="Onde vai ficar" FontSize="11"
+                                   Foreground="{DynamicResource TextoFraco}" />
+                        <TextBlock x:Name="CaminhoDeInstalacao" FontSize="13" Margin="0,4,0,0"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Texto}" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Opções" FontSize="11" Margin="0,16,0,8"
+                           Foreground="{DynamicResource TextoFraco}" />
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1"
+                        Padding="14,12" Margin="0,0,0,8">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="330"
+                                    HorizontalAlignment="Left">
+                            <TextBlock Text="Atalho na área de trabalho" FontSize="13"
+                                       FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="O atalho do menu Iniciar é criado de qualquer jeito"
+                                       FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
+                        <CheckBox x:Name="OpcaoAtalho" Style="{StaticResource CaixaDeSelecao}"
+                                  IsChecked="True" HorizontalAlignment="Right"
+                                  VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1"
+                        Padding="14,12" Margin="0,0,0,8">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="330"
+                                    HorizontalAlignment="Left">
+                            <TextBlock Text="Iniciar com o Windows" FontSize="13"
+                                       FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="Abre na bandeja ao entrar, 20 segundos depois do logon"
+                                       FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
+                        <CheckBox x:Name="OpcaoLogon" Style="{StaticResource CaixaDeSelecao}"
+                                  IsChecked="True" HorizontalAlignment="Right"
+                                  VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1"
+                        Padding="14,12">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="330"
+                                    HorizontalAlignment="Left">
+                            <TextBlock Text="Abrir exceção no Windows Defender" FontSize="13"
+                                       FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="Sem ela o Defender pode pôr a biblioteca de sensores em quarentena, e o app para de abrir"
+                                       FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
+                        <CheckBox x:Name="OpcaoDefender" Style="{StaticResource CaixaDeSelecao}"
+                                  IsChecked="True" HorizontalAlignment="Right"
+                                  VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+              </StackPanel>
+
+                <!-- O que o instalador faz com o driver -->
+                <Border Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource AvisoFundo}"
+                        BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1" Padding="14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Path Grid.Column="0" Data="M12,3 L22,21 L2,21 Z M12,10 L12,15 M12,18 L12,18.01"
+                              Stroke="{DynamicResource AvisoIcone}" StrokeThickness="2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round" Width="16" Height="16" Stretch="Uniform"
+                              VerticalAlignment="Top" Margin="0,2,10,0" />
+                        <TextBlock Grid.Column="1" FontSize="11" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource AlertaTexto}"
+                                   Text="Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só carrega com privilégio elevado. O instalador registra uma tarefa do Windows para o app subir elevado sem pedir confirmação toda vez. O driver vem dentro da biblioteca de sensores e é carregado apenas enquanto o app está aberto." />
+                    </Grid>
+                </Border>
+
+                <UniformGrid Columns="2" Margin="0,20,0,0">
+                    <Button x:Name="BotaoCancelar" Style="{StaticResource BotaoSecundario}"
+                            Margin="0,0,5,0" Content="Cancelar" Click="FecharJanela_Click" />
+                    <Button x:Name="BotaoInstalar" Style="{StaticResource BotaoPrincipal}"
+                            Margin="5,0,0,0" Content="Instalar" Click="Instalar_Click" />
+                </UniformGrid>
+            </StackPanel>
+
+            <!-- ==================== PASSO: ANDAMENTO ==================== -->
+            <StackPanel x:Name="PassoAndamento" Margin="0,22,0,0" Visibility="Collapsed">
+                <TextBlock x:Name="Etapa" FontSize="13" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Texto}" Text="Preparando…" />
+
+                <Grid Height="6" Margin="0,14,0,0">
+                    <Border CornerRadius="3" Background="{DynamicResource Trilho}" />
+                    <Border x:Name="BarraDeProgresso" CornerRadius="3" Width="0"
+                            HorizontalAlignment="Left" Background="{DynamicResource Acento}" />
+                </Grid>
+
+                <TextBlock FontSize="11" Margin="0,14,0,0" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextoMuitoFraco}"
+                           Text="Não feche esta janela." />
+            </StackPanel>
+
+            <!-- ====================== PASSO: FIM ======================= -->
+            <StackPanel x:Name="PassoFim" Margin="0,22,0,0" Visibility="Collapsed">
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="14">
+                    <StackPanel>
+                        <TextBlock x:Name="ResultadoTitulo" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Sucesso}" Text="Pronto" />
+                        <TextBlock x:Name="ResultadoDetalhe" FontSize="12" Margin="0,6,0,0"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}" />
+                    </StackPanel>
+                </Border>
+
+                <UniformGrid x:Name="BotoesDoFim" Columns="2" Margin="0,20,0,0">
+                    <Button x:Name="BotaoSair" Style="{StaticResource BotaoSecundario}"
+                            Margin="0,0,5,0" Content="Fechar" Click="FecharJanela_Click" />
+                    <Button x:Name="BotaoAbrirApp" Style="{StaticResource BotaoPrincipal}"
+                            Margin="5,0,0,0" Content="Abrir o Monitor" Click="AbrirApp_Click" />
+                </UniformGrid>
+            </StackPanel>
+
+        </StackPanel>
+    </Border>
+</Window>

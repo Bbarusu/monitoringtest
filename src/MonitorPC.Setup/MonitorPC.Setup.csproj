@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>MonitorPC-Setup</AssemblyName>
+    <RootNamespace>MonitorPC.Setup</RootNamespace>
+    <Version>0.1.0</Version>
+
+    <!-- Um arquivo so, sem exigir runtime instalado: o instalador precisa
+         rodar numa maquina que ainda nao tem nada do projeto. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <!--
+    O app publicado entra aqui como recurso, zipado pelo publicar.cmd. A
+    condicao deixa o projeto compilar sem o payload, para dar para mexer na
+    interface do instalador sem reempacotar o app a cada vez.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="Payload\app.zip" LogicalName="app.zip"
+                      Condition="Exists('Payload\app.zip')" />
+  </ItemGroup>
+
+</Project>

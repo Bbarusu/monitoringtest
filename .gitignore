@@ -2,3 +2,8 @@ bin/
 obj/
 *.user
 .vs/
+
+# Saída do publicar.cmd: o app publicado, o instalador e o pacote intermediário.
+# São dezenas de megabytes gerados a cada publicação.
+dist/
+src/MonitorPC.Setup/Payload/
