@@ -249,18 +249,37 @@ internal sealed class LinhaDeVentoinha : Border
     {
         _nome.Text = canal.Gpu ? $"{canal.Nome} · placa de vídeo" : canal.Nome;
 
-        _agora.Text = canal.Rpm > 0
-            ? teto.Existe ? $"{canal.Rpm:F0} / {teto.Valor:F0}" : $"{canal.Rpm:F0}"
-            : "parada";
+        _agora.Text = !canal.TemLeitura
+            ? "—"
+            : canal.Rpm > 0
+                ? teto.Existe ? $"{canal.Rpm:F0} / {teto.Valor:F0}" : $"{canal.Rpm:F0}"
+                : "parada";
 
         _detalhe.Text = Procedencia(canal, teto);
         ToolTip = teto.Explicacao("rpm");
     }
 
+    /// <summary>
+    /// Por que esta ventoinha pode ou não ser calibrada.
+    ///
+    /// São três paradas diferentes no caminho, e juntá-las num recado só
+    /// deixava o usuário sem saber o que fazer: sem leitura de rotação, sem
+    /// canal de PWM, ou com PWM que a peça publica mas não aceita comandar —
+    /// este último é o caso comum das placas de vídeo.
+    /// </summary>
     private static string Procedencia(SensorService.CanalDeVentoinha canal, Teto teto)
     {
+        if (!canal.TemLeitura)
+            return "Sem leitura de rotação agora, então não há o que medir.";
+
+        if (!canal.TemControle)
+            return "A placa não expõe o PWM desta ventoinha: não há o que comandar.";
+
         if (!canal.Comandavel)
-            return "Rotação visível, mas o app não comanda esta ventoinha.";
+            return canal.Gpu
+                ? "A placa de vídeo mostra o PWM mas não aceita comando do app. " +
+                  "O teto é aprendido sozinho quando ela trabalha."
+                : "A placa mostra o PWM mas não aceita comando do app.";
 
         return teto.Origem switch
         {

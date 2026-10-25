@@ -45,6 +45,9 @@
                     <TextBlock Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextoMuitoFraco}"
                                Text="A rotação medida vira a escala das barras: 2200 de 3400 rpm passa a mostrar dois terços, e não a barra cheia." />
+                    <TextBlock Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextoMuitoFraco}"
+                               Text="A ventoinha da placa de vídeo quase nunca entra: as placas publicam o PWM mas não aceitam comando de fora. O teto dela é aprendido sozinho enquanto a placa trabalha — um jogo pesado resolve em minutos — ou você informa a rotação máxima em Componentes de energia, que para placa de vídeo é um número de ficha técnica." />
                 </StackPanel>
             </Border>
 

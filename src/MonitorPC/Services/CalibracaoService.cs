@@ -85,7 +85,9 @@ public sealed class CalibracaoService
         var resultados = canais
             .Where(c => !c.Comandavel)
             .Select(c => new ResultadoCalibracao(c.Chave, c.Nome, c.Peca, 0,
-                "A placa não deixa o app comandar esta ventoinha."))
+                c.Gpu
+                    ? "A placa de vídeo não aceita comando de ventoinha pelo app."
+                    : "A placa não deixa o app comandar esta ventoinha."))
             .ToList();
 
         if (alvos.Count == 0)
@@ -147,9 +149,16 @@ public sealed class CalibracaoService
 
             if (rpm <= 0)
             {
+                // Numa placa de video o motivo costuma ser outro: o firmware
+                // segura a ventoinha parada abaixo de certa temperatura, e o
+                // PWM no maximo nao vence essa decisao.
                 resultados.Add(new ResultadoCalibracao(c.Chave, c.Nome, c.Peca, 0,
-                    "Não girou: o conector pode estar vazio ou a ventoinha não " +
-                    "informa rotação."));
+                    c.Gpu
+                        ? "Não girou. Placas de vídeo seguram a ventoinha parada " +
+                          "abaixo de uma temperatura, por firmware, mesmo com o " +
+                          "PWM no máximo."
+                        : "Não girou: o conector pode estar vazio ou a ventoinha " +
+                          "não informa rotação."));
                 continue;
             }
 

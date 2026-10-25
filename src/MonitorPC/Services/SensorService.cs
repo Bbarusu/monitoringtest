@@ -470,23 +470,42 @@ public sealed class SensorService : IDisposable
     /// marca 0 rpm, e e justamente ela que mais precisa ser calibrada.
     /// </summary>
     public sealed record CanalDeVentoinha(
-        string Chave, string Nome, string Peca, bool Gpu, ISensor Rotacao, IControl? Comando)
+        string Chave, string Nome, string Peca, bool Gpu,
+        ISensor Rotacao, IControl? Comando, bool TemControle)
     {
         public float Rpm => Rotacao.Value ?? 0;
+
+        /// <summary>A peca reporta rotacao agora. Zero conta; ausencia de leitura nao.</summary>
+        public bool TemLeitura => Rotacao.Value.HasValue;
+
+        /// <summary>
+        /// Da para mandar nela. Diferente de <see cref="TemControle"/>: muita
+        /// placa de video publica o PWM e nao aceita comando nenhum, e separar
+        /// as duas coisas e o que permite dizer ao usuario onde a corrente
+        /// arrebenta.
+        /// </summary>
         public bool Comandavel => Comando is not null;
     }
 
-    public List<CanalDeVentoinha> CanaisDeVentoinha() => Canais()
+    public List<CanalDeVentoinha> CanaisDeVentoinha() => Canais(incluirSemLeitura: true)
         .Select(c => new CanalDeVentoinha(
             Chave(c.Peca, c.Rotacao), c.Rotacao.Name, c.Peca.Name.Trim(),
-            EhGpu(c.Peca.HardwareType), c.Rotacao, c.Controle?.Control))
+            EhGpu(c.Peca.HardwareType), c.Rotacao, c.Controle?.Control,
+            TemControle: c.Controle is not null))
         .ToList();
 
     /// <summary>
     /// Casa cada sensor de rotacao com o de controle, uma vez so, para os dois
     /// usos: aprender a curva e comandar a ventoinha.
     /// </summary>
-    private List<(IHardware Peca, ISensor Rotacao, ISensor? Controle)> Canais()
+    /// <param name="incluirSemLeitura">
+    /// Traz tambem os canais de rotacao que nao estao reportando nada. Para
+    /// aprender a curva eles sao inuteis, mas na tela de calibracao sumir em
+    /// silencio e pior que aparecer como "sem leitura": o usuario fica
+    /// procurando uma ventoinha que o app nunca mostrou.
+    /// </param>
+    private List<(IHardware Peca, ISensor Rotacao, ISensor? Controle)> Canais(
+        bool incluirSemLeitura = false)
     {
         var lista = new List<(IHardware, ISensor, ISensor?)>();
         var pilha = new Stack<IHardware>(_pc.Hardware);
@@ -497,7 +516,8 @@ public sealed class SensorService : IDisposable
             foreach (var sub in h.SubHardware) pilha.Push(sub);
 
             var rotacoes = h.Sensors
-                .Where(s => s.SensorType == SensorType.Fan && s.Value.HasValue)
+                .Where(s => s.SensorType == SensorType.Fan
+                            && (incluirSemLeitura || s.Value.HasValue))
                 .OrderBy(s => s.Index)
                 .ToList();
 
