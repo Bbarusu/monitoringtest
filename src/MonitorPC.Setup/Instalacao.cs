@@ -48,8 +48,19 @@ public static class Instalacao
 
     // ------------------------------------------------------------------
 
-    public static async Task Instalar(string pasta, OpcoesDeInstalacao opcoes, IProgress<string> aviso)
+    /// <summary>
+    /// Instala, e devolve o que não deu certo sem impedir a instalação.
+    ///
+    /// A separação importa: a tarefa dos sensores não existir é motivo para
+    /// parar e dizer, porque sem ela o app perde metade do que faz. Já o
+    /// desinstalador não ter sido copiado é um incômodo, e derrubar tudo por
+    /// causa dele deixaria o usuário sem nada.
+    /// </summary>
+    public static async Task<List<string>> Instalar(
+        string pasta, OpcoesDeInstalacao opcoes, IProgress<string> aviso)
     {
+        var ressalvas = new List<string>();
+
         await Task.Run(() =>
         {
             aviso.Report("Fechando o app, se estiver aberto…");
@@ -62,15 +73,20 @@ public static class Instalacao
             Directory.CreateDirectory(pasta);
             ExtrairPayload(pasta);
 
-            // O proprio instalador vira o desinstalador: ele ja sabe desfazer
-            // tudo que fez, e nao ha segundo programa para manter em dia.
             aviso.Report("Preparando a desinstalação…");
-            File.Copy(Environment.ProcessPath!, Desinstalador(pasta), overwrite: true);
+            if (!InstalarDesinstalador(pasta))
+                ressalvas.Add("Não foi possível copiar o desinstalador. " +
+                              "Para remover o app depois, rode este instalador de novo " +
+                              "com o argumento --desinstalar.");
 
             if (opcoes.ExcluirDoDefender)
             {
                 aviso.Report("Pedindo exceção ao Windows Defender…");
-                ExcluirDoDefender(pasta);
+
+                if (!ExcluirDoDefender(pasta))
+                    ressalvas.Add("O Windows Defender não aceitou a exceção. Se o app " +
+                                  "parar de abrir, procure a biblioteca de sensores no " +
+                                  "Histórico de Proteção.");
             }
 
             if (opcoes.AcessoCompletoAosSensores)
@@ -97,6 +113,56 @@ public static class Instalacao
             // que nada aconteceu.
             PedirParaAbrirOPainel();
         });
+
+        return ressalvas;
+    }
+
+    /// <summary>
+    /// Põe uma cópia deste instalador na pasta do app, para ele ser também o
+    /// desinstalador — ele já sabe desfazer tudo que fez, e assim não há um
+    /// segundo programa para manter em dia.
+    ///
+    /// A cópia direta por cima falha com acesso negado quando já existe um
+    /// Desinstalar.exe ali: o Windows não deixa sobrescrever um executável.
+    /// Mas deixa renomear, inclusive um que esteja rodando. Então o antigo sai
+    /// da frente por renomeação e a cópia cai no lugar vazio.
+    /// </summary>
+    private static bool InstalarDesinstalador(string pasta)
+    {
+        var origem = Environment.ProcessPath;
+        var destino = Desinstalador(pasta);
+
+        if (origem is null) return false;
+
+        // Rodando de dentro da própria pasta de instalação, origem e destino
+        // são o mesmo arquivo e não há nada a fazer.
+        if (string.Equals(origem, destino, StringComparison.OrdinalIgnoreCase)) return true;
+
+        for (var tentativa = 1; tentativa <= 3; tentativa++)
+        {
+            try
+            {
+                if (File.Exists(destino))
+                {
+                    var velho = $"{destino}.{DateTime.Now:HHmmssfff}.antigo";
+                    File.Move(destino, velho);
+
+                    // Some agora se der; senão fica para a desinstalação, que
+                    // apaga a pasta inteira.
+                    try { File.Delete(velho); } catch { }
+                }
+
+                File.Copy(origem, destino);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Anotar($"copiar o desinstalador, tentativa {tentativa}: {ex.Message}");
+                Thread.Sleep(500);
+            }
+        }
+
+        return false;
     }
 
     public static async Task Desinstalar(IProgress<string> aviso)
@@ -392,8 +458,8 @@ public static class Instalacao
     /// placa-mae. Sem a excecao, ele pode pôr a biblioteca em quarentena e o
     /// app para de abrir — sem aviso nenhum que ligue uma coisa a outra.
     /// </summary>
-    private static void ExcluirDoDefender(string pasta) =>
-        PowerShell($"Add-MpPreference -ExclusionPath '{Aspas(pasta)}'");
+    private static bool ExcluirDoDefender(string pasta) =>
+        PowerShell($"Add-MpPreference -ExclusionPath '{Aspas(pasta)}'") == 0;
 
     private static void RegistrarDesinstalacao(string pasta)
     {
@@ -471,8 +537,8 @@ public static class Instalacao
         }
     }
 
-    private static void PowerShell(string script) => Executar("powershell.exe",
-        $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"");
+    private static int PowerShell(string script) => Executar("powershell.exe",
+        $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"").Codigo;
 
     /// <summary>Onde cada passo da instalacao deixa registro do que aconteceu.</summary>
     public static string Registro => Path.Combine(Path.GetTempPath(), "KInfo-instalacao.log");

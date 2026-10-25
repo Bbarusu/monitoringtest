@@ -10,6 +10,9 @@ public partial class SetupWindow : Window
     private readonly bool _desinstalando = App.Desinstalando;
     private string _pasta = Instalacao.PastaPadrao;
 
+    /// <summary>O que falhou sem impedir a instalação, para a tela final dizer.</summary>
+    private List<string> _ressalvas = new();
+
     public SetupWindow()
     {
         InitializeComponent();
@@ -78,7 +81,7 @@ public partial class SetupWindow : Window
         try
         {
             if (_desinstalando) await Instalacao.Desinstalar(progresso);
-            else await Instalacao.Instalar(_pasta, Opcoes(), progresso);
+            else _ressalvas = await Instalacao.Instalar(_pasta, Opcoes(), progresso);
 
             Concluir();
         }
@@ -115,14 +118,24 @@ public partial class SetupWindow : Window
             return;
         }
 
-        ResultadoTitulo.Text = "Instalado";
-        ResultadoDetalhe.Text = OpcaoAdministrador.IsChecked == true
+        ResultadoTitulo.Text = _ressalvas.Count == 0 ? "Instalado" : "Instalado, com ressalvas";
+
+        // As ressalvas vêm primeiro: o que não deu certo importa mais que o
+        // texto de boas-vindas, e escondê-las no fim repetiria o erro de
+        // instalar em silêncio.
+        var texto = _ressalvas.Count > 0 ? string.Join("\n\n", _ressalvas) + "\n\n" : "";
+
+        ResultadoDetalhe.Text = texto + (OpcaoAdministrador.IsChecked == true
             ? "O painel abre agora e, daqui em diante, pelo ícone na bandeja do " +
               "Windows. O app sobe com acesso completo aos sensores, sem pedir " +
               "confirmação toda vez."
             : "O painel abre agora e, daqui em diante, pelo ícone na bandeja do " +
               "Windows. Sem o acesso elevado, as medidas do chip da placa-mãe — " +
-              "temperatura de CPU, tensões e ventoinhas — vão aparecer vazias.";
+              "temperatura de CPU, tensões e ventoinhas — vão aparecer vazias.");
+
+        if (_ressalvas.Count > 0)
+            ResultadoTitulo.SetResourceReference(
+                System.Windows.Controls.TextBlock.ForegroundProperty, "AlertaTexto");
     }
 
     private void Falhar(Exception ex)
