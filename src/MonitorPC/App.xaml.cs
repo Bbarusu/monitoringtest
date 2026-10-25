@@ -65,6 +65,27 @@ public partial class App : Application
         }
     }
 
+    /// <summary>
+    /// O icone do proprio executavel, para a bandeja antes da primeira leitura.
+    ///
+    /// Dura pouco: assim que sai a primeira temperatura, o icone passa a ser o
+    /// numero desenhado. Mas e o que aparece enquanto os sensores acordam, e um
+    /// icone generico do Windows ali parece app quebrado.
+    /// </summary>
+    private static D.Icon IconeDoApp()
+    {
+        try
+        {
+            return D.Icon.ExtractAssociatedIcon(Environment.ProcessPath!)
+                   ?? D.SystemIcons.Application;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Ícone do app", ex);
+            return D.SystemIcons.Application;
+        }
+    }
+
     private static bool Elevado()
     {
         using var identidade = System.Security.Principal.WindowsIdentity.GetCurrent();
@@ -120,7 +141,7 @@ public partial class App : Application
         {
             Text = "KInfo",
             Visible = true,
-            Icon = D.SystemIcons.Application
+            Icon = IconeDoApp()
         };
         _bandeja.MouseClick += (_, args) =>
         {

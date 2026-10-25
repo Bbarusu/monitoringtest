@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>KInfo-Setup</AssemblyName>
+    <ApplicationIcon>..\MonitorPC\kinfo.ico</ApplicationIcon>
     <RootNamespace>MonitorPC.Setup</RootNamespace>
     <Version>0.1.0</Version>
 

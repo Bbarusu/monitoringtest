@@ -21,11 +21,22 @@
             <!-- Cabecalho -->
             <Grid>
                 <StackPanel Orientation="Horizontal">
+                    <!--
+                        O mesmo chip do ícone do app. Os dois quadrados vão de
+                        Rectangle, que arredonda canto sem esforço; os oito
+                        pinos são retas, e para retas o Path é mais curto.
+                    -->
                     <Border Width="44" Height="44" CornerRadius="12"
                             Background="{DynamicResource Acento}" Margin="0,0,14,0">
-                        <TextBlock x:Name="Simbolo" Text="65" FontSize="18" FontWeight="SemiBold"
-                                   Foreground="White" HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" />
+                        <Grid Width="24" Height="24">
+                            <Rectangle Width="13" Height="13" RadiusX="3" RadiusY="3"
+                                       Stroke="White" StrokeThickness="1.9" />
+                            <Rectangle Width="4" Height="4" RadiusX="1" RadiusY="1" Fill="White" />
+                            <Path Width="24" Height="24" Stretch="None"
+                                  Stroke="White" StrokeThickness="1.9" StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Data="M9.5,2.6 V5.5 M14.5,2.6 V5.5 M9.5,18.5 V21.4 M14.5,18.5 V21.4 M2.6,9.5 H5.5 M2.6,14.5 H5.5 M18.5,9.5 H21.4 M18.5,14.5 H21.4" />
+                        </Grid>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="Titulo" Text="KInfo" FontSize="17"

@@ -10,6 +10,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AssemblyName>KInfo</AssemblyName>
+    <ApplicationIcon>kinfo.ico</ApplicationIcon>
     <RootNamespace>MonitorPC</RootNamespace>
     <Version>0.1.0</Version>
   </PropertyGroup>

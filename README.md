@@ -24,6 +24,22 @@ disponíveis.
 **Estado atual:** as cinco abas funcionais (Geral, CPU, GPU, Disco e Energia), com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
+## Ícone
+
+`arte/gerar-icone.py` desenha `src/MonitorPC/kinfo.ico` — o contorno de um chip,
+branco, sobre o quadrado azul do acento. É um script e não um arquivo desenhado
+à mão porque cada tamanho precisa de proporções próprias: o mesmo desenho
+reduzido de 256 para 16 px vira borrão. Conforme o ícone encolhe, o traço
+engrossa, os pinos caem de oito para quatro, o canto do corpo perde raio para
+não virar um anel, e abaixo de 24 px o miolo sai de cena — com ele sobraria um
+pixel de folga, e um pixel de folga não se enxerga.
+
+O `.ico` é montado quadro a quadro em vez de pelo `save` do Pillow, que guarda
+uma imagem só e reduz as outras, jogando fora justamente esse ajuste.
+
+Na bandeja o ícone continua sendo o número da temperatura desenhado a cada
+leitura. O chip é a marca do app: janela, atalho, menu Iniciar e instalador.
+
 ## Instalador
 
 `publicar.cmd` na raiz gera um instalador de arquivo único em
