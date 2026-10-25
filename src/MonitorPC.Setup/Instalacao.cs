@@ -10,6 +10,14 @@ namespace MonitorPC.Setup;
 
 /// <summary>O que o usuario escolheu nas caixas da tela.</summary>
 public sealed record OpcoesDeInstalacao(
+    /// <summary>
+    /// Registra a tarefa que da privilegio elevado ao app. Sem ela o app roda
+    /// como usuario comum e perde temperatura de CPU e placa-mae — a escolha
+    /// aparece na tela de instalacao justamente para nao ser uma descoberta
+    /// depois de tudo instalado.
+    /// </summary>
+    bool AcessoCompletoAosSensores,
+
     bool AtalhoNaAreaDeTrabalho,
     bool IniciarComWindows,
     bool ExcluirDoDefender);
@@ -62,14 +70,29 @@ public static class Instalacao
                 ExcluirDoDefender(pasta);
             }
 
-            aviso.Report("Registrando o acesso aos sensores…");
-            CriarTarefa(pasta, opcoes.IniciarComWindows);
+            if (opcoes.AcessoCompletoAosSensores)
+            {
+                aviso.Report("Registrando o acesso aos sensores…");
+                CriarTarefa(pasta, opcoes.IniciarComWindows);
+            }
+            else
+            {
+                // Sem tarefa, o app nao tenta se elevar: ele verifica que ela
+                // nao existe e segue como usuario comum.
+                aviso.Report("Pulando o acesso elevado, como você escolheu…");
+                Executar("schtasks.exe", $"/Delete /TN \"{NomeDaTarefa}\" /F");
+            }
 
             aviso.Report("Criando os atalhos…");
-            CriarAtalhos(pasta, opcoes.AtalhoNaAreaDeTrabalho);
+            CriarAtalhos(pasta, opcoes);
 
             aviso.Report("Registrando no Windows…");
             RegistrarDesinstalacao(pasta);
+
+            // Pede ao app que a primeira abertura mostre o painel. Sem isto,
+            // clicar em "Abrir o Monitor" só põe um ícone na bandeja e parece
+            // que nada aconteceu.
+            PedirParaAbrirOPainel();
         });
     }
 
@@ -86,7 +109,8 @@ public static class Instalacao
             Executar("schtasks.exe", $"/Delete /TN \"{NomeDaTarefa}\" /F");
 
             aviso.Report("Removendo os atalhos…");
-            foreach (var atalho in new[] { AtalhoDoMenu(), AtalhoDaAreaDeTrabalho() })
+            foreach (var atalho in new[]
+                     { AtalhoDoMenu(), AtalhoDaAreaDeTrabalho(), AtalhoDeInicializacao() })
                 try { if (File.Exists(atalho)) File.Delete(atalho); } catch { }
 
             aviso.Report("Removendo a exceção do Defender…");
@@ -228,15 +252,47 @@ public static class Instalacao
     private static string AtalhoDaAreaDeTrabalho() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), $"{Nome}.lnk");
 
-    private static void CriarAtalhos(string pasta, bool naAreaDeTrabalho)
+    private static string AtalhoDeInicializacao() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.Startup), $"{Nome}.lnk");
+
+    private static void CriarAtalhos(string pasta, OpcoesDeInstalacao opcoes)
     {
         // Os atalhos apontam direto para o executavel, e nao para o schtasks.
         // O app sobe sozinho pela tarefa quando percebe que abriu sem
         // privilegio, o que evita a janela preta do console piscando.
         CriarAtalho(AtalhoDoMenu(), Executavel(pasta), pasta);
 
-        if (naAreaDeTrabalho)
+        if (opcoes.AtalhoNaAreaDeTrabalho)
             CriarAtalho(AtalhoDaAreaDeTrabalho(), Executavel(pasta), pasta);
+
+        // Com acesso elevado, quem abre junto com a sessao e o gatilho de logon
+        // da tarefa. Sem ela, resta a pasta de inicializacao do Windows.
+        try { if (File.Exists(AtalhoDeInicializacao())) File.Delete(AtalhoDeInicializacao()); }
+        catch { }
+
+        if (opcoes.IniciarComWindows && !opcoes.AcessoCompletoAosSensores)
+            CriarAtalho(AtalhoDeInicializacao(), Executavel(pasta), pasta);
+    }
+
+    /// <summary>
+    /// Marca que a proxima abertura deve mostrar o painel. E um arquivo vazio
+    /// na pasta de configuracao do app, que o proprio app apaga ao ler.
+    /// </summary>
+    private static void PedirParaAbrirOPainel()
+    {
+        try
+        {
+            var pasta = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "MonitorPC");
+
+            Directory.CreateDirectory(pasta);
+            File.WriteAllText(Path.Combine(pasta, "abrir-apos-instalar"), "");
+        }
+        catch
+        {
+            // Um detalhe de conforto: se falhar, o app so abre na bandeja.
+        }
     }
 
     private static void CriarAtalho(string atalho, string alvo, string pasta)

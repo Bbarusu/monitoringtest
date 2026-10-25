@@ -19,8 +19,30 @@ public partial class SetupWindow : Window
         if (Instalacao.PastaInstalada() is { Length: > 0 } anterior) _pasta = anterior;
 
         CaminhoDeInstalacao.Text = _pasta;
+        Administrador_Alterado(this, new RoutedEventArgs());
 
         if (_desinstalando) PrepararDesinstalacao();
+    }
+
+    /// <summary>
+    /// O cartão de aviso explica o que a escolha de administrador significa, e
+    /// muda junto com ela. Deixar um texto fixo falando de privilégio elevado
+    /// com a caixa desmarcada seria contar outra história.
+    /// </summary>
+    private void Administrador_Alterado(object sender, RoutedEventArgs e)
+    {
+        if (AvisoDoDriver is null) return;
+
+        AvisoDoDriver.Text = OpcaoAdministrador.IsChecked == true
+            ? "Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só " +
+              "carrega com privilégio elevado. O instalador registra uma tarefa do Windows " +
+              "para o app subir elevado sem pedir confirmação toda vez. O driver vem dentro " +
+              "da biblioteca de sensores e é carregado apenas enquanto o app está aberto — " +
+              "nada fica residente no boot."
+            : "Sem privilégio elevado o driver de sensores não carrega. O app abre e " +
+              "funciona, mas temperatura de CPU, tensões, rotação de ventoinhas e tudo que " +
+              "vem do chip da placa-mãe ficam indisponíveis. GPU, discos, memória e uso de " +
+              "CPU continuam normais. Dá para mudar reinstalando.";
     }
 
     private void PrepararDesinstalacao()
@@ -71,6 +93,7 @@ public partial class SetupWindow : Window
     }
 
     private OpcoesDeInstalacao Opcoes() => new(
+        OpcaoAdministrador.IsChecked == true,
         OpcaoAtalho.IsChecked == true,
         OpcaoLogon.IsChecked == true,
         OpcaoDefender.IsChecked == true);
@@ -93,10 +116,13 @@ public partial class SetupWindow : Window
         }
 
         ResultadoTitulo.Text = "Instalado";
-        ResultadoDetalhe.Text =
-            "O Monitor abre pela bandeja do Windows. Da primeira vez o Windows " +
-            "pode pedir confirmação para carregar o driver de sensores; depois " +
-            "disso ele sobe sozinho, sem perguntar.";
+        ResultadoDetalhe.Text = OpcaoAdministrador.IsChecked == true
+            ? "O painel abre agora e, daqui em diante, pelo ícone na bandeja do " +
+              "Windows. O app sobe com acesso completo aos sensores, sem pedir " +
+              "confirmação toda vez."
+            : "O painel abre agora e, daqui em diante, pelo ícone na bandeja do " +
+              "Windows. Sem o acesso elevado, as medidas do chip da placa-mãe — " +
+              "temperatura de CPU, tensões e ventoinhas — vão aparecer vazias.";
     }
 
     private void Falhar(Exception ex)

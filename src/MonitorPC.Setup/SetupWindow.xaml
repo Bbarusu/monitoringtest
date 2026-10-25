@@ -79,6 +79,32 @@
                 <TextBlock Text="Opções" FontSize="11" Margin="0,16,0,8"
                            Foreground="{DynamicResource TextoFraco}" />
 
+                <!--
+                    A escolha mais consequente vem primeiro, e com o preço dito
+                    por extenso: descobrir que faltam sensores depois de tudo
+                    instalado é o pior jeito de ficar sabendo.
+                -->
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1"
+                        Padding="14,12" Margin="0,0,0,8">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="330"
+                                    HorizontalAlignment="Left">
+                            <TextBlock Text="Rodar como administrador" FontSize="13"
+                                       FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                            <TextBlock x:Name="DetalheAdministrador" FontSize="11" Margin="0,2,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}"
+                                       Text="Necessário para temperatura de CPU, placa-mãe e ventoinhas. Sem isso só aparecem GPU, discos, memória e uso de CPU." />
+                        </StackPanel>
+                        <CheckBox x:Name="OpcaoAdministrador" Style="{StaticResource CaixaDeSelecao}"
+                                  IsChecked="True" HorizontalAlignment="Right"
+                                  VerticalAlignment="Center"
+                                  Checked="Administrador_Alterado"
+                                  Unchecked="Administrador_Alterado" />
+                    </Grid>
+                </Border>
+
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1"
                         Padding="14,12" Margin="0,0,0,8">
@@ -148,9 +174,9 @@
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               StrokeLineJoin="Round" Width="16" Height="16" Stretch="Uniform"
                               VerticalAlignment="Top" Margin="0,2,10,0" />
-                        <TextBlock Grid.Column="1" FontSize="11" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource AlertaTexto}"
-                                   Text="Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só carrega com privilégio elevado. O instalador registra uma tarefa do Windows para o app subir elevado sem pedir confirmação toda vez. O driver vem dentro da biblioteca de sensores e é carregado apenas enquanto o app está aberto." />
+                        <TextBlock x:Name="AvisoDoDriver" Grid.Column="1" FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource AlertaTexto}" />
                     </Grid>
                 </Border>
 

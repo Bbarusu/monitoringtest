@@ -146,6 +146,39 @@ public partial class App : Application
             _painel.Mostrar();
             _painel.AbrirConfiguracao(true);
         }
+        else if (PedidoDoInstalador())
+        {
+            _painel.Mostrar();
+        }
+    }
+
+    /// <summary>
+    /// O instalador deixa um arquivo vazio pedindo que esta abertura mostre o
+    /// painel.
+    ///
+    /// Sem isso, clicar em "Abrir o Monitor" no fim da instalacao so punha um
+    /// icone na bandeja, e parecia que nada tinha acontecido. Nas aberturas
+    /// seguintes o painel continua escondido, que e o certo para um app que
+    /// sobe junto com a sessao — por isso a marca e apagada na leitura e vale
+    /// uma vez so.
+    /// </summary>
+    private static bool PedidoDoInstalador()
+    {
+        try
+        {
+            var marca = Path.Combine(
+                Path.GetDirectoryName(AppConfig.Caminho)!, "abrir-apos-instalar");
+
+            if (!File.Exists(marca)) return false;
+
+            File.Delete(marca);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Marca do instalador", ex);
+            return false;
+        }
     }
 
     /// <summary>
