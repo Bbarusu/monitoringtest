@@ -9,7 +9,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <AssemblyName>MonitorPC</AssemblyName>
+    <AssemblyName>KInfo</AssemblyName>
     <RootNamespace>MonitorPC</RootNamespace>
     <Version>0.1.0</Version>
   </PropertyGroup>

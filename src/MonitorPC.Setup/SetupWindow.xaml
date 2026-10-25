@@ -1,7 +1,7 @@
 <Window x:Class="MonitorPC.Setup.SetupWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Monitor de PC"
+        Title="KInfo"
         Width="480" SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
@@ -28,7 +28,7 @@
                                    VerticalAlignment="Center" />
                     </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Name="Titulo" Text="Monitor de PC" FontSize="17"
+                        <TextBlock x:Name="Titulo" Text="KInfo" FontSize="17"
                                    FontWeight="SemiBold" Foreground="{DynamicResource Texto}" />
                         <TextBlock x:Name="Subtitulo" FontSize="12" Margin="0,3,0,0"
                                    TextWrapping="Wrap" MaxWidth="320" HorizontalAlignment="Left"

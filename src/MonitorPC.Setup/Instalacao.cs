@@ -35,15 +35,15 @@ public sealed record OpcoesDeInstalacao(
 /// </summary>
 public static class Instalacao
 {
-    public const string Nome = "Monitor de PC";
-    public const string NomeDaTarefa = "Monitor de PC";
+    public const string Nome = "KInfo";
+    public const string NomeDaTarefa = "KInfo";
     private const string ChaveDeDesinstalacao =
-        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MonitorDePC";
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\KInfo";
 
     public static string PastaPadrao => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), Nome);
 
-    private static string Executavel(string pasta) => Path.Combine(pasta, "MonitorPC.exe");
+    private static string Executavel(string pasta) => Path.Combine(pasta, "KInfo.exe");
     private static string Desinstalador(string pasta) => Path.Combine(pasta, "Desinstalar.exe");
 
     // ------------------------------------------------------------------
@@ -54,6 +54,9 @@ public static class Instalacao
         {
             aviso.Report("Fechando o app, se estiver aberto…");
             FecharAppAberto();
+
+            aviso.Report("Limpando a instalação antiga, se houver…");
+            LimparNomeAntigo();
 
             aviso.Report("Copiando os arquivos…");
             Directory.CreateDirectory(pasta);
@@ -143,9 +146,54 @@ public static class Instalacao
     /// Uma instancia antiga segurando os arquivos faria a copia falhar. Pede
     /// para fechar pela janela primeiro; so insiste com quem nao responde.
     /// </summary>
+    /// <summary>
+    /// O app se chamava Monitor de PC. Sem isto, instalar a versao nova
+    /// deixaria para tras a tarefa, os atalhos e a pasta do nome antigo — e
+    /// duas copias disputando o mesmo driver dao leitura zerada nas duas.
+    ///
+    /// A pasta de dados em AppData nao entra aqui: ela guarda o consumo e as
+    /// curvas de ventoinha, e quem a renomeia, levando tudo junto, e o proprio
+    /// app na primeira abertura.
+    /// </summary>
+    private static void LimparNomeAntigo()
+    {
+        const string antigo = "Monitor de PC";
+
+        Executar("schtasks.exe", $"/Delete /TN \"{antigo}\" /F");
+
+        try { Registry.LocalMachine.DeleteSubKeyTree(
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\MonitorDePC", false); }
+        catch { }
+
+        foreach (var pasta in new[]
+                 {
+                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs"),
+                     Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                     Environment.GetFolderPath(Environment.SpecialFolder.Startup)
+                 })
+            try
+            {
+                var atalho = Path.Combine(pasta, $"{antigo}.lnk");
+                if (File.Exists(atalho)) File.Delete(atalho);
+            }
+            catch { }
+
+        try
+        {
+            var instalacao = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), antigo);
+
+            if (Directory.Exists(instalacao)) Directory.Delete(instalacao, recursive: true);
+        }
+        catch { }
+    }
+
     private static void FecharAppAberto()
     {
-        foreach (var p in Process.GetProcessesByName("MonitorPC"))
+        // Os dois nomes: uma copia do app antigo ainda aberta seguraria os
+        // arquivos e faria a copia falhar.
+        foreach (var p in Process.GetProcessesByName("KInfo")
+                     .Concat(Process.GetProcessesByName("MonitorPC")))
         {
             try
             {
@@ -284,7 +332,7 @@ public static class Instalacao
         {
             var pasta = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MonitorPC");
+                "KInfo");
 
             Directory.CreateDirectory(pasta);
             File.WriteAllText(Path.Combine(pasta, "abrir-apos-instalar"), "");

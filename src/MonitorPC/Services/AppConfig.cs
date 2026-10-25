@@ -159,9 +159,40 @@ public sealed class AppConfig
     // ------------------------------------------------------------------
 
     [JsonIgnore]
-    public static string Caminho => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "MonitorPC", "config.json");
+    public static string Caminho => Path.Combine(Pasta, "config.json");
+
+    /// <summary>
+    /// Onde moram a configuracao, o registro de consumo e o log de erros.
+    ///
+    /// O app se chamava Monitor de PC, e a pasta tinha o nome antigo. Quem ja
+    /// usava tem ali curvas de ventoinha aprendidas durante dias e o consumo de
+    /// cada dia: renomear sem levar isso junto jogaria fora o que o app mais
+    /// demorou para saber. A mudanca acontece uma vez, na primeira abertura
+    /// depois da renomeacao.
+    /// </summary>
+    [JsonIgnore]
+    public static string Pasta { get; } = PrepararPasta();
+
+    private static string PrepararPasta()
+    {
+        var dados = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var nova = Path.Combine(dados, "KInfo");
+
+        try
+        {
+            var antiga = Path.Combine(dados, "MonitorPC");
+
+            if (Directory.Exists(antiga) && !Directory.Exists(nova))
+                Directory.Move(antiga, nova);
+        }
+        catch
+        {
+            // Sem Log aqui: o proprio Log depende desta pasta. Falhando, o app
+            // comeca com configuracao nova, que e ruim mas nao impede nada.
+        }
+
+        return nova;
+    }
 
     private static readonly JsonSerializerOptions Opcoes = new()
     {

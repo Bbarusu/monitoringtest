@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 chcp 65001 >nul
 
 rem ---------------------------------------------------------------------------
-rem  Gera o instalador do Monitor de PC.
+rem  Gera o instalador do KInfo.
 rem
 rem  Sem argumento, sai um executavel unico que roda em qualquer Windows 10 ou
 rem  11 de 64 bits, sem exigir nada instalado — o .NET viaja dentro. Fica perto
@@ -29,7 +29,7 @@ if "%MODO%"=="leve" (
 )
 
 echo.
-echo === Monitor de PC — gerando o instalador (modo %MODO%) ===
+echo === KInfo — gerando o instalador (modo %MODO%) ===
 echo.
 
 rem --- Limpa a saida anterior, para nao empacotar sobra de build antigo ------
@@ -72,7 +72,7 @@ if errorlevel 1 goto :falhou
 
 echo.
 echo === Pronto ===
-for %%A in ("dist\instalador\MonitorPC-Setup.exe") do (
+for %%A in ("dist\instalador\KInfo-Setup.exe") do (
     echo Instalador: %%~fA
     set /a TAMANHO=%%~zA/1048576
     echo Tamanho:    !TAMANHO! MB

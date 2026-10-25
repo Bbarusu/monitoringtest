@@ -1,4 +1,4 @@
-# Monitor de PC
+# KInfo
 
 Painel de monitoramento que vive na bandeja do Windows. Abre no canto inferior direito,
 ancorado ao ícone da barra de tarefas, e mostra temperatura, carga, memória e energia
@@ -27,7 +27,7 @@ mais a tela de Personalização e os perfis de energia.
 ## Instalador
 
 `publicar.cmd` na raiz gera um instalador de arquivo único em
-`dist\instalador\MonitorPC-Setup.exe`. Sem argumento, o .NET viaja dentro e o
+`dist\instalador\KInfo-Setup.exe`. Sem argumento, o .NET viaja dentro e o
 instalador roda em qualquer Windows 10 ou 11 de 64 bits (~130 MB);
 `publicar.cmd leve` gera a versão de poucos megabytes, que exige o .NET 8
 Desktop Runtime na máquina de destino.
@@ -35,7 +35,7 @@ Desktop Runtime na máquina de destino.
 O instalador tem a mesma cara do app — painel escuro arredondado, mesma paleta e
 tipografia — e faz quatro coisas:
 
-- Copia o app para `C:\Program Files\Monitor de PC`
+- Copia o app para `C:\Program Files\KInfo`
 - Registra uma **tarefa do Windows com privilégio elevado**, que é o que resolve
   o problema do driver (abaixo)
 - Cria os atalhos e, opcionalmente, o início junto com o Windows
@@ -91,7 +91,7 @@ sem exigir administrador.
 
 ## Configuração
 
-Gerada na primeira execução em `%APPDATA%\MonitorPC\config.json`.
+Gerada na primeira execução em `%APPDATA%\KInfo\config.json`.
 
 As **quantidades** de componentes (módulos de RAM, discos, ventoinhas) são detectadas
 do hardware. Os campos terminados em `Manual` vêm vazios e servem para o que o PC não
@@ -310,7 +310,11 @@ não comandáveis: a rotação é visível, mas o teto não pode ser medido.
 
 ## Registro de consumo
 
-`%APPDATA%\MonitorPC\consumo.txt` guarda o consumo de cada dia: kWh, tempo com o
+A pasta de dados era `%APPDATA%\MonitorPC` quando o app se chamava Monitor de
+PC. O app renomeia a pasta na primeira abertura, levando junto o consumo e as
+curvas de ventoinha aprendidas — o que ele mais demorou para saber.
+
+`%APPDATA%\KInfo\consumo.txt` guarda o consumo de cada dia: kWh, tempo com o
 app aberto, média e pico. O botão na aba Energia abre o arquivo. Ele é gravado
 junto com os sensores lentos, de 30 em 30 segundos, e de novo ao fechar o app.
 

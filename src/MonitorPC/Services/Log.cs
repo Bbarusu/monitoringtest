@@ -8,9 +8,8 @@ namespace MonitorPC.Services;
 /// </summary>
 public static class Log
 {
-    public static string Caminho => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "MonitorPC", "erro.log");
+    /// <summary>Na mesma pasta da configuracao, que trata a renomeacao do app.</summary>
+    public static string Caminho => Path.Combine(AppConfig.Pasta, "erro.log");
 
     public static void Erro(string origem, Exception ex)
     {

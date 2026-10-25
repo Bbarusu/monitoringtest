@@ -18,7 +18,7 @@ public partial class App : Application
     /// </summary>
     private const string ArgumentoElevado = "--elevado";
 
-    private const string NomeDaTarefa = "Monitor de PC";
+    private const string NomeDaTarefa = "KInfo";
 
     /// <summary>
     /// Quando o app foi instalado e abriu sem privilegio, pede para a tarefa do
@@ -118,7 +118,7 @@ public partial class App : Application
 
         _bandeja = new WF.NotifyIcon
         {
-            Text = "Monitor de PC",
+            Text = "KInfo",
             Visible = true,
             Icon = D.SystemIcons.Application
         };
@@ -343,8 +343,8 @@ public partial class App : Application
     {
         var texto = temSensores && cpuTemp is > 0 ? $"{cpuTemp:F0}" : "--";
         _bandeja.Text = temSensores
-            ? $"Monitor de PC — CPU {texto} °C"
-            : "Monitor de PC — sensores de baixo nível indisponíveis";
+            ? $"KInfo — CPU {texto} °C"
+            : "KInfo — sensores de baixo nível indisponíveis";
 
         // 32 por 32 e desenhado para ser reduzido a 16 na bandeja: quanto mais
         // area o numero ocupar, mais legivel ele fica depois da reducao.

@@ -1,4 +1,4 @@
-# Monitor de PC — resumo para a implementação
+# KInfo — resumo para a implementação
 
 Base consolidada a partir do design no canvas e dos testes de sensores feitos em 21 e 22/10/2026
 no PC de referência (Ryzen 7 5700, ASUS Prime B550M-A, Radeon RX 7600, 24 GB, 3 SSDs).

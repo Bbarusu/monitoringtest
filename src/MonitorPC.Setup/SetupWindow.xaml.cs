@@ -47,7 +47,7 @@ public partial class SetupWindow : Window
 
     private void PrepararDesinstalacao()
     {
-        Titulo.Text = "Desinstalar o Monitor de PC";
+        Titulo.Text = "Desinstalar o KInfo";
         Subtitulo.Text = "Remove o app, a tarefa dos sensores e os atalhos.";
         BotaoInstalar.Content = "Desinstalar";
 
@@ -164,7 +164,7 @@ public partial class SetupWindow : Window
             {
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = Path.Combine(_pasta, "MonitorPC.exe"),
+                    FileName = Path.Combine(_pasta, "KInfo.exe"),
                     UseShellExecute = true
                 });
             }

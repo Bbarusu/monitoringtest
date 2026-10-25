@@ -124,8 +124,8 @@ public sealed class ConsumoService
     {
         var t = new StringBuilder();
 
-        t.AppendLine("Monitor de PC — consumo de energia");
-        t.AppendLine("==================================");
+        t.AppendLine("KInfo — consumo de energia");
+        t.AppendLine("=====================");
         t.AppendLine();
         t.AppendLine("ESTIMATIVA, e só com o app aberto.");
         t.AppendLine();
