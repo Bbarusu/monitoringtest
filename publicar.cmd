@@ -38,7 +38,7 @@ if exist "src\MonitorPC.Setup\Payload" rmdir /s /q "src\MonitorPC.Setup\Payload"
 mkdir "src\MonitorPC.Setup\Payload"
 
 rem --- 1. Publica o app -----------------------------------------------------
-echo [1/3] Publicando o app...
+echo [1/4] Publicando o app...
 dotnet publish "src\MonitorPC\MonitorPC.csproj" ^
     -c Release -r win-x64 %ARGS_APP% ^
     -o "dist\app" ^
@@ -57,17 +57,22 @@ if not exist "dist\app\LibreHardwareMonitorLib.dll" (
 )
 
 rem --- 2. Empacota o app dentro do instalador -------------------------------
-echo [2/3] Empacotando...
+echo [2/4] Empacotando...
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "Compress-Archive -Path 'dist\app\*' -DestinationPath 'src\MonitorPC.Setup\Payload\app.zip' -Force"
 if errorlevel 1 goto :falhou
 
 rem --- 3. Publica o instalador com o app dentro -----------------------------
-echo [3/3] Gerando o instalador...
+echo [3/4] Gerando o instalador...
 dotnet publish "src\MonitorPC.Setup\MonitorPC.Setup.csproj" ^
     -c Release -r win-x64 %ARGS_SETUP% ^
     -o "dist\instalador" ^
     --nologo -v minimal
+if errorlevel 1 goto :falhou
+
+rem --- 4. Junta o codigo num arquivo so, ao lado do instalador -------------
+echo [4/4] Reunindo o codigo-fonte...
+powershell -NoProfile -ExecutionPolicy Bypass -File "codigo-unico.ps1"
 if errorlevel 1 goto :falhou
 
 echo.

@@ -24,6 +24,17 @@ disponíveis.
 **Estado atual:** as cinco abas funcionais (Geral, CPU, GPU, Disco e Energia), com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
+## Código num arquivo só
+
+`codigo-unico.ps1` junta todo o código-fonte em
+`dist\instalador\KInfo-codigo-completo.md`, ao lado do instalador. O
+`publicar.cmd` o chama no último passo, para o arquivo nunca ficar defasado em
+relação ao executável que saiu junto.
+
+O cabeçalho explicativo mora em `arte/cabecalho-codigo.md`, e não dentro do
+script: assim o `.ps1` fica em ASCII puro e a prosa acentuada vive num arquivo
+lido explicitamente como UTF-8, sem depender da página de código do console.
+
 ## Ícone
 
 `arte/gerar-icone.py` desenha `src/MonitorPC/kinfo.ico` — o contorno de um chip,
