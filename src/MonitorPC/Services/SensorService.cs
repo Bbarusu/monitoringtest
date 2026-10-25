@@ -75,6 +75,16 @@ public sealed class SensorService : IDisposable
         };
     }
 
+    /// <summary>
+    /// Grava o relatorio de diagnostico e devolve o caminho.
+    ///
+    /// Mora aqui porque o <c>Computer</c> da biblioteca nao sai desta classe: o
+    /// relatorio dele e a unica fonte que diz o erro exato do carregamento do
+    /// driver, e expor o objeto inteiro so para isso abriria caminho para o
+    /// resto do app mexer no estado dos sensores por fora.
+    /// </summary>
+    public string SalvarDiagnostico() => Diagnostico.Salvar(_pc);
+
     public void Iniciar()
     {
         _pc.Open();

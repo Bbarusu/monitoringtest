@@ -278,7 +278,7 @@ public partial class FlyoutWindow : Window
 
     private void Aplicar(Snapshot s)
     {
-        AvisoDriver.Visibility = s.SensoresDeBaixoNivel ? Visibility.Collapsed : Visibility.Visible;
+        MostrarAvisoDeDriver(s.SensoresDeBaixoNivel);
 
         MostrarAviso(_alertas.Atual);
         GuardarHistorico(s);
@@ -1061,6 +1061,62 @@ public partial class FlyoutWindow : Window
         }
     }
 
+    /// <summary>
+    /// A faixa de aviso dos sensores de baixo nivel.
+    ///
+    /// O texto e montado pelo <see cref="Diagnostico"/> e nao fica mais fixo no
+    /// XAML: ele dizia "abra como administrador" tambem para quem ja estava como
+    /// administrador, o que mandava o usuario repetir uma tentativa que acabara
+    /// de falhar e escondia o motivo de verdade.
+    /// </summary>
+    private void MostrarAvisoDeDriver(bool temSensores)
+    {
+        AvisoDriver.Visibility = temSensores ? Visibility.Collapsed : Visibility.Visible;
+
+        if (temSensores) return;
+
+        // Remontar o mesmo texto a cada leitura faria a faixa piscar debaixo de
+        // quem esta lendo. Nada aqui muda durante a sessao.
+        if (!_avisoDeDriverMontado)
+        {
+            AvisoDriverTexto.Text = Diagnostico.PorQueFaltamSensores();
+
+            // Elevar resolve o primeiro caso, e ai o relatorio nao ajuda em
+            // nada: o botao e para quando elevar ja nao e a resposta.
+            BotaoDiagnostico.Visibility = Diagnostico.Elevado
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
+            _avisoDeDriverMontado = true;
+        }
+    }
+
+    private bool _avisoDeDriverMontado;
+
+    private void Diagnostico_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var arquivo = _sensores.SalvarDiagnostico();
+
+            // Selecionar no Explorer em vez de abrir o txt: o usuario precisa
+            // anexar o arquivo em algum lugar, nao so le-lo.
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{arquivo}\"",
+                UseShellExecute = true
+            });
+
+            Recado("Relatório salvo. A pasta foi aberta com o arquivo selecionado.");
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Salvar diagnóstico", ex);
+            Recado("Não foi possível salvar o relatório. O motivo ficou no erro.log.");
+        }
+    }
+
     private void AtualizarStatus(Snapshot s)
     {
         // Um recado recente sobre o plano de energia segura o rodape por alguns
@@ -1069,7 +1125,7 @@ public partial class FlyoutWindow : Window
 
         Status.Text = s.SensoresDeBaixoNivel
             ? "Sensores ativos · atualiza a cada 1 s"
-            : "Sensores parciais · atualiza a cada 1 s";
+            : $"{Diagnostico.ResumoCurto()} · atualiza a cada 1 s";
     }
 
     private static string Clock(float mhz) =>
