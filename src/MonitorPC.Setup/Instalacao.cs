@@ -228,6 +228,16 @@ public static class Instalacao
               "<Delay>PT20S</Delay></LogonTrigger>"
             : "";
 
+        // O conteudo e a ordem de <Settings> seguem o que o proprio Agendador
+        // de Tarefas exporta num arquivo versao 1.2, e nada alem disso.
+        // UseUnifiedSchedulingEngine e DisallowStartOnRemoteAppSession ficaram
+        // de fora: so existem a partir do esquema 1.3, e num arquivo 1.2 eles
+        // derrubam a validacao inteira — o schtasks recusa falando em valor mal
+        // formatado, sem dizer qual.
+        //
+        // ExecutionTimeLimit em PT0S e o unico desvio deliberado: o padrao sao
+        // 72 horas, e ao fim delas o Windows encerraria um app que existe para
+        // ficar aberto.
         var xml = $"""
             <?xml version="1.0" encoding="UTF-16"?>
             <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
@@ -257,11 +267,9 @@ public static class Instalacao
                 <Enabled>true</Enabled>
                 <Hidden>false</Hidden>
                 <RunOnlyIfIdle>false</RunOnlyIfIdle>
-                <DisallowStartOnRemoteAppSession>false</DisallowStartOnRemoteAppSession>
-                <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
                 <WakeToRun>false</WakeToRun>
                 <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-                <Priority>5</Priority>
+                <Priority>7</Priority>
               </Settings>
               <Actions Context="Author">
                 <Exec>
@@ -279,7 +287,19 @@ public static class Instalacao
 
         try
         {
-            Executar("schtasks.exe", $"/Create /TN \"{NomeDaTarefa}\" /XML \"{temporario}\" /F");
+            var (codigo, saida) = Executar(
+                "schtasks.exe", $"/Create /TN \"{NomeDaTarefa}\" /XML \"{temporario}\" /F");
+
+            // Conferir em vez de confiar. Sem isto, uma tarefa recusada passa
+            // por instalação concluída e o app abre sem sensores, que foi
+            // exatamente o que aconteceu na primeira versão deste instalador.
+            if (codigo != 0 || Executar("schtasks.exe", $"/Query /TN \"{NomeDaTarefa}\"").Codigo != 0)
+                throw new InvalidOperationException(
+                    "O Windows recusou a tarefa que dá acesso aos sensores.\n\n" +
+                    (saida.Length > 0 ? saida + "\n\n" : "") +
+                    $"O passo a passo está em {Registro}. Dá para instalar sem ela, " +
+                    "desmarcando \"Rodar como administrador\" — o app funciona, " +
+                    "mas sem temperatura de CPU, tensões e ventoinhas.");
         }
         finally
         {
@@ -454,7 +474,19 @@ public static class Instalacao
     private static void PowerShell(string script) => Executar("powershell.exe",
         $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"");
 
-    private static void Executar(string programa, string argumentos)
+    /// <summary>Onde cada passo da instalacao deixa registro do que aconteceu.</summary>
+    public static string Registro => Path.Combine(Path.GetTempPath(), "KInfo-instalacao.log");
+
+    /// <summary>
+    /// Roda um programa e devolve o codigo de saida com o que ele escreveu.
+    ///
+    /// A versao anterior engolia tudo em silencio, e foi assim que uma tarefa
+    /// que nunca chegou a existir passou por instalacao bem-sucedida: o app
+    /// abria sem privilegio, sem sensores, e nada no caminho tinha dito nada.
+    /// Agora toda chamada vai para o registro, e quem chama decide se a falha
+    /// importa.
+    /// </summary>
+    private static (int Codigo, string Saida) Executar(string programa, string argumentos)
     {
         try
         {
@@ -468,13 +500,32 @@ public static class Instalacao
                 RedirectStandardError = true
             });
 
-            p?.WaitForExit(30000);
+            if (p is null) return (-1, "não foi possível iniciar " + programa);
+
+            var saida = (p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd()).Trim();
+            p.WaitForExit(30000);
+
+            Anotar($"{programa} {argumentos}\n  código {p.ExitCode}" +
+                   (saida.Length > 0 ? $"\n  {saida.Replace("\n", "\n  ")}" : ""));
+
+            return (p.ExitCode, saida);
+        }
+        catch (Exception ex)
+        {
+            Anotar($"{programa} {argumentos}\n  exceção: {ex.Message}");
+            return (-1, ex.Message);
+        }
+    }
+
+    private static void Anotar(string texto)
+    {
+        try
+        {
+            File.AppendAllText(Registro, $"[{DateTime.Now:HH:mm:ss}] {texto}\n");
         }
         catch
         {
-            // Uma etapa acessoria que falha — a excecao do Defender, por
-            // exemplo — nao pode derrubar a instalacao inteira. A tela mostra
-            // no fim o que ficou de fora.
+            // Sem registro a instalação segue; é diagnóstico, não funcionalidade.
         }
     }
 }

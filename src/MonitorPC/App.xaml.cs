@@ -52,10 +52,20 @@ public partial class App : Application
                 CreateNoWindow = true
             });
 
-            p?.WaitForExit(10000);
+            if (p is null) return false;
 
-            // Mesmo que a tarefa falhe, sair e melhor que seguir: duas copias
-            // disputando o driver dao leitura zerada nas duas.
+            p.WaitForExit(10000);
+
+            // Só sai se a cópia elevada realmente subiu. O schtasks inicia
+            // sempre; o que falha é a tarefa lá dentro. Saindo sem conferir, um
+            // duplo clique no atalho não abriria nada — e foi o que aconteceu.
+            if (p.ExitCode != 0)
+            {
+                Log.Erro("Subir pela tarefa",
+                    new InvalidOperationException($"schtasks devolveu {p.ExitCode}"));
+                return false;
+            }
+
             Shutdown();
             return true;
         }

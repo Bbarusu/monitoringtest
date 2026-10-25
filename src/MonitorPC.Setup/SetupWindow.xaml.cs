@@ -145,20 +145,14 @@ public partial class SetupWindow : Window
 
     private void AbrirApp_Click(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            // Pela tarefa, e nao pelo executavel: assim o app ja sobe elevado,
-            // com os sensores de CPU e placa-mae disponiveis desde o primeiro
-            // segundo.
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "schtasks.exe",
-                Arguments = $"/Run /TN \"{Instalacao.NomeDaTarefa}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            });
-        }
-        catch
+        // Pela tarefa, e não pelo executável: assim o app já sobe elevado, com
+        // os sensores de CPU e placa-mãe disponíveis desde o primeiro segundo.
+        //
+        // O código de saída precisa ser conferido. O schtasks inicia sempre —
+        // o que falha é a tarefa lá dentro —, então Process.Start devolver um
+        // processo não prova nada, e era por isso que este botão não abria
+        // nada quando a tarefa não existia.
+        if (!Rodou("schtasks.exe", $"/Run /TN \"{Instalacao.NomeDaTarefa}\""))
         {
             try
             {
@@ -168,14 +162,52 @@ public partial class SetupWindow : Window
                     UseShellExecute = true
                 });
             }
-            catch
+            catch (Exception ex)
             {
-                // Sem o app instalado nao ha o que abrir; a tela ja disse o que
-                // deu errado.
+                Log(ex);
             }
         }
 
         Close();
+    }
+
+    private static bool Rodou(string programa, string argumentos)
+    {
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo
+            {
+                FileName = programa,
+                Arguments = argumentos,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+
+            if (p is null) return false;
+
+            p.WaitForExit(15000);
+            return p.ExitCode == 0;
+        }
+        catch (Exception ex)
+        {
+            Log(ex);
+            return false;
+        }
+    }
+
+    private static void Log(Exception ex)
+    {
+        try
+        {
+            File.AppendAllText(Instalacao.Registro,
+                $"[{DateTime.Now:HH:mm:ss}] abrir o app: {ex.Message}\n");
+        }
+        catch
+        {
+            // Diagnóstico, não funcionalidade.
+        }
     }
 
     private void FecharJanela_Click(object sender, RoutedEventArgs e) => Close();
