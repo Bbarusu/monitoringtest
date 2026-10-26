@@ -155,6 +155,29 @@ Despejar (Get-MpPreference -ErrorAction SilentlyContinue |
     Select-Object ExclusionPath, ExclusionProcess, ExclusionExtension
     ) '(não foi possível ler as exclusões)'
 
+# --- 6b. O log do sistema: o serviço chegou a ser criado? -----------------
+Secao 'Log do sistema — instalação e início de serviços'
+Diga 'O evento 7045 registra todo serviço instalado no sistema; 7000 e 7026'
+Diga 'registram serviço e driver que não iniciaram, com o erro do Windows.'
+Diga ''
+Diga 'É a pergunta que separa os dois casos: se houver um 7045 do WinRing0,'
+Diga 'a biblioteca criou o serviço e a falha está no carregamento. Se não'
+Diga 'houver nenhum, ela nunca chegou a criar — e o problema é antes, na'
+Diga 'escrita do arquivo.'
+Diga ''
+
+$servicos = Get-WinEvent -FilterHashtable @{ LogName = 'System'; Id = 7000, 7026, 7045 } `
+    -MaxEvents 80 -ErrorAction SilentlyContinue
+
+if ($null -eq $servicos -or $servicos.Count -eq 0) {
+    Diga '(nenhum evento 7000/7026/7045 no log do sistema)'
+} else {
+    foreach ($e in $servicos) {
+        Diga ('[' + $e.TimeCreated + '] Id=' + $e.Id + ' ' +
+            ($e.Message -replace '\s+', ' '))
+    }
+}
+
 # --- 7. O driver: foi escrito? foi registrado? ----------------------------
 Secao 'Serviço e arquivo do driver'
 Diga 'Arquivo ausente = não foi escrito ou foi apagado. Arquivo presente com'
