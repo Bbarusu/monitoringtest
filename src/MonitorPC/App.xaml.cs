@@ -184,7 +184,59 @@ public partial class App : Application
         }
 
         _iniciado = true;
+
+        // Depois de tudo montado, e sem segurar a abertura.
+        if (_cfg.VerificarAtualizacoes) _ = ProcurarAtualizacao(false);
     }
+
+    /// <summary>
+    /// Procura versao nova e, se houver, oferece no painel.
+    ///
+    /// <paramref name="pedidaPeloUsuario"/> muda duas coisas: a procura ignora
+    /// o intervalo de um dia, e o resultado "nao ha nada novo" e dito. Na
+    /// procura automatica esse resultado e silencio — quem nao pediu nada nao
+    /// precisa saber que o app olhou.
+    /// </summary>
+    private async Task ProcurarAtualizacao(bool pedidaPeloUsuario)
+    {
+        try
+        {
+            if (!pedidaPeloUsuario)
+            {
+                // Este app sobe junto com a sessao: num dia de reinicios seriam
+                // dez consultas para a mesma resposta.
+                var ultima = _cfg.UltimaVerificacaoDeAtualizacao;
+                if (ultima is { } quando && DateTime.UtcNow - quando < TimeSpan.FromDays(1))
+                    return;
+            }
+
+            var manifesto = await _atualizacoes.ProcurarAsync();
+
+            _cfg.UltimaVerificacaoDeAtualizacao = DateTime.UtcNow;
+            _cfg.Salvar();
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (manifesto is not null)
+                {
+                    _painel.OferecerAtualizacao(manifesto);
+                    _painel.Mostrar();
+                }
+                else if (pedidaPeloUsuario)
+                {
+                    _painel.Mostrar();
+                    _painel.Recado($"Você já tem a versão mais recente " +
+                                   $"({AtualizacaoService.VersaoAtual}).");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Procurar atualização", ex);
+        }
+    }
+
+    private readonly AtualizacaoService _atualizacoes = new();
 
     /// <summary>
     /// A inicializacao chegou ao fim, e existe o que desmontar no
@@ -278,6 +330,7 @@ public partial class App : Application
         // Também aqui, e não só na faixa de aviso do painel: numa máquina onde
         // a leitura falha o usuário precisa poder nos mandar o relatório sem
         // depender de o painel estar mostrando o aviso certo.
+        _menu.Items.Add(Item("Procurar atualizações", () => _ = ProcurarAtualizacao(true)));
         _menu.Items.Add(Item("Salvar relatório do problema", SalvarRelatorio));
 
         _menu.Items.Add(new System.Windows.Controls.Separator());

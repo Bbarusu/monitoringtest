@@ -108,6 +108,22 @@ public sealed class AppConfig
     /// </summary>
     public bool AtualizarCatalogoOnline { get; set; } = true;
 
+    /// <summary>
+    /// Procura versao nova do app, no maximo uma vez por dia.
+    ///
+    /// Procurar e so procurar: encontrar vira um aviso no painel, e instalar
+    /// continua sendo decisao de quem esta na frente do PC — custa uma
+    /// confirmacao do Windows e fecha o app no meio.
+    /// </summary>
+    public bool VerificarAtualizacoes { get; set; } = true;
+
+    /// <summary>
+    /// Quando a ultima procura aconteceu, para nao repetir a cada abertura.
+    /// Um app que sobe junto com a sessao abriria dez vezes num dia de
+    /// reinicios, e dez consultas para a mesma resposta nao servem a ninguem.
+    /// </summary>
+    public DateTime? UltimaVerificacaoDeAtualizacao { get; set; }
+
     // --- Fonte ---
     public double EficienciaFonte { get; set; } = 0.85;
     public int CapacidadeFonteW { get; set; } = 550;

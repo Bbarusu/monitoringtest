@@ -12,8 +12,16 @@
     <AssemblyName>KInfo</AssemblyName>
     <ApplicationIcon>kinfo.ico</ApplicationIcon>
     <RootNamespace>MonitorPC</RootNamespace>
-    <Version>0.1.0</Version>
   </PropertyGroup>
+
+  <!--
+    A versao vem do Directory.Build.props na raiz, e este arquivo e o unico
+    lugar que sabe le-la. Compartilhado com o instalador pelo mesmo caminho,
+    para os dois nunca discordarem do que e a versao atual.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Comum\Versao.cs" Link="Comum\Versao.cs" />
+  </ItemGroup>
 
   <!--
     WPF e WinForms convivem no projeto: o WinForms so entra pelo icone da bandeja.

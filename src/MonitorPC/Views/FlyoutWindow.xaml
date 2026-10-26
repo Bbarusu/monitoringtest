@@ -88,6 +88,29 @@
                 </StackPanel>
             </Border>
 
+            <!-- Aviso: versão nova disponível.
+                 Cores de cartão, e não de alerta: atualização é notícia, não
+                 problema, e gastar o vermelho nela baratearia o vermelho. -->
+            <Border x:Name="AvisoAtualizacao" Visibility="Collapsed" Margin="0,16,0,0"
+                    CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
+                <StackPanel>
+                    <TextBlock x:Name="AtualizacaoTitulo" FontSize="13" FontWeight="Medium"
+                               TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                    <TextBlock x:Name="AtualizacaoDetalhe" FontSize="11" Margin="0,4,0,0"
+                               TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}" />
+
+                    <UniformGrid Columns="2" Margin="0,10,0,0">
+                        <Button x:Name="BotaoAtualizar" Style="{StaticResource BotaoLargo}"
+                                Margin="0,0,4,0" Content="Baixar e instalar"
+                                Click="Atualizar_Click" />
+                        <Button x:Name="BotaoAdiarAtualizacao" Style="{StaticResource BotaoLargo}"
+                                Margin="4,0,0,0" Content="Depois"
+                                Click="AdiarAtualizacao_Click" />
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
 
             <!-- Aviso de temperatura -->
             <Border x:Name="AvisoTemperatura" Visibility="Collapsed" Margin="0,16,0,0"

@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Fonte única da versão do KInfo.
+
+    Antes o número vivia em três lugares: o .csproj do app, o .csproj do
+    instalador e uma string literal no RegistrarDesinstalacao. Três cópias de um
+    número que precisa ser igual nos três é um defeito esperando a hora, e para
+    um atualizador é pior que isso: app e instalador discordando de versão fazem
+    o app oferecer uma atualização que ele já tem, ou nunca oferecer a que falta.
+
+    Mexer aqui muda os dois projetos de uma vez. O instalador e o app leem este
+    valor em tempo de execução por Comum/Versao.cs.
+  -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+
+</Project>

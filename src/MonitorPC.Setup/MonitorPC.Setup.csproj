@@ -10,7 +10,6 @@
     <AssemblyName>KInfo-Setup</AssemblyName>
     <ApplicationIcon>..\MonitorPC\kinfo.ico</ApplicationIcon>
     <RootNamespace>MonitorPC.Setup</RootNamespace>
-    <Version>0.1.0</Version>
 
     <!-- Um arquivo so, sem exigir runtime instalado: o instalador precisa
          rodar numa maquina que ainda nao tem nada do projeto. -->
@@ -20,6 +19,15 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
+
+  <!--
+    Mesmo arquivo de versão do app, pelo mesmo caminho: o instalador grava a
+    versão no registro do Windows e o app a compara com a publicada, e os dois
+    discordando fariam o atualizador oferecer o que já está instalado.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Comum\Versao.cs" Link="Comum\Versao.cs" />
+  </ItemGroup>
 
   <!--
     O app publicado entra aqui como recurso, zipado pelo publicar.cmd. A

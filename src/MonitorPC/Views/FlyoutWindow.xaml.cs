@@ -1124,6 +1124,107 @@ public partial class FlyoutWindow : Window
         }
     }
 
+    // ------------------------------------------------------------------
+    // Atualização
+
+    private readonly AtualizacaoService _atualizacoes = new();
+    private Manifesto? _atualizacaoOferecida;
+    private CancellationTokenSource? _cancelarAtualizacao;
+
+    /// <summary>
+    /// Mostra a faixa de versao nova. Chamada pelo App, que e quem procura.
+    ///
+    /// Oferece, nao instala: baixar e executar fecha o app no meio e custa uma
+    /// confirmacao do Windows, e nenhuma das duas coisas se faz nas costas de
+    /// quem esta usando o PC.
+    /// </summary>
+    public void OferecerAtualizacao(Manifesto manifesto)
+    {
+        _atualizacaoOferecida = manifesto;
+
+        AtualizacaoTitulo.Text = $"Versão {manifesto.Versao} disponível";
+
+        var notas = string.IsNullOrWhiteSpace(manifesto.Notas)
+            ? ""
+            : $"\n\n{manifesto.Notas!.Trim()}";
+
+        // O aviso do Windows precisa ser dito aqui, antes de aparecer. O
+        // executavel nao e assinado — assinatura exige certificado pago —, e
+        // quem ve "editor desconhecido" sem ter sido avisado conclui, com
+        // razao, que pegou algo errado.
+        AtualizacaoDetalhe.Text =
+            $"Você tem a {AtualizacaoService.VersaoAtual}. O arquivo é conferido por " +
+            "SHA-256 antes de rodar. O Windows vai mostrar um aviso de editor " +
+            "desconhecido, porque o instalador não é assinado — é esperado." + notas;
+
+        AvisoAtualizacao.Visibility = Visibility.Visible;
+    }
+
+    private async void Atualizar_Click(object sender, RoutedEventArgs e)
+    {
+        if (_atualizacaoOferecida is not { } manifesto) return;
+
+        if (_cancelarAtualizacao is not null)
+        {
+            _cancelarAtualizacao.Cancel();
+            return;
+        }
+
+        var cancelamento = new CancellationTokenSource();
+        _cancelarAtualizacao = cancelamento;
+
+        BotaoAtualizar.Content = "Cancelar";
+        BotaoAdiarAtualizacao.IsEnabled = false;
+
+        var progresso = new Progress<double>(fracao =>
+            AtualizacaoDetalhe.Text = $"Baixando… {fracao * 100:F0}%");
+
+        try
+        {
+            string? recusa = null;
+
+            var arquivo = await _atualizacoes.BaixarAsync(
+                manifesto, progresso, cancelamento.Token, motivo => recusa = motivo);
+
+            if (cancelamento.IsCancellationRequested)
+            {
+                AtualizacaoDetalhe.Text = "Download cancelado.";
+                return;
+            }
+
+            if (arquivo is null)
+            {
+                AtualizacaoDetalhe.Text = recusa
+                    ?? "Não foi possível baixar a atualização.";
+                return;
+            }
+
+            AtualizacaoDetalhe.Text = "Arquivo conferido. Abrindo o instalador…";
+
+            if (!AtualizacaoService.Executar(arquivo))
+                AtualizacaoDetalhe.Text = "O instalador foi baixado e conferido, mas não " +
+                                          "abriu. Ele está na pasta temporária.";
+        }
+        finally
+        {
+            cancelamento.Dispose();
+            _cancelarAtualizacao = null;
+
+            BotaoAtualizar.Content = "Baixar e instalar";
+            BotaoAdiarAtualizacao.IsEnabled = true;
+        }
+    }
+
+    /// <summary>
+    /// Esconde a faixa sem registrar recusa.
+    ///
+    /// Nao grava "dispensada": a verificacao e uma vez por dia, e no dia
+    /// seguinte a faixa volta. Guardar a recusa para sempre faria uma correcao
+    /// de seguranca ficar invisivel por causa de um clique distraido.
+    /// </summary>
+    private void AdiarAtualizacao_Click(object sender, RoutedEventArgs e) =>
+        AvisoAtualizacao.Visibility = Visibility.Collapsed;
+
     private void AtualizarStatus(Snapshot s)
     {
         // Um recado recente sobre o plano de energia segura o rodape por alguns
@@ -1394,7 +1495,12 @@ public partial class FlyoutWindow : Window
         SincronizarPerfil();
     }
 
-    private void Recado(string texto)
+    /// <summary>
+    /// Mensagem curta no rodapé, por alguns segundos. Pública porque o App
+    /// também precisa dizer coisas por aqui — o resultado de uma procura de
+    /// atualização que o usuário pediu, por exemplo.
+    /// </summary>
+    public void Recado(string texto)
     {
         Status.Text = texto;
         _recadoAte = DateTime.UtcNow.AddSeconds(4);

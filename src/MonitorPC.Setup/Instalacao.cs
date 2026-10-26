@@ -493,7 +493,10 @@ public static class Instalacao
         if (chave is null) return;
 
         chave.SetValue("DisplayName", Nome);
-        chave.SetValue("DisplayVersion", "0.1.0");
+        // Lido do proprio executavel, e nao escrito a mao: este valor e o que o
+        // Painel de Controle mostra e o que um atualizador compara, e uma
+        // string literal aqui ficaria para tras na primeira versao nova.
+        chave.SetValue("DisplayVersion", Comum.Versao.Texto);
         chave.SetValue("Publisher", "Projeto pessoal");
         chave.SetValue("InstallLocation", pasta);
         chave.SetValue("DisplayIcon", Executavel(pasta));
