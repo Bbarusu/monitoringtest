@@ -85,10 +85,48 @@ public sealed class SensorService : IDisposable
     /// </summary>
     public string SalvarDiagnostico() => Diagnostico.Salvar(_pc);
 
+    /// <summary>
+    /// Sem temperatura de CPU na primeira leitura, grava o diagnostico sozinho.
+    ///
+    /// A biblioteca nao lanca excecao quando o driver nao sobe: ela devolve a
+    /// lista de sensores vazia e segue. Por isso o erro.log de uma maquina que
+    /// falha nao tinha uma linha sobre o driver — nao havia o que registrar, e
+    /// o motivo ficava preso dentro do relatorio interno dela, que ninguem
+    /// pedia.
+    ///
+    /// Agora o arquivo passa a existir sozinho em qualquer maquina onde a
+    /// leitura falha, pronto para ser enviado, sem depender de alguem achar o
+    /// botao no painel. Numa maquina que le normalmente isto nao custa nada:
+    /// sai na primeira linha.
+    /// </summary>
+    private void GravarDiagnosticoSeFaltamSensores()
+    {
+        try
+        {
+            var temTemperatura = Todos().Any(t =>
+                t.Hardware.HardwareType == HardwareType.Cpu &&
+                t.Sensor.SensorType == SensorType.Temperature &&
+                t.Sensor.Value.HasValue);
+
+            if (temTemperatura) return;
+
+            Log.Nota("Nenhuma temperatura de CPU na primeira leitura: o driver de " +
+                     "sensores não subiu. Diagnóstico gravado em " + Diagnostico.Salvar(_pc));
+        }
+        catch (Exception ex)
+        {
+            // Gravar o diagnostico nao pode impedir o app de abrir: sem driver
+            // ainda restam GPU, disco, RAM e uso de CPU.
+            Log.Erro("Gravar diagnóstico inicial", ex);
+        }
+    }
+
     public void Iniciar()
     {
         _pc.Open();
         _pc.Accept(_visitor);
+
+        GravarDiagnosticoSeFaltamSensores();
 
         DetectarQuantidades();
         Especificacoes.Identificar(

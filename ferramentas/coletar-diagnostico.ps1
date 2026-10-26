@@ -201,7 +201,9 @@ Secao 'erro.log do app'
 $log = Join-Path $env:APPDATA 'KInfo\erro.log'
 
 if (Test-Path $log) {
-    Diga (Get-Content $log -Tail 120 -ErrorAction SilentlyContinue | Out-String)
+    # -Encoding UTF8: o app grava o log em UTF-8 sem BOM, e o PowerShell 5.1
+    # assume ANSI na leitura, o que transforma "·" em "Â·" no relatório.
+    Diga (Get-Content $log -Tail 120 -Encoding UTF8 -ErrorAction SilentlyContinue | Out-String)
 } else {
     Diga ('(não existe: ' + $log + ')')
 }
