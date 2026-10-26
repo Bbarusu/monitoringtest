@@ -19,11 +19,40 @@ public static class Versao
     public static string Texto { get; } = Ler();
 
     /// <summary>
+    /// A versao como o compilador a gravou, incluindo o commit: ex.
+    /// "0.1.0+a1b2c3d". O SDK acrescenta esse sufixo sozinho quando compila de
+    /// um repositorio git.
+    ///
+    /// Existe para o relatorio de diagnostico. Numa rodada de testes em
+    /// maquinas de outras pessoas, "versao 0.1.0" nao distingue duas builds
+    /// feitas no mesmo dia, e foi exatamente disso que senti falta ao investigar
+    /// a falha de sensores: eu nao sabia qual codigo estava rodando na maquina
+    /// que falhava.
+    /// </summary>
+    public static string Completa { get; } = LerCompleta();
+
+    /// <summary>
     /// A mesma versao em forma comparavel. <c>null</c> quando nao da para
     /// interpretar — e ai quem compara deve desistir em vez de chutar.
     /// </summary>
     public static Version? Numero { get; } =
         Version.TryParse(Texto, out var v) ? v : null;
+
+    private static string LerCompleta()
+    {
+        try
+        {
+            var bruto = Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                ?.InformationalVersion;
+
+            return string.IsNullOrWhiteSpace(bruto) ? Texto : bruto;
+        }
+        catch
+        {
+            return Texto;
+        }
+    }
 
     private static string Ler()
     {

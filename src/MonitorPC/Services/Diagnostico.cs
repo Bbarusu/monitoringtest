@@ -336,6 +336,11 @@ public static class Diagnostico
         t.AppendLine();
 
         t.AppendLine("--- ambiente ---");
+
+        // O commit vai junto. Numa rodada de testes em maquinas de outras
+        // pessoas, "0.1.0" nao distingue duas builds do mesmo dia, e sem isso
+        // um relato chega sem dizer qual codigo estava rodando.
+        t.AppendLine($"KInfo              : {Comum.Versao.Completa}");
         t.AppendLine($"Windows            : {Environment.OSVersion.VersionString}");
         t.AppendLine($"64 bits            : {Environment.Is64BitOperatingSystem}");
         t.AppendLine($"Processo 64 bits   : {Environment.Is64BitProcess}");
