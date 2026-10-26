@@ -274,6 +274,18 @@ public sealed class SensorService : IDisposable
         var cpuW = Pegar(h => h == HardwareType.Cpu, SensorType.Power, "Package");
         var gpuW = Pegar(EhGpu, SensorType.Power, "Package", "Board", "GPU");
 
+        // O clock medio da CPU tinha uma fonte so: um sensor chamado
+        // "Cores (Average)", que nem todo processador publica. Faltando ele, a
+        // media dos nucleos responde a mesma pergunta e com o mesmo
+        // significado — e e o que salva um Intel, onde esse sensor nao existe
+        // e a tela de CPU ficava sem clock nenhum.
+        var clocksPorNucleo = ClocksPorNucleo();
+
+        var clockMedio = Pegar(h => h == HardwareType.Cpu, SensorType.Clock, "Cores (Average)")
+                         ?? (clocksPorNucleo.Count > 0
+                             ? clocksPorNucleo.Average()
+                             : (float?)null);
+
         // Placa dedicada publica "GPU Memory Used/Total". Video integrado nao
         // tem memoria propria: ele publica "D3D Shared Memory Used/Total", que
         // e um pedaco da RAM do sistema cedido a GPU. A ordem importa — numa
@@ -343,8 +355,8 @@ public sealed class SensorService : IDisposable
             CpuTemp = cpuTemp,
             CpuUso = Pegar(h => h == HardwareType.Cpu, SensorType.Load, "CPU Total"),
             CpuWatts = cpuW,
-            CpuClockMhz = Pegar(h => h == HardwareType.Cpu, SensorType.Clock, "Cores (Average)"),
-            CpuClocksPorNucleo = ClocksPorNucleo(),
+            CpuClockMhz = clockMedio,
+            CpuClocksPorNucleo = clocksPorNucleo,
             CpuCargaPorThread = CargasPorThread(),
             CpuPicoDeNucleo = Pegar(h => h == HardwareType.Cpu, SensorType.Load, "CPU Core Max"),
             CpuTensao = TensaoDoNucleo(),
@@ -794,15 +806,34 @@ public sealed class SensorService : IDisposable
         return usada.HasValue && livre.HasValue ? usada + livre : null;
     }
 
-    /// <summary>Clocks por nucleo fisico. A contagem vem do hardware, nunca fixa.</summary>
+    /// <summary>
+    /// Clocks por nucleo fisico. A contagem vem do hardware, nunca fixa.
+    ///
+    /// O filtro aceita os dois nomes porque a biblioteca usa dois: na AMD o
+    /// sensor de clock se chama "Core #1", na Intel "CPU Core #1". Este codigo
+    /// exigia <c>StartsWith("Core #")</c> e portanto so via a AMD — num Intel
+    /// as barras de clock por nucleo vinham vazias, embora os sensores
+    /// estivessem todos ali na aba de todos os sensores.
+    ///
+    /// Vale notar a assimetria da propria biblioteca: a carga por nucleo se
+    /// chama "CPU Core #1" nas duas marcas, e so o clock muda de nome. Foi o
+    /// que fez este defeito passar — a carga funcionava.
+    /// </summary>
     private List<float> ClocksPorNucleo() => Todos()
         .Where(x => x.Hardware.HardwareType == HardwareType.Cpu
                     && x.Sensor.SensorType == SensorType.Clock
-                    && x.Sensor.Name.StartsWith("Core #")
-                    && !x.Sensor.Name.Contains("Effective")
+                    && EhClockDeNucleo(x.Sensor.Name)
                     && x.Sensor.Value.HasValue)
         .Select(x => x.Sensor.Value!.Value)
         .ToList();
+
+    /// <summary>
+    /// O sensor e o clock de um nucleo, e nao "Bus Speed" nem a variante
+    /// efetiva — que mede outra coisa e apareceria como nucleo extra.
+    /// </summary>
+    private static bool EhClockDeNucleo(string nome) =>
+        nome.Contains("Core #", StringComparison.OrdinalIgnoreCase)
+        && !nome.Contains("Effective", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Cargas por thread logica. Idem: a contagem vem do hardware.</summary>
     private List<float> CargasPorThread() => Todos()
