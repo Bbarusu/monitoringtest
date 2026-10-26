@@ -71,10 +71,29 @@ tipografia — e faz quatro coisas:
 
 ### O driver, e por que a tarefa agendada
 
-Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só carrega
-com privilégio elevado. O driver vem dentro da `LibreHardwareMonitorLib` e é
-carregado apenas enquanto o app está aberto — não fica um driver residente no
-boot, o que seria um risco de segurança desnecessário.
+Ler temperatura de CPU e placa-mãe exige duas coisas, e por muito tempo este
+README só documentava uma. As duas: o **PawnIO** instalado no sistema, e
+**privilégio elevado** para falar com ele. Faltando qualquer uma, essas leituras
+voltam vazias.
+
+O PawnIO é um driver assinado, instalado uma vez, fora do app. A
+`LibreHardwareMonitorLib` **não embute driver nenhum**: ela usava a família
+WinRing0, que tem falha conhecida de 2020 (CVE-2020-14979) e hoje está na lista
+de drivers bloqueados do Windows, e migrou para o PawnIO. Como ela não reclama
+quando o PawnIO falta — devolve a lista de sensores vazia e segue —, a ausência
+não deixa rastro nenhum: nenhum arquivo escrito, nenhum serviço criado, nenhuma
+recusa no log do Windows, nenhuma detecção de antivírus.
+
+Isso produz o "funciona na minha máquina" mais limpo possível: num PC de
+desenvolvimento o PawnIO já está lá, posto pelo LibreHardwareMonitor oficial em
+algum momento, e numa máquina limpa não está. Foram três máquinas até a causa
+aparecer. O instalador agora oferece baixá-lo de pawnio.eu e instalar, e o painel
+nomeia a dependência quando ela falta.
+
+Baixar em vez de embutir é deliberado: o PawnIO é GPL-2.0. Carregá-lo pela
+interface de IOCTL está coberto pela exceção de licença dele, mas redistribuir o
+instalador dentro do nosso seria redistribuição de GPL, com a obrigação de
+acompanhar o código-fonte.
 
 Pedir elevação pelo manifesto do app resolveria, mas cobraria a confirmação do
 Windows **toda vez** que o app abrisse — e este app abre junto com a sessão. Em
@@ -89,11 +108,16 @@ nunca tenta se relançar.
 
 ### Windows Defender
 
-O Defender marca a família de drivers WinRing0 como `HackTool:Win32/Winring0`, e
-é esse driver que a biblioteca de sensores carrega. Ele é capaz de pôr a
-`LibreHardwareMonitorLib.dll` em quarentena, e aí o app simplesmente para de
-abrir, sem nenhuma mensagem que ligue uma coisa à outra. Por isso o instalador
-oferece abrir uma exceção para a pasta de instalação, e o `publicar.cmd` falha
+O Defender marca a família de drivers WinRing0 como `HackTool:Win32/Winring0`.
+A biblioteca **não** carrega mais esse driver — hoje é o PawnIO, assinado, e em
+três máquinas medidas o Defender não mexeu com ele nem com a nossa pasta.
+
+O que foi observado, e cuja causa nunca foi confirmada: a
+`LibreHardwareMonitorLib.dll` desapareceu de `bin\Debug` uma vez durante o
+desenvolvimento. Quando a DLL falta o app simplesmente para de abrir, sem
+nenhuma mensagem que ligue uma coisa à outra. A exceção do Defender para a pasta
+de instalação fica como precaução contra isso, não como correção de um problema
+diagnosticado. Pelo mesmo motivo o `publicar.cmd` falha
 com uma mensagem explícita se a DLL não aparecer na publicação.
 
 ## Requisitos

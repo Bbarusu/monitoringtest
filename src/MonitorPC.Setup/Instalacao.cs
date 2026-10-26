@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Win32;
@@ -17,6 +19,24 @@ public sealed record OpcoesDeInstalacao(
     /// depois de tudo instalado.
     /// </summary>
     bool AcessoCompletoAosSensores,
+
+    /// <summary>
+    /// Baixa e instala o PawnIO, o driver que da acesso aos sensores de baixo
+    /// nivel.
+    ///
+    /// E a dependencia de verdade do app, e ela nao viaja aqui dentro: a
+    /// LibreHardwareMonitorLib 0.9.6 nao embute mais driver nenhum, e sem o
+    /// PawnIO nao ha temperatura de CPU nem chip de placa-mae, com ou sem
+    /// privilegio de administrador.
+    ///
+    /// Baixar em vez de embutir e escolha deliberada. O PawnIO e GPL-2.0:
+    /// carrega-lo pela interface de IOCTL, que e o que a biblioteca faz, esta
+    /// coberto pela excecao de licenca dele, mas redistribuir o instalador
+    /// dentro do nosso seria redistribuicao de GPL, com a obrigacao de
+    /// acompanhar o codigo-fonte. Baixando da origem oficial na hora, quem
+    /// distribui continua sendo o autor dele.
+    /// </summary>
+    bool InstalarPawnIo,
 
     bool AtalhoNaAreaDeTrabalho,
     bool IniciarComWindows,
@@ -87,6 +107,12 @@ public static class Instalacao
                     ressalvas.Add("O Windows Defender não aceitou a exceção. Se o app " +
                                   "parar de abrir, procure a biblioteca de sensores no " +
                                   "Histórico de Proteção.");
+            }
+
+            if (opcoes.InstalarPawnIo)
+            {
+                var queixa = InstalarPawnIo(aviso);
+                if (queixa is not null) ressalvas.Add(queixa);
             }
 
             if (opcoes.AcessoCompletoAosSensores)
@@ -552,6 +578,142 @@ public static class Instalacao
     /// Agora toda chamada vai para o registro, e quem chama decide se a falha
     /// importa.
     /// </summary>
+    /// <summary>
+    /// A origem oficial do instalador do PawnIO. O caminho <c>latest</c> sempre
+    /// aponta para a versao mais nova, entao o instalador nao carrega um numero
+    /// de versao que envelhece — e a URL de download direto, que o projeto ja
+    /// mudou de lugar uma vez, nao fica cravada aqui.
+    /// </summary>
+    private const string UrlDoPawnIo =
+        "https://github.com/namazso/PawnIO.Setup/releases/latest/download/PawnIO_setup.exe";
+
+    /// <summary>
+    /// Baixa o PawnIO da origem oficial e instala em silencio. Devolve
+    /// <c>null</c> quando deu certo, ou o que dizer ao usuario quando nao.
+    ///
+    /// Nunca e motivo para derrubar a instalacao: sem o PawnIO o app abre e
+    /// mostra placa de video, discos, memoria e uso de CPU, e o painel explica
+    /// o que falta e onde pegar. Travar tudo aqui deixaria o usuario sem nada
+    /// por causa de uma rede fora do ar.
+    /// </summary>
+    private static string? InstalarPawnIo(IProgress<string> aviso)
+    {
+        const string ComoResolver =
+            "O app abre e funciona sem ele — placa de vídeo, discos, memória e " +
+            "uso de CPU continuam normais —, mas temperatura de CPU e ventoinhas " +
+            "da placa-mãe ficam de fora até o PawnIO ser instalado. Baixe em " +
+            "pawnio.eu e reabra o app.";
+
+        if (PawnIoInstalado())
+        {
+            Anotar("PawnIO já estava instalado; nada a fazer.");
+            return null;
+        }
+
+        var destino = Path.Combine(Path.GetTempPath(), "PawnIO_setup.exe");
+
+        try
+        {
+            aviso.Report("Baixando o PawnIO, o driver dos sensores…");
+
+            using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(3) })
+            {
+                http.DefaultRequestHeaders.UserAgent.ParseAdd($"{Nome}-Setup/1.0");
+
+                // Sincrono de proposito: isto roda dentro de um Task.Run, sem
+                // contexto de UI para travar.
+                var bytes = http.GetByteArrayAsync(UrlDoPawnIo).GetAwaiter().GetResult();
+                File.WriteAllBytes(destino, bytes);
+
+                Anotar($"PawnIO baixado: {bytes.Length} bytes em {destino}");
+            }
+
+            // Nao executar binario baixado sem conferir quem assinou. Nao e
+            // validacao de cadeia completa — isso pediria WinVerifyTrust —, mas
+            // um arquivo trocado no caminho nao chega aqui assinado pelo autor,
+            // e sem assinatura nenhuma nos nao rodamos.
+            var assinante = Assinante(destino);
+
+            if (assinante is null)
+                return "O PawnIO foi baixado mas não está assinado, então não foi " +
+                       "executado. " + ComoResolver;
+
+            if (!assinante.Contains("namazso", StringComparison.OrdinalIgnoreCase))
+                return $"O PawnIO foi baixado mas está assinado por \"{assinante}\", " +
+                       "e não pelo autor do projeto, então não foi executado. " +
+                       ComoResolver;
+
+            Anotar($"PawnIO assinado por: {assinante}");
+
+            aviso.Report("Instalando o PawnIO…");
+
+            // O proprio instalador dele se eleva; -install -silent e o que o
+            // projeto documenta para instalacao desacompanhada.
+            var (codigo, _) = Executar(destino, "-install -silent");
+
+            // O que decide e o driver estar registrado, nao o codigo de saida.
+            // Executar desiste de esperar em 30 s e devolve -1 nesse caso, o
+            // que faria uma instalacao lenta porem bem-sucedida ser reportada
+            // como falha.
+            if (PawnIoInstalado())
+            {
+                Anotar($"PawnIO instalado (código {codigo}).");
+                return null;
+            }
+
+            return codigo == 0
+                ? "O instalador do PawnIO rodou mas o driver não apareceu no " +
+                  "sistema. " + ComoResolver
+                : $"O instalador do PawnIO terminou com código {codigo} e o driver " +
+                  "não apareceu no sistema. " + ComoResolver;
+        }
+        catch (Exception ex)
+        {
+            Anotar($"PawnIO: exceção: {ex.Message}");
+
+            return "Não foi possível baixar o PawnIO — a máquina pode estar sem " +
+                   "internet agora. " + ComoResolver;
+        }
+        finally
+        {
+            try { if (File.Exists(destino)) File.Delete(destino); } catch { }
+        }
+    }
+
+    /// <summary>O PawnIO esta registrado como servico neste Windows.</summary>
+    private static bool PawnIoInstalado()
+    {
+        try
+        {
+            using var chave = Registry.LocalMachine.OpenSubKey(
+                @"SYSTEM\CurrentControlSet\Services\PawnIO");
+
+            return chave is not null;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Quem assinou o executavel, ou <c>null</c> se ele nao tem assinatura.
+    /// </summary>
+    private static string? Assinante(string arquivo)
+    {
+        try
+        {
+            using var certificado = X509Certificate.CreateFromSignedFile(arquivo);
+            return certificado.Subject;
+        }
+        catch
+        {
+            // Sem assinatura, CreateFromSignedFile lanca. Tratado como "nao
+            // assinado", que e o que importa para a decisao de rodar ou nao.
+            return null;
+        }
+    }
+
     private static (int Codigo, string Saida) Executar(string programa, string argumentos)
     {
         try

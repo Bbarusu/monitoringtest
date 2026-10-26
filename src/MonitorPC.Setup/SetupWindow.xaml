@@ -122,6 +122,24 @@
                     <Grid>
                         <StackPanel VerticalAlignment="Center" MaxWidth="330"
                                     HorizontalAlignment="Left">
+                            <TextBlock Text="Instalar o PawnIO" FontSize="13"
+                                       FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                            <TextBlock FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}"
+                                       Text="O driver que dá acesso aos sensores de baixo nível. É baixado de pawnio.eu, assinado pelo autor, e instalado uma vez. Sem ele não há temperatura de CPU nem ventoinhas da placa-mãe, nem com privilégio de administrador." />
+                        </StackPanel>
+                        <CheckBox x:Name="OpcaoPawnIo" Style="{StaticResource CaixaDeSelecao}"
+                                  IsChecked="True" HorizontalAlignment="Right"
+                                  VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1"
+                        Padding="14,12" Margin="0,0,0,8">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="330"
+                                    HorizontalAlignment="Left">
                             <TextBlock Text="Atalho na área de trabalho" FontSize="13"
                                        FontWeight="Medium" Foreground="{DynamicResource Texto}" />
                             <TextBlock Text="O atalho do menu Iniciar é criado de qualquer jeito"

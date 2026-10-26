@@ -37,11 +37,15 @@ public partial class SetupWindow : Window
         if (AvisoDoDriver is null) return;
 
         AvisoDoDriver.Text = OpcaoAdministrador.IsChecked == true
+            // O texto anterior dizia que "o driver vem dentro da biblioteca de
+            // sensores". Era falso: a biblioteca não embute driver nenhum desde
+            // que trocou a família WinRing0 pelo PawnIO, e foi essa frase errada
+            // que sustentou a ideia de que bastava elevar.
             ? "Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só " +
               "carrega com privilégio elevado. O instalador registra uma tarefa do Windows " +
-              "para o app subir elevado sem pedir confirmação toda vez. O driver vem dentro " +
-              "da biblioteca de sensores e é carregado apenas enquanto o app está aberto — " +
-              "nada fica residente no boot."
+              "para o app subir elevado sem pedir confirmação toda vez. O driver em si é o " +
+              "PawnIO, instalado no sistema pela opção abaixo — privilégio sem ele não lê " +
+              "nada, e ele sem privilégio também não."
             : "Sem privilégio elevado o driver de sensores não carrega. O app abre e " +
               "funciona, mas temperatura de CPU, tensões, rotação de ventoinhas e tudo que " +
               "vem do chip da placa-mãe ficam indisponíveis. GPU, discos, memória e uso de " +
@@ -97,6 +101,7 @@ public partial class SetupWindow : Window
 
     private OpcoesDeInstalacao Opcoes() => new(
         OpcaoAdministrador.IsChecked == true,
+        OpcaoPawnIo.IsChecked == true,
         OpcaoAtalho.IsChecked == true,
         OpcaoLogon.IsChecked == true,
         OpcaoDefender.IsChecked == true);
