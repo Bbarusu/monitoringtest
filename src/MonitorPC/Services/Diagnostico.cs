@@ -15,21 +15,56 @@ namespace MonitorPC.Services;
 /// notebooks diferentes esse recado mandou o usuario repetir uma tentativa que
 /// acabara de falhar, e escondeu o motivo de verdade.
 ///
-/// O motivo de verdade quase sempre e o mesmo: a temperatura da CPU e o chip da
-/// placa-mae so sao legiveis por um driver de kernel (familia WinRing0), esse
-/// driver tem uma falha conhecida de 2020 (CVE-2020-14979) que permite subir a
-/// SYSTEM, e por isso o Defender o trata como HackTool:Win32/Winring0 e o poe
-/// em quarentena assim que ele aparece. Nao e defeito nosso nem da biblioteca:
-/// corrigir exigiria assinatura WHQL, que a Microsoft emite para empresa.
+/// O motivo de verdade, medido em tres maquinas, e a falta do PawnIO. A
+/// temperatura da CPU e o chip da placa-mae so sao legiveis por um driver de
+/// kernel, e a LibreHardwareMonitorLib 0.9.6 nao embute mais driver nenhum:
+/// ela abandonou a familia WinRing0 — que tem falha conhecida de 2020
+/// (CVE-2020-14979) e entrou na lista de drivers bloqueados do Windows — e
+/// passou a depender do PawnIO, instalado no sistema por fora.
 ///
-/// Num PC de desenvolvimento isso costuma estar resolvido por uma exclusao
-/// criada no meio do caminho, o que explica funcionar aqui e falhar na maquina
-/// de quem recebe o instalador.
+/// Sem o PawnIO a biblioteca nao reclama: devolve a lista de sensores vazia e
+/// segue. Por isso a falha nao deixava rastro nenhum — nenhum arquivo escrito,
+/// nenhum servico criado, nenhuma recusa no log do Windows, nenhuma deteccao
+/// do antivirus. Nao havia nada sendo instalado para dar errado.
+///
+/// Num PC de desenvolvimento o PawnIO costuma ja estar la, posto pelo
+/// LibreHardwareMonitor oficial em algum momento. E o que explica funcionar
+/// aqui e falhar na maquina de quem recebe o instalador.
+///
+/// A ordem das conferencias abaixo segue essa descoberta: PawnIO primeiro,
+/// porque sem ele nao ha leitura nem com privilegio de administrador.
 /// </summary>
 public static class Diagnostico
 {
     /// <summary>O processo tem privilegio de administrador.</summary>
     public static bool Elevado { get; } = Conferir();
+
+    /// <summary>
+    /// O PawnIO esta instalado nesta maquina.
+    ///
+    /// E a dependencia de verdade, e ela nao viaja com o app. A
+    /// LibreHardwareMonitorLib 0.9.6 nao embute mais driver nenhum: ela
+    /// abandonou a familia WinRing0 — que tem falha conhecida de 2020 e entrou
+    /// na lista de drivers bloqueados do Windows — e passou a usar o PawnIO,
+    /// que e um driver assinado, instalado no sistema por fora, uma vez.
+    ///
+    /// Sem ele a biblioteca nao reclama: devolve a lista de sensores vazia e
+    /// segue. Foi o que escondeu a causa por uma conversa inteira — nao havia
+    /// arquivo sendo escrito, nem servico sendo criado, nem recusa do Windows,
+    /// porque nao havia nada sendo instalado.
+    ///
+    /// Numa maquina de desenvolvimento ele costuma ja estar la, instalado pelo
+    /// LibreHardwareMonitor oficial em algum momento. E por isso que funcionava
+    /// aqui e falhava em maquina limpa.
+    /// </summary>
+    /// <remarks>
+    /// Propriedade calculada, e nao campo: um campo declarado antes de
+    /// <see cref="DetalheDoPawnIo"/> leria nulo na inicializacao estatica.
+    /// </remarks>
+    public static bool PawnIo => DetalheDoPawnIo is not null;
+
+    /// <summary>O que foi encontrado do PawnIO, para o relatorio.</summary>
+    public static string? DetalheDoPawnIo { get; } = AcharPawnIo();
 
     /// <summary>
     /// A Integridade de Memoria do Windows esta ligada. Ela impede o
@@ -124,6 +159,58 @@ public static class Diagnostico
         return null;
     }
 
+    /// <summary>
+    /// Procura o PawnIO pelo servico no registro e pelo arquivo em disco.
+    /// Devolve o que achou, ou <c>null</c> quando nao esta instalado.
+    ///
+    /// Duas vias porque sao perguntas diferentes: o servico diz que o Windows
+    /// conhece o driver, o arquivo diz que ele esta no disco. Instalacao pela
+    /// metade — servico sem arquivo, por exemplo — aparece no relatorio em vez
+    /// de virar um "nao instalado" que mandaria instalar de novo.
+    /// </summary>
+    private static string? AcharPawnIo()
+    {
+        var achados = new List<string>();
+
+        try
+        {
+            using var chave = Registry.LocalMachine.OpenSubKey(
+                @"SYSTEM\CurrentControlSet\Services\PawnIO");
+
+            if (chave is not null)
+                achados.Add($"serviço PawnIO (Start={chave.GetValue("Start")}, " +
+                            $"ImagePath={chave.GetValue("ImagePath")})");
+        }
+        catch
+        {
+            // Chave ilegivel nao pode impedir a busca pelo arquivo.
+        }
+
+        foreach (var pasta in new[]
+                 {
+                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                     Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+                 })
+        {
+            try
+            {
+                var dir = Path.Combine(pasta, "PawnIO");
+                if (!Directory.Exists(dir)) continue;
+
+                var arquivos = Directory.GetFiles(dir, "PawnIO*");
+                achados.Add(arquivos.Length > 0
+                    ? $"{dir} ({arquivos.Length} arquivo(s))"
+                    : $"{dir} (pasta vazia)");
+            }
+            catch
+            {
+                // Pasta sem permissao de listagem: segue.
+            }
+        }
+
+        return achados.Count > 0 ? string.Join("; ", achados) : null;
+    }
+
     /// <summary>Onde a biblioteca pode ter deixado o .sys, e se ele sobreviveu.</summary>
     private static string? AcharSys()
     {
@@ -165,6 +252,18 @@ public static class Diagnostico
     /// </summary>
     public static string PorQueFaltamSensores()
     {
+        // O PawnIO vem primeiro porque e a causa real e a mais comum: sem ele
+        // nao ha leitura nem com privilegio de administrador, e mandar elevar
+        // seria mandar repetir o que nao resolve.
+        if (!PawnIo)
+            return "Temperatura de CPU e placa-mãe indisponíveis: falta o " +
+                   "PawnIO neste Windows. É um driver assinado, instalado uma " +
+                   "vez, que dá ao app acesso aos sensores de baixo nível — a " +
+                   "biblioteca que o KInfo usa depende dele e não o traz " +
+                   "consigo. Instale em pawnio.eu e reabra o app. Enquanto " +
+                   "isso, placa de vídeo, discos, memória e uso de CPU " +
+                   "continuam funcionando normalmente.";
+
         if (!Elevado)
             return "Temperatura de CPU e placa-mãe indisponíveis. O driver que lê " +
                    "esses valores só carrega com privilégio de administrador — pelo " +
@@ -174,45 +273,28 @@ public static class Diagnostico
         // texto precisa dizer o que o Windows fez, porque e a unica informacao
         // que leva a algum lugar.
 
-        if (ArquivoDoDriver is null)
-            return "Temperatura de CPU e placa-mãe indisponíveis, mesmo como " +
-                   "administrador. O arquivo do driver não está no disco: o " +
-                   "antivírus quase certamente o pôs em quarentena. O Defender " +
-                   "marca esse driver como HackTool:Win32/Winring0 por uma falha " +
-                   "real dele, de 2020 — a marcação está tecnicamente correta. " +
-                   "Para liberar é preciso restaurar o arquivo e criar uma exclusão " +
-                   "na Segurança do Windows. Salve o relatório abaixo para ver o " +
-                   "nome e o caminho exatos.";
-
-        if (IntegridadeDeMemoria)
-            return "Temperatura de CPU e placa-mãe indisponíveis, mesmo como " +
-                   "administrador. A Integridade de Memória está ligada neste " +
-                   "Windows, e ela recusa a família de drivers que lê esses " +
-                   "valores. Fica em Segurança do Windows → Segurança do " +
-                   "dispositivo → Isolamento de núcleo. É uma proteção real do " +
-                   "sistema: desligá-la para ver temperaturas é uma troca, não " +
-                   "um conserto.";
-
-        if (BloqueioDeDriversVulneraveis)
-            return "Temperatura de CPU e placa-mãe indisponíveis, mesmo como " +
-                   "administrador. O driver existe no disco, mas a lista de " +
-                   "drivers vulneráveis do Windows está ativa e ele está nessa " +
-                   "lista, por uma falha real dele, de 2020. Salve o relatório " +
-                   "abaixo: ele traz o erro exato que o Windows devolveu.";
-
-        return "Temperatura de CPU e placa-mãe indisponíveis, mesmo como " +
-               "administrador. O driver está no disco e não houve bloqueio " +
-               "declarado, então o motivo está no erro que o Windows devolveu. " +
-               "Salve o relatório abaixo — ele traz esse erro. Vale lembrar que " +
-               "parte dos notebooks não expõe esses sensores de jeito nenhum: " +
-               "a leitura fica com o controlador do fabricante.";
+        // Aqui havia tres recados sobre quarentena do Defender, Integridade de
+        // Memoria e lista de drivers vulneraveis. Os tres descreviam o
+        // WinRing0, que esta biblioteca nao usa mais, e os tres foram testados
+        // em tres maquinas: nenhum era a causa. O PawnIO e assinado, e um
+        // bloqueio dele deixaria rastro no log CodeIntegrity do Windows.
+        // Repetir palpite num aviso que o usuario le como diagnostico foi o
+        // erro que custou mais tempo neste projeto.
+        return "Temperatura de CPU e placa-mãe indisponíveis, mesmo com o " +
+               "PawnIO instalado e privilégio de administrador. Duas " +
+               "possibilidades: o PawnIO acabou de ser instalado e o serviço " +
+               "ainda não subiu, e aí reiniciar resolve; ou esta placa não " +
+               "expõe esses sensores à biblioteca, o que acontece em parte dos " +
+               "notebooks, onde a leitura fica com o controlador do fabricante. " +
+               "Salve o relatório abaixo: ele traz o relatório interno da " +
+               "biblioteca, que diz qual dos dois é.";
     }
 
     /// <summary>Versao curta, para o rodapé do painel.</summary>
-    public static string ResumoCurto() => !Elevado
-        ? "Sem acesso aos sensores de baixo nível"
-        : ArquivoDoDriver is null
-            ? "Driver de sensores em quarentena"
+    public static string ResumoCurto() => !PawnIo
+        ? "PawnIO não instalado · sensores de baixo nível indisponíveis"
+        : !Elevado
+            ? "Sem acesso aos sensores de baixo nível"
             : IntegridadeDeMemoria
                 ? "Driver bloqueado pela Integridade de Memória"
                 : "Driver de sensores não carregou";
@@ -249,6 +331,11 @@ public static class Diagnostico
         t.AppendLine($"Processo 64 bits   : {Environment.Is64BitProcess}");
         t.AppendLine($"Administrador      : {Elevado}");
         t.AppendLine($"Pasta do app       : {AppContext.BaseDirectory}");
+        t.AppendLine();
+
+        t.AppendLine("--- PawnIO (a dependência que importa) ---");
+        t.AppendLine($"Instalado : {PawnIo}");
+        t.AppendLine($"Onde      : {DetalheDoPawnIo ?? "não encontrado"}");
         t.AppendLine();
 
         t.AppendLine("--- o que pode barrar o driver ---");
