@@ -717,8 +717,33 @@ public sealed class SensorService : IDisposable
             .DefaultIfEmpty(null)
             .Max();
 
-        return vids ?? Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN")
-                    ?? Pegar(_ => true, SensorType.Voltage, "Vcore");
+        return vids
+               ?? Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN")
+               // A propria CPU informa a tensao do pacote, e em Intel e a
+               // melhor fonte disponivel. Antes a busca pulava daqui direto
+               // para o Vcore da placa-mae, que passa por divisor resistivo e
+               // se move em degraus de 8 a 16 mV — parecia um valor travado.
+               ?? PegarExato(h => h == HardwareType.Cpu, SensorType.Voltage, "CPU Core")
+               ?? Pegar(_ => true, SensorType.Voltage, "Vcore");
+    }
+
+    /// <summary>
+    /// Primeiro sensor com o nome exato.
+    ///
+    /// Diferente de <see cref="Pegar"/>, que casa por trecho: "CPU Core" por
+    /// trecho acharia "CPU Core #1" antes do sensor do pacote, e sao valores
+    /// diferentes — um e a tensao do conjunto, o outro de um nucleo so.
+    /// </summary>
+    private float? PegarExato(Func<HardwareType, bool> filtro, SensorType tipo, string nome)
+    {
+        foreach (var (hardware, sensor) in Todos())
+            if (filtro(hardware.HardwareType)
+                && sensor.SensorType == tipo
+                && sensor.Value.HasValue
+                && string.Equals(sensor.Name, nome, StringComparison.OrdinalIgnoreCase))
+                return sensor.Value;
+
+        return null;
     }
 
     /// <summary>Taxas vem em bytes por segundo; o painel mostra em MB/s.</summary>
