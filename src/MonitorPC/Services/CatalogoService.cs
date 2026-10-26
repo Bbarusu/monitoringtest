@@ -166,6 +166,20 @@ public sealed class CatalogoService
             Atualizado?.Invoke();
             return true;
         }
+        catch (HttpRequestException)
+        {
+            // Sem rede, sem DNS, ou o arquivo fora do ar — inclusive o 404 de
+            // quando ainda nao ha catalogo publicado. O comentario acima sempre
+            // prometeu que essa falha era silenciosa, mas ela ia para o
+            // erro.log a cada abertura, e enterrava o que importa lá debaixo de
+            // uma falha prevista. Fica o catalogo embutido, que e o combinado.
+            return false;
+        }
+        catch (TaskCanceledException)
+        {
+            // Estouro do tempo limite de 8 s: mesma situacao.
+            return false;
+        }
         catch (Exception ex)
         {
             Log.Erro("Atualizar catálogo", ex);

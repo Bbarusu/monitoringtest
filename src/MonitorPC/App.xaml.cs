@@ -182,7 +182,21 @@ public partial class App : Application
         {
             _painel.Mostrar();
         }
+
+        _iniciado = true;
     }
+
+    /// <summary>
+    /// A inicializacao chegou ao fim, e existe o que desmontar no
+    /// encerramento.
+    ///
+    /// Quando o app se relanca pela tarefa agendada, SubirPelaTarefa chama
+    /// Shutdown antes de qualquer campo existir, e o OnExit caia em cima de
+    /// seis referencias nulas — seis excecoes no erro.log a cada elevacao. Era
+    /// ruido inofensivo em si, mas enchia justamente o arquivo onde um erro de
+    /// verdade precisa ser visto.
+    /// </summary>
+    private bool _iniciado;
 
     /// <summary>
     /// O instalador deixa um arquivo vazio pedindo que esta abertura mostre o
@@ -493,6 +507,14 @@ public partial class App : Application
     /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
+        // Saida antes da inicializacao terminar: nao ha nada montado para
+        // desmontar. E o caminho normal do relancamento pela tarefa.
+        if (!_iniciado)
+        {
+            base.OnExit(e);
+            return;
+        }
+
         Tentar(() => _bandeja.Visible = false);
         Tentar(() => _bandeja.Dispose());
         Tentar(() => _sensores.Dispose());
