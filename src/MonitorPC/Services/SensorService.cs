@@ -274,6 +274,20 @@ public sealed class SensorService : IDisposable
         var cpuW = Pegar(h => h == HardwareType.Cpu, SensorType.Power, "Package");
         var gpuW = Pegar(EhGpu, SensorType.Power, "Package", "Board", "GPU");
 
+        // Placa dedicada publica "GPU Memory Used/Total". Video integrado nao
+        // tem memoria propria: ele publica "D3D Shared Memory Used/Total", que
+        // e um pedaco da RAM do sistema cedido a GPU. A ordem importa — numa
+        // placa dedicada os dois conjuntos existem, e o dedicado e o certo.
+        var vramUsada = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Used");
+        var vramTotal = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Total");
+        var vramCompartilhada = vramUsada is null || vramTotal is null;
+
+        if (vramCompartilhada)
+        {
+            vramUsada = Pegar(EhGpu, SensorType.SmallData, "D3D Shared Memory Used");
+            vramTotal = Pegar(EhGpu, SensorType.SmallData, "D3D Shared Memory Total");
+        }
+
         var total = (cpuW ?? 0) + (gpuW ?? 0) + _wattsEstimados;
         if (dt > 0 && dt < 60)
         {
@@ -340,8 +354,9 @@ public sealed class SensorService : IDisposable
             GpuHotSpot = Pegar(EhGpu, SensorType.Temperature, "Hot"),
             GpuUso = UsoDeGpu(),
             GpuWatts = gpuW,
-            VramUsadaMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Used"),
-            VramTotalMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Total"),
+            VramUsadaMb = vramUsada,
+            VramTotalMb = vramTotal,
+            VramCompartilhada = vramCompartilhada,
             GpuFanRpm = Pegar(EhGpu, SensorType.Fan, "Fan"),
             GpuFanPwm = gpuFan?.Pwm,
             GpuFanChave = gpuFan?.Chave,

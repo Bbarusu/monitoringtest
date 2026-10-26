@@ -507,10 +507,13 @@ public partial class FlyoutWindow : Window
         var barras = new List<(string Rotulo, string Valor, double Pct, string? Dica)>();
 
         if (s.VramUsadaMb is { } usada && s.VramTotalMb is { } total && total > 0)
-            barras.Add(("VRAM",
+            barras.Add((s.VramCompartilhada ? "Memória gráfica" : "VRAM",
                 $"{usada / 1024:0.0} / {total / 1024:0.0} GB",
                 usada / total * 100,
-                "Escala: total informado pela própria placa."));
+                s.VramCompartilhada
+                    ? "Vídeo integrado não tem memória própria: isto é RAM do " +
+                      "sistema cedida à GPU. Escala: o total que o Windows reserva."
+                    : "Escala: total informado pela própria placa."));
 
         if (s.GpuWatts is { } w && w > 0)
         {

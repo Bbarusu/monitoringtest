@@ -30,6 +30,14 @@ public sealed class Snapshot
     public float? GpuWatts { get; init; }
     public float? VramUsadaMb { get; init; }
     public float? VramTotalMb { get; init; }
+
+    /// <summary>
+    /// A memoria acima e RAM do sistema cedida a GPU, e nao memoria dedicada
+    /// da placa. E o caso do video integrado, e a barra precisa dizer isso:
+    /// chamar de VRAM um pedaco da memoria principal faria o usuario procurar
+    /// no lugar errado quando ela enchesse.
+    /// </summary>
+    public bool VramCompartilhada { get; init; }
     public float? GpuFanRpm { get; init; }
 
     /// <summary>

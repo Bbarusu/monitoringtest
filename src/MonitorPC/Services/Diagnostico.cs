@@ -322,7 +322,17 @@ public static class Diagnostico
         t.AppendLine();
 
         t.AppendLine("--- veredito ---");
-        t.AppendLine(PorQueFaltamSensores());
+
+        // O veredito era impresso sempre, e em maquina que le normalmente o
+        // relatorio afirmava que a temperatura estava indisponivel com 59 °C de
+        // CPU listados tres linhas abaixo. Um relatorio de diagnostico que
+        // contradiz os proprios dados nao serve para nada.
+        t.AppendLine(TemTemperaturaDeCpu(pc)
+            ? "Os sensores de baixo nível estão respondendo: há temperatura de CPU " +
+              "nesta leitura. Se você veio parar aqui por outro motivo, o problema " +
+              "não é o driver."
+            : PorQueFaltamSensores());
+
         t.AppendLine();
 
         t.AppendLine("--- ambiente ---");
@@ -349,12 +359,25 @@ public static class Diagnostico
 
         try
         {
-            foreach (var h in pc.Hardware)
-                t.AppendLine($"{h.HardwareType,-12} {h.Name}  " +
+            // Desce no sub-hardware. A placa-mae nao tem sensor proprio: quem
+            // tem e o chip de monitoramento pendurado nela, e sem descer a
+            // listagem dizia "Motherboard [0 leituras]" numa maquina onde o
+            // Nuvoton estava entregando temperaturas, tensoes e rotacoes. O
+            // relatorio acusava uma falha que nao existia.
+            void Listar(IHardware h, int nivel)
+            {
+                var recuo = new string(' ', nivel * 2);
+
+                t.AppendLine($"{recuo}{h.HardwareType,-12} {h.Name}  " +
                              $"[{h.Sensors.Count(s => s.Value.HasValue)} leituras]");
 
+                foreach (var sub in h.SubHardware) Listar(sub, nivel + 1);
+            }
+
+            foreach (var h in pc.Hardware) Listar(h, 0);
+
             if (!pc.Hardware.Any(h => h.HardwareType == HardwareType.Motherboard))
-                t.AppendLine("(nenhuma placa-mãe: é o que acontece sem o driver)");
+                t.AppendLine("(nenhuma placa-mãe na lista)");
         }
         catch (Exception ex)
         {
@@ -393,6 +416,28 @@ public static class Diagnostico
         File.WriteAllText(caminho, t.ToString());
 
         return caminho;
+    }
+
+    /// <summary>
+    /// Ha temperatura de CPU nesta leitura — o sinal de que o acesso de baixo
+    /// nivel esta funcionando. Desce no sub-hardware porque e onde moram os
+    /// sensores que vem pelo chip da placa-mae.
+    /// </summary>
+    private static bool TemTemperaturaDeCpu(Computer pc)
+    {
+        try
+        {
+            return pc.Hardware.Any(Tem);
+        }
+        catch
+        {
+            return false;
+        }
+
+        static bool Tem(IHardware h) =>
+            (h.HardwareType == HardwareType.Cpu &&
+             h.Sensors.Any(s => s.SensorType == SensorType.Temperature && s.Value.HasValue))
+            || h.SubHardware.Any(Tem);
     }
 
     /// <summary>
