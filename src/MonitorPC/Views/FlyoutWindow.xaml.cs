@@ -1081,11 +1081,12 @@ public partial class FlyoutWindow : Window
         {
             AvisoDriverTexto.Text = Diagnostico.PorQueFaltamSensores();
 
-            // Elevar resolve o primeiro caso, e ai o relatorio nao ajuda em
-            // nada: o botao e para quando elevar ja nao e a resposta.
-            BotaoDiagnostico.Visibility = Diagnostico.Elevado
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            // O botao aparece sempre que falta sensor, inclusive sem elevacao.
+            // Antes ele exigia estar elevado, com o argumento de que elevar
+            // resolveria o primeiro caso — mas e justamente a maquina que nao
+            // elevou a que precisa contar por que nao elevou, e sem o botao ela
+            // ficava sem nenhuma forma de dizer isso.
+            BotaoDiagnostico.Visibility = Visibility.Visible;
 
             _avisoDeDriverMontado = true;
         }
@@ -1097,16 +1098,7 @@ public partial class FlyoutWindow : Window
     {
         try
         {
-            var arquivo = _sensores.SalvarDiagnostico();
-
-            // Selecionar no Explorer em vez de abrir o txt: o usuario precisa
-            // anexar o arquivo em algum lugar, nao so le-lo.
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "explorer.exe",
-                Arguments = $"/select,\"{arquivo}\"",
-                UseShellExecute = true
-            });
+            Diagnostico.Revelar(_sensores.SalvarDiagnostico());
 
             Recado("Relatório salvo. A pasta foi aberta com o arquivo selecionado.");
         }

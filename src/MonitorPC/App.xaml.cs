@@ -261,6 +261,11 @@ public partial class App : Application
             _painel.Mostrar();
             _painel.AbrirConfiguracao(false);
         }));
+        // Também aqui, e não só na faixa de aviso do painel: numa máquina onde
+        // a leitura falha o usuário precisa poder nos mandar o relatório sem
+        // depender de o painel estar mostrando o aviso certo.
+        _menu.Items.Add(Item("Salvar relatório do problema", SalvarRelatorio));
+
         _menu.Items.Add(new System.Windows.Controls.Separator());
         _menu.Items.Add(Item("Encerrar", Shutdown));
 
@@ -281,6 +286,25 @@ public partial class App : Application
             };
             item.Click += (_, _) => acao();
             return item;
+        }
+    }
+
+    /// <summary>
+    /// Grava o relatorio de diagnostico e abre a pasta nele.
+    ///
+    /// E a unica via de informacao quando o app roda numa maquina que nao e
+    /// esta: o que o Windows respondeu sobre o driver nao da para adivinhar
+    /// daqui, e adivinhar foi o que custou duas hipoteses erradas.
+    /// </summary>
+    private void SalvarRelatorio()
+    {
+        try
+        {
+            Diagnostico.Revelar(_sensores.SalvarDiagnostico());
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Salvar diagnóstico", ex);
         }
     }
 

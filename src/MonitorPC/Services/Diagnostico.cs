@@ -307,4 +307,21 @@ public static class Diagnostico
 
         return caminho;
     }
+
+    /// <summary>
+    /// Abre a pasta com o relatorio ja selecionado.
+    ///
+    /// Selecionar no Explorer em vez de abrir o txt porque o usuario precisa
+    /// anexar o arquivo em algum lugar, nao so le-lo. Fica aqui, e nao na tela,
+    /// porque o painel e o menu da bandeja chamam os dois.
+    /// </summary>
+    public static void Revelar(string arquivo)
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "explorer.exe",
+            Arguments = $"/select,\"{arquivo}\"",
+            UseShellExecute = true
+        });
+    }
 }
