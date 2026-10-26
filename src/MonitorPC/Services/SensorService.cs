@@ -338,7 +338,7 @@ public sealed class SensorService : IDisposable
             GpuNome = _pc.Hardware.FirstOrDefault(h => EhGpu(h.HardwareType))?.Name,
             GpuTemp = Pegar(EhGpu, SensorType.Temperature, "GPU Core", "Core"),
             GpuHotSpot = Pegar(EhGpu, SensorType.Temperature, "Hot"),
-            GpuUso = Pegar(EhGpu, SensorType.Load, "GPU Core"),
+            GpuUso = UsoDeGpu(),
             GpuWatts = gpuW,
             VramUsadaMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Used"),
             VramTotalMb = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Total"),
@@ -472,6 +472,40 @@ public sealed class SensorService : IDisposable
             foreach (var s in h.Sensors) yield return (h, s);
             foreach (var sub in h.SubHardware) pilha.Push(sub);
         }
+    }
+
+    /// <summary>
+    /// Uso da GPU, incluindo o caminho das integradas.
+    ///
+    /// NVIDIA e AMD publicam uma carga chamada "GPU Core", e era a unica que
+    /// este app lia. GPU integrada da Intel nao tem esse sensor: ela publica
+    /// uma carga por motor do D3D — "D3D 3D", "D3D Video Decode", "D3D Copy" e
+    /// outros. Por isso, num PC de video integrado, a peca aparecia na aba de
+    /// todos os sensores mas o uso vinha vazio, e com ele vazio o cartao da aba
+    /// Geral mostrava "--" como se nao houvesse GPU.
+    ///
+    /// Sem "GPU Core", vale o motor mais ocupado. E o que o Gerenciador de
+    /// Tarefas do Windows chama de porcentagem de GPU, entao o numero bate com
+    /// o que o usuario ja conhece de outro lugar. Somar os motores passaria de
+    /// 100% e nao significaria nada.
+    /// </summary>
+    private float? UsoDeGpu()
+    {
+        if (Pegar(EhGpu, SensorType.Load, "GPU Core") is { } core) return core;
+
+        float? maior = null;
+
+        foreach (var (hardware, sensor) in Todos())
+        {
+            if (!EhGpu(hardware.HardwareType)) continue;
+            if (sensor.SensorType != SensorType.Load) continue;
+            if (!sensor.Name.StartsWith("D3D", StringComparison.OrdinalIgnoreCase)) continue;
+            if (sensor.Value is not { } valor) continue;
+
+            if (maior is null || valor > maior) maior = valor;
+        }
+
+        return maior;
     }
 
     private static bool EhGpu(HardwareType t) =>

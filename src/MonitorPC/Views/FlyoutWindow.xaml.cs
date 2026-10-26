@@ -365,7 +365,19 @@ public partial class FlyoutWindow : Window
         ValorPrincipal.SetResourceReference(
             TextBlock.ForegroundProperty, quente ? "AlertaTexto" : "Texto");
 
-        CardGpu.Text = s.GpuTemp is { } gt && s.GpuUso is { } gu ? $"{gt:F0}° · {gu:F0}%" : "--";
+        // Mostra o que existe, e nao nada quando falta uma das duas. Vídeo
+        // integrado não publica temperatura própria — quem mede o calor dele é
+        // o sensor da CPU, no mesmo encapsulamento —, e exigir as duas leituras
+        // fazia o cartão dizer "--" numa máquina onde o uso era perfeitamente
+        // legível.
+        CardGpu.Text = (s.GpuTemp, s.GpuUso) switch
+        {
+            ({ } gt, { } gu) => $"{gt:F0}° · {gu:F0}%",
+            ({ } gt, null) => $"{gt:F0}°",
+            (null, { } gu) => $"{gu:F0}%",
+            _ => "--"
+        };
+
         CardRam.Text = s.RamUsadaGb is { } usada && s.RamTotalGb is { } total
             ? $"{usada:F1} / {total:F0} GB"
             : s.RamUso is { } ru ? $"{ru:F0}% em uso" : "--";
