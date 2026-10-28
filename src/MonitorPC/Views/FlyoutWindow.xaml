@@ -10,7 +10,7 @@
     <Border x:Name="Painel" Margin="20" CornerRadius="16"
             Background="{DynamicResource Fundo}"
             BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20"
-            MouseLeftButtonDown="Painel_Arrastar">
+            PreviewMouseLeftButtonDown="Painel_Arrastar">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>

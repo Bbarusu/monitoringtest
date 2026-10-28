@@ -127,6 +127,11 @@ public partial class FlyoutWindow : Window
     {
         if (e.ButtonState != MouseButtonState.Pressed) return;
 
+        // Sai se o clique era de alguém: botão, aba, seletor, barra de
+        // rolagem. Sem esta conferência, arrastar de qualquer ponto custaria
+        // o painel inteiro parar de responder a clique.
+        if (EhControle(e.OriginalSource as DependencyObject)) return;
+
         try
         {
             DragMove();
@@ -141,6 +146,43 @@ public partial class FlyoutWindow : Window
         _cfg.PosicaoLivre = true;
         _cfg.PosicaoX = Left;
         _cfg.PosicaoY = Top;
+    }
+
+    /// <summary>
+    /// O clique nasceu dentro de um controle que precisa dele.
+    ///
+    /// Sobe a arvore visual a partir de onde o clique nasceu. Sobe, e nao
+    /// confere so a origem, porque o clique num botao nasce em algum
+    /// <c>Border</c> ou <c>TextBlock</c> do template dele — a origem quase
+    /// nunca e o controle em si.
+    ///
+    /// <c>ButtonBase</c> cobre botao, aba e caixa de selecao de uma vez;
+    /// <c>Thumb</c> e <c>ScrollBar</c> cobrem a rolagem, que seria o pior
+    /// lugar para o arrasto roubar o clique.
+    /// </summary>
+    private static bool EhControle(DependencyObject? origem)
+    {
+        while (origem is not null)
+        {
+            if (origem is System.Windows.Controls.Primitives.ButtonBase
+                       or System.Windows.Controls.Primitives.ScrollBar
+                       or System.Windows.Controls.Primitives.Thumb
+                       or System.Windows.Controls.Primitives.TextBoxBase
+                       or ComboBox
+                       or Slider
+                       or ListBoxItem
+                       or MenuItem)
+                return true;
+
+            // GetParent exige um Visual: chamado com outra coisa, ele lança.
+            // Um clique sempre nasce num Visual, mas o custo de garantir é
+            // nenhum e o de errar é derrubar o painel.
+            if (origem is not Visual) return false;
+
+            origem = VisualTreeHelper.GetParent(origem);
+        }
+
+        return false;
     }
 
     /// <summary>
