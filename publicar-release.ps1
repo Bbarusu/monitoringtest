@@ -93,9 +93,16 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-if ((Gh @('auth','status')).Codigo -ne 0) {
-    Parar 'o gh não está autenticado. Rode uma vez:  gh auth login'
-}
+# Aqui havia uma conferência de "gh auth status" que barrava a publicação.
+# Ela deu falso negativo com o gh autenticado e logado — esse comando não
+# devolve código zero de forma confiável entre versões — e bloqueou o caminho
+# bom.
+#
+# É a terceira conferência prévia deste script a falhar onde a operação real
+# teria funcionado, então vale a regra em vez do remendo: barrar só o que não
+# dá para descobrir tentando. Arquivo que não existe e versão malformada são
+# assim, porque o erro do gh para esses casos seria obscuro. Autenticação não
+# é: o próprio gh diz, com todas as letras, quando falta.
 
 Write-Host "Versão      : $versao"
 Write-Host "Repositório : $repo"
@@ -143,7 +150,11 @@ Write-Host ''
 & gh @argumentos 2>&1 | ForEach-Object { Write-Host $_ }
 $codigo = $LASTEXITCODE
 
-if ($codigo -ne 0) { Parar "o gh terminou com código $codigo. A mensagem dele está acima." }
+if ($codigo -ne 0) {
+    Parar ("o gh terminou com código $codigo. A mensagem dele está acima.`n`n" +
+           "Se ela falar em autenticação, rode:  gh auth login`n" +
+           "Se falar em permissão, confira que $repo é seu e é público.")
+}
 
 # --- Confere que ficou de pé no caminho que o app consulta -----------------
 #  Publicar sem erro não garante que o app encontre: rascunho e pre-release
