@@ -1143,7 +1143,6 @@ public partial class FlyoutWindow : Window
         _atualizacaoOferecida = manifesto;
 
         AtualizacaoTitulo.Text = $"Versão {manifesto.Versao} disponível";
-        AtualizacaoDetalhe.Text = $"Você está na {AtualizacaoService.VersaoAtual}.";
 
         MontarNovidades(manifesto.Notas);
 
@@ -1258,7 +1257,12 @@ public partial class FlyoutWindow : Window
                 return;
             }
 
-            Estado("Arquivo conferido. Abrindo o instalador…");
+            // O aviso do Windows é dito aqui, e não na faixa: é agora que ele
+            // vai aparecer. Quem vê "editor desconhecido" sem ter sido avisado
+            // conclui, com razão, que pegou algo errado — e quem foi avisado
+            // dois minutos antes, enquanto lia as novidades, já esqueceu.
+            Estado("Arquivo conferido. Abrindo o instalador — o Windows vai " +
+                   "mostrar um aviso de editor desconhecido, que é esperado.");
 
             if (!AtualizacaoService.Executar(arquivo))
                 Estado("O instalador foi baixado e conferido, mas não abriu. " +
