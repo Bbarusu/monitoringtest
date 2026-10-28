@@ -98,7 +98,11 @@ public partial class MemoriaWindow : Window
                 Style = (Style)FindResource("BotaoIcone"),
                 Width = 32,
                 Height = 32,
-                ToolTip = $"Fechar {p.Nome}",
+                // O que o botão faz muda conforme a linha, e a dica diz qual
+                // dos dois: pedir para fechar não é a mesma coisa que encerrar.
+                ToolTip = p.TemJanela
+                    ? $"Pedir para {p.Nome} fechar"
+                    : $"Encerrar {p.Nome} — está em segundo plano, então pede confirmação",
                 Tag = p.Nome,
                 VerticalAlignment = VerticalAlignment.Center,
                 Content = new System.Windows.Shapes.Path
@@ -146,20 +150,80 @@ public partial class MemoriaWindow : Window
         // tela de arquivos.
         e.Handled = true;
 
-        var fechados = PerformanceService.FecharPorNome(nome);
-
-        Rodape.Text = fechados == 0
-            ? $"{nome} não aceitou fechar. Pode estar sem janela ou aguardando resposta."
-            : $"{nome}: {fechados} pedido(s) de fechar enviados.";
-
-        // Fechar leva tempo: a lista so reflete depois que o programa sai.
-        Dispatcher.InvokeAsync(async () =>
+        // Segundo clique no mesmo X, logo depois do aviso: é a confirmação de
+        // forçar. Dois cliques no mesmo lugar em vez de uma caixa de diálogo
+        // porque a pergunta nasce de um clique ali e a resposta volta para o
+        // mesmo lugar — e porque uma caixa modal neste painel seria a única.
+        if (_forcarPendente == nome && DateTime.UtcNow < _forcarAte)
         {
-            await Task.Delay(1200);
-            Montar();
-            Reposicionar();
-        });
+            _forcarPendente = null;
+
+            var encerrados = PerformanceService.ForcarPorNome(nome);
+
+            Rodape.Text = encerrados > 0
+                ? $"{nome}: {encerrados} processo(s) encerrado(s) à força."
+                : $"Não foi possível encerrar {nome}. O motivo ficou no erro.log.";
+
+            Recarregar();
+            return;
+        }
+
+        _forcarPendente = null;
+
+        var r = PerformanceService.FecharPorNome(nome);
+
+        if (r.Pedidos > 0)
+        {
+            Rodape.Text = $"{nome}: {r.Pedidos} pedido(s) de fechar enviados.";
+        }
+        else if (r.SemJanela > 0)
+        {
+            // Sem janela não existe pedido gentil: ou força, ou nada acontece.
+            // Era este o caso que não fazia nada e não explicava nada.
+            _forcarPendente = nome;
+            _forcarAte = DateTime.UtcNow.AddSeconds(10);
+
+            Rodape.Text = $"{nome} está em segundo plano e não tem janela para " +
+                          "receber o pedido. Encerrar à força pode perder o que não " +
+                          "foi salvo. Clique no X de novo para confirmar.";
+        }
+        else if (r.Recusados > 0)
+        {
+            _forcarPendente = nome;
+            _forcarAte = DateTime.UtcNow.AddSeconds(10);
+
+            Rodape.Text = $"{nome} recebeu o pedido e não fechou — pode estar " +
+                          "perguntando algo. Clique no X de novo para forçar.";
+        }
+        else
+        {
+            Rodape.Text = $"{nome} já não está em execução.";
+        }
+
+        Recarregar();
     }
+
+    /// <summary>
+    /// Qual programa está com a pergunta de forçar em aberto, e até quando.
+    ///
+    /// O prazo existe para a confirmação não ficar armada: sem ele, um X
+    /// clicado agora e outro daqui a dez minutos, na linha que mudou de lugar
+    /// porque a lista se reordena por memória, encerrariam algo à força sem o
+    /// usuário ter pedido.
+    /// </summary>
+    private string? _forcarPendente;
+    private DateTime _forcarAte;
+
+    /// <summary>
+    /// Remonta a lista depois de um fechamento. Fechar leva tempo: a lista só
+    /// reflete a mudança depois que o programa sai.
+    /// </summary>
+    private void Recarregar() => Dispatcher.InvokeAsync(async () =>
+    {
+        await Task.Delay(1200);
+        Montar();
+        Reposicionar();
+    });
 
     /// <summary>
     /// O Explorer nao aparece na lista para ser fechado: encerra-lo sem subir de

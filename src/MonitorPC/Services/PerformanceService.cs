@@ -94,10 +94,11 @@ public static class PerformanceService
     /// Pede para o processo fechar pela janela, como se o usuario clicasse no X,
     /// para ele poder salvar o que estiver aberto. Nada e forcado.
     /// </summary>
-    public static (int Fechados, double MemoriaMb) Fechar(IEnumerable<int> pids)
+    public static (int Fechados, double MemoriaMb, int SemJanela) Fechar(IEnumerable<int> pids)
     {
         var fechados = 0;
         var memoria = 0.0;
+        var semJanela = 0;
 
         foreach (var pid in pids)
         {
@@ -107,6 +108,15 @@ public static class PerformanceService
                 if (Protegidos.Contains(p.ProcessName)) continue;
 
                 var mb = p.WorkingSet64 / 1048576.0;
+
+                // Sem janela principal nao ha para onde mandar o pedido.
+                // Contado a parte porque leva a outro caminho: quem chama pode
+                // oferecer forcar, que e a unica saida nesse caso.
+                if (p.MainWindowHandle == IntPtr.Zero)
+                {
+                    semJanela++;
+                    continue;
+                }
 
                 if (!p.CloseMainWindow()) continue;
 
@@ -119,7 +129,37 @@ public static class PerformanceService
             }
         }
 
-        return (fechados, memoria);
+        return (fechados, memoria, semJanela);
+    }
+
+    /// <summary>
+    /// Encerra a forca os processos destes PIDs. Mesmas ressalvas de
+    /// <see cref="ForcarPorNome"/>: nada e perguntado ao programa, e quem
+    /// chama precisa ter perguntado ao usuario.
+    /// </summary>
+    public static int Forcar(IEnumerable<int> pids)
+    {
+        var encerrados = 0;
+
+        foreach (var pid in pids)
+        {
+            try
+            {
+                using var p = Process.GetProcessById(pid);
+                if (Protegidos.Contains(p.ProcessName)) continue;
+                if (p.Id == Environment.ProcessId) continue;
+
+                p.Kill();
+                p.WaitForExit(2000);
+                encerrados++;
+            }
+            catch (Exception ex)
+            {
+                Log.Erro("Forçar encerramento", ex);
+            }
+        }
+
+        return encerrados;
     }
 
     /// <summary>
@@ -170,21 +210,46 @@ public static class PerformanceService
     }
 
     /// <summary>
-    /// Fecha todos os processos com este nome, pelo mesmo pedido do botao X da
-    /// janela. Devolve quantos aceitaram.
+    /// O que aconteceu ao pedir para um programa fechar.
+    ///
+    /// <paramref name="SemJanela"/> existe separado de <paramref name="Recusados"/>
+    /// porque sao coisas diferentes e levam a caminhos diferentes: quem recusou
+    /// ouviu o pedido e pode estar perguntando algo ao usuario; quem nao tem
+    /// janela nunca vai ouvir pedido nenhum, e para esse so forcar resolve.
     /// </summary>
-    public static int FecharPorNome(string nome)
+    public sealed record ResultadoDeFechamento(int Pedidos, int SemJanela, int Recusados)
     {
-        if (Protegidos.Contains(nome)) return 0;
+        public int Total => Pedidos + SemJanela + Recusados;
+    }
 
-        var fechados = 0;
+    /// <summary>
+    /// Pede para os processos com este nome fecharem, pelo mesmo caminho do
+    /// botao X da janela deles. Nada e forcado aqui.
+    /// </summary>
+    public static ResultadoDeFechamento FecharPorNome(string nome)
+    {
+        if (Protegidos.Contains(nome)) return new ResultadoDeFechamento(0, 0, 0);
+
+        int pedidos = 0, semJanela = 0, recusados = 0;
 
         foreach (var p in Process.GetProcessesByName(nome))
         {
             try
             {
                 if (p.Id == Environment.ProcessId) continue;
-                if (p.CloseMainWindow()) fechados++;
+
+                // Sem janela principal nao ha para onde mandar o pedido de
+                // fechar. CloseMainWindow devolveria false na hora, e era isso
+                // que fazia o botao nao surtir efeito nenhum em programa de
+                // segundo plano — sem fechar e sem explicar o porque.
+                if (p.MainWindowHandle == IntPtr.Zero)
+                {
+                    semJanela++;
+                    continue;
+                }
+
+                if (p.CloseMainWindow()) pedidos++;
+                else recusados++;
             }
             catch (Exception ex)
             {
@@ -196,7 +261,49 @@ public static class PerformanceService
             }
         }
 
-        return fechados;
+        return new ResultadoDeFechamento(pedidos, semJanela, recusados);
+    }
+
+    /// <summary>
+    /// Encerra a forca os processos com este nome. Devolve quantos cairam.
+    ///
+    /// Isto nao pergunta nada ao programa: ele para onde estiver, e o que nao
+    /// tiver sido salvo se perde. E o unico caminho possivel para quem nao tem
+    /// janela, e por isso existe — mas quem chama precisa ter perguntado ao
+    /// usuario antes, porque daqui nao ha como desfazer.
+    ///
+    /// A lista de protegidos vale aqui tambem, e com mais razao.
+    /// </summary>
+    public static int ForcarPorNome(string nome)
+    {
+        if (Protegidos.Contains(nome)) return 0;
+
+        var encerrados = 0;
+
+        foreach (var p in Process.GetProcessesByName(nome))
+        {
+            try
+            {
+                if (p.Id == Environment.ProcessId) continue;
+
+                p.Kill();
+
+                // Espera curta: confirma que caiu mesmo, sem segurar a tela se
+                // o processo demorar a sair.
+                p.WaitForExit(2000);
+                encerrados++;
+            }
+            catch (Exception ex)
+            {
+                Log.Erro("Forçar encerramento", ex);
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+
+        return encerrados;
     }
 
     // ------------------------------------------------------------------

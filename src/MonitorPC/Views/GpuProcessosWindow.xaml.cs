@@ -152,13 +152,47 @@ public partial class GpuProcessosWindow : Window
     /// </summary>
     private void Fechar(ProcessoGpu p)
     {
-        var (fechados, _) = PerformanceService.Fechar(new[] { p.Pid });
+        // Segundo clique no mesmo processo, logo depois do aviso: confirma
+        // forçar. Um programa que usa a placa sem janela é justamente o caso
+        // que esta tela existe para encontrar, e era o que o botão não fechava.
+        if (_forcarPendente == p.Pid && DateTime.UtcNow < _forcarAte)
+        {
+            _forcarPendente = null;
 
-        Rodape.Text = fechados == 0
-            ? $"{p.Nome} não aceitou fechar. Pode estar em tela cheia, sem janela " +
-              "ou aguardando resposta."
-            : $"{p.Nome}: pedido de fechar enviado.";
+            Rodape.Text = PerformanceService.Forcar(new[] { p.Pid }) > 0
+                ? $"{p.Nome} foi encerrado à força."
+                : $"Não foi possível encerrar {p.Nome}. O motivo ficou no erro.log.";
+
+            return;
+        }
+
+        _forcarPendente = null;
+
+        var (fechados, _, semJanela) = PerformanceService.Fechar(new[] { p.Pid });
+
+        if (fechados > 0)
+        {
+            Rodape.Text = $"{p.Nome}: pedido de fechar enviado.";
+            return;
+        }
+
+        _forcarPendente = p.Pid;
+        _forcarAte = DateTime.UtcNow.AddSeconds(10);
+
+        Rodape.Text = semJanela > 0
+            ? $"{p.Nome} não tem janela para receber o pedido. Encerrar à força pode " +
+              "perder o que não foi salvo. Clique de novo para confirmar."
+            : $"{p.Nome} não aceitou fechar — pode estar em tela cheia ou perguntando " +
+              "algo. Clique de novo para forçar.";
     }
+
+    /// <summary>
+    /// Qual processo está com a pergunta de forçar em aberto, e até quando. O
+    /// prazo evita que a confirmação fique armada para um clique distraído
+    /// minutos depois, numa lista que se reordena sozinha.
+    /// </summary>
+    private int? _forcarPendente;
+    private DateTime _forcarAte;
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 }

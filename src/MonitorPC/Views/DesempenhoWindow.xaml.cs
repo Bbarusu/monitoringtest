@@ -162,10 +162,23 @@ public partial class DesempenhoWindow : Window
 
             if (pids.Count > 0)
             {
-                var (fechados, memoria) = PerformanceService.Fechar(pids);
-                feito.Add(fechados == 0
-                    ? "nenhum programa aceitou fechar"
-                    : $"{fechados} programas fechados (~{memoria:N0} MB)");
+                var (fechados, memoria, semJanela) = PerformanceService.Fechar(pids);
+
+                // Aqui não se força nada, nem com confirmação: isto fecha vários
+                // de uma vez, e uma confirmação só para o conjunto não deixaria
+                // claro o que seria encerrado. Os sem janela são contados e
+                // ditos, para a conta não parecer errada.
+                feito.Add(fechados switch
+                {
+                    0 when semJanela > 0 =>
+                        $"nenhum fechou: {semJanela} está(ão) em segundo plano, sem janela " +
+                        "— use a tela de memória por programa para encerrá-los",
+                    0 => "nenhum programa aceitou fechar",
+                    _ when semJanela > 0 =>
+                        $"{fechados} programas fechados (~{memoria:N0} MB); {semJanela} " +
+                        "em segundo plano foram deixados",
+                    _ => $"{fechados} programas fechados (~{memoria:N0} MB)"
+                });
             }
         }
 
