@@ -142,6 +142,37 @@ public sealed class AppConfig
     public bool Transparencia { get; set; } = true;
     public int Opacidade { get; set; } = 85;
 
+    // --- Ilha no topo da tela ---
+
+    /// <summary>
+    /// A pilula no centro do topo da tela. Desligada por padrao: uma janela
+    /// sempre por cima de tudo nao pode aparecer sozinha depois de uma
+    /// atualizacao — quem quiser liga em Personalizacao.
+    /// </summary>
+    public bool IlhaAtiva { get; set; }
+
+    // O que a pilula mostra fechada. A musica so aparece quando ha algo tocando.
+    public bool IlhaMusica { get; set; } = true;
+    public bool IlhaCpu { get; set; } = true;
+    public bool IlhaGpu { get; set; } = true;
+    public bool IlhaVolume { get; set; } = true;
+    public bool IlhaRam { get; set; }
+
+    /// <summary>Abre ao passar o mouse; falso, so ao clicar.</summary>
+    public bool IlhaAbrirAoPassarMouse { get; set; } = true;
+
+    /// <summary>Sai da frente de jogo, video e apresentacao.</summary>
+    public bool IlhaEsconderEmTelaCheia { get; set; } = true;
+
+    /// <summary>
+    /// Mostra o volume na ilha por dois segundos quando ele muda. O aviso do
+    /// proprio Windows continua: ele nao tem como ser desligado por outro app.
+    /// </summary>
+    public bool IlhaAvisoDeVolume { get; set; } = true;
+
+    /// <summary>Mostra a faixa nova por tres segundos quando a musica muda.</summary>
+    public bool IlhaAvisoDeFaixa { get; set; } = true;
+
     /// <summary>
     /// Fechar o painel ao clicar fora dele. Desligado por padrao: assim da para
     /// olhar o painel, trocar de janela e tirar print sem ele sumir. Quem fecha

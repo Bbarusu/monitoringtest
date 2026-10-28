@@ -39,6 +39,18 @@ public partial class PersonalizacaoWindow : Window
         Transparencia.IsChecked = _cfg.Transparencia;
         Opacidade.Value = Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
 
+        IlhaAtiva.IsChecked = _cfg.IlhaAtiva;
+        IlhaMusica.IsChecked = _cfg.IlhaMusica;
+        IlhaCpu.IsChecked = _cfg.IlhaCpu;
+        IlhaGpu.IsChecked = _cfg.IlhaGpu;
+        IlhaVolume.IsChecked = _cfg.IlhaVolume;
+        IlhaRam.IsChecked = _cfg.IlhaRam;
+        IlhaAoPassar.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
+        IlhaAoClicar.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
+        IlhaTelaCheia.IsChecked = _cfg.IlhaEsconderEmTelaCheia;
+        IlhaAvisoVolume.IsChecked = _cfg.IlhaAvisoDeVolume;
+        IlhaAvisoFaixa.IsChecked = _cfg.IlhaAvisoDeFaixa;
+
         AtualizarEstados();
         AplicarFundo();
 
@@ -121,6 +133,30 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
+    /// <summary>
+    /// Todas as opcoes da ilha passam por aqui: sao muitas e independentes, e
+    /// ler o conjunto inteiro a cada mudanca e mais simples que um handler por
+    /// caixa — e nao ha como uma ficar fora de sincronia com a tela.
+    /// </summary>
+    private void Ilha_Alterada(object sender, RoutedEventArgs e)
+    {
+        if (_carregando) return;
+
+        _cfg.IlhaAtiva = IlhaAtiva.IsChecked == true;
+        _cfg.IlhaMusica = IlhaMusica.IsChecked == true;
+        _cfg.IlhaCpu = IlhaCpu.IsChecked == true;
+        _cfg.IlhaGpu = IlhaGpu.IsChecked == true;
+        _cfg.IlhaVolume = IlhaVolume.IsChecked == true;
+        _cfg.IlhaRam = IlhaRam.IsChecked == true;
+        _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
+        _cfg.IlhaEsconderEmTelaCheia = IlhaTelaCheia.IsChecked == true;
+        _cfg.IlhaAvisoDeVolume = IlhaAvisoVolume.IsChecked == true;
+        _cfg.IlhaAvisoDeFaixa = IlhaAvisoFaixa.IsChecked == true;
+
+        AtualizarEstados();
+        Confirmar();
+    }
+
     private void Restaurar_Click(object sender, RoutedEventArgs e)
     {
         var padrao = new AppConfig();
@@ -173,6 +209,12 @@ public partial class PersonalizacaoWindow : Window
             : "A cor vale para anéis, abas e botões do painel.";
 
         Opacidade.IsEnabled = Transparencia.IsChecked == true;
+
+        // Com a ilha desligada as opcoes dela ficam a mostra, mas apagadas:
+        // assim da para ver o que ela faz antes de ligar.
+        var ilha = IlhaAtiva.IsChecked == true;
+        OpcoesIlha.IsEnabled = ilha;
+        OpcoesIlha.Opacity = ilha ? 1 : 0.5;
     }
 
     /// <summary>A propria tela usa a transparencia escolhida, como previa ao vivo.</summary>

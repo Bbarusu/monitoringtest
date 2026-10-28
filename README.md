@@ -24,6 +24,47 @@ disponíveis.
 **Estado atual:** as cinco abas funcionais (Geral, CPU, GPU, Disco e Energia), com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
+## Ilha no topo da tela
+
+Uma pílula no centro do topo da tela, ligada em **Personalização → Ilha no topo
+da tela**. Fechada, mostra o que está tocando, as temperaturas de CPU e GPU e o
+volume — cada item pode ser desligado, e há também o uso de RAM. Ao passar o
+mouse (ou ao clicar, conforme a escolha) ela abre: player com capa, tocar,
+pausar, anterior e próxima, barra de progresso, as temperaturas em destaque,
+volume com mudo, os perfis de energia e atalhos para o painel e a
+Personalização.
+
+Vem desligada. Uma janela sempre por cima de tudo não pode surgir sozinha numa
+atualização automática.
+
+Não tem aparência própria: segue a cor de destaque, o tema e a transparência do
+painel, e mexer na Personalização repinta as duas.
+
+Nenhuma leitura nova de sensor. As temperaturas são as mesmas que desenham o
+ícone da bandeja; música e volume chegam por aviso do Windows:
+
+- **O que está tocando** vem do controle de mídia do sistema
+  (`GlobalSystemMediaTransportControlsSessionManager`) — o mesmo que põe a
+  música no painel de volume. Funciona com qualquer player que se anuncie ao
+  Windows: Spotify, navegador, Media Player. É por causa dele que o app passou
+  a mirar `net8.0-windows10.0.19041.0`, com mínimo no Windows 10 1809.
+- **O volume** vem do Core Audio (`IAudioEndpointVolume`), com aviso de
+  mudança. Quando ele muda, a ilha mostra o nível por dois segundos. O aviso
+  do próprio Windows continua aparecendo: não existe forma suportada de outro
+  app desligá-lo.
+
+O único relógio próprio é de um segundo, para sumir em **tela cheia** e andar a
+barra de progresso com a ilha aberta. Tela cheia é conferida de dois jeitos,
+porque nenhum cobre tudo sozinho: o estado que o Windows publica
+(`SHQueryUserNotificationState`, que pega Direct3D exclusivo e apresentação) e
+a geometria da janela em primeiro plano, que pega jogo em janela sem borda e
+vídeo em tela cheia no navegador. Janela maximizada com barra de título não
+conta, senão a barra de tarefas em ocultar automaticamente faria a ilha sumir
+a cada janela maximizada.
+
+A ilha nunca toma o foco (`WS_EX_NOACTIVATE`): tocar, pausar ou mexer no volume
+não tira o cursor do que estava sendo digitado.
+
 ## Código num arquivo só
 
 `codigo-unico.ps1` junta todo o código-fonte em
@@ -267,6 +308,10 @@ src/MonitorPC/
   Services/DiskLogService.cs      registro de picos de disco
   Views/LogDiscoWindow.xaml       a tela do log
   Views/DesempenhoWindow.xaml     a tela do Modo Desempenho
+  Views/IlhaWindow.xaml           a ilha do topo da tela
+  Services/MidiaService.cs        o que está tocando, pelo controle de mídia do Windows
+  Services/VolumeService.cs       volume geral pelo Core Audio
+  Services/TelaCheia.cs           se há programa em tela cheia agora
   App.xaml.cs               ícone da bandeja e ciclo de vida
 ```
 

@@ -127,6 +127,13 @@ public partial class App : Application
     private AlertService _alertas = null!;
     private WF.NotifyIcon _bandeja = null!;
     private FlyoutWindow _painel = null!;
+
+    // A ilha e os dois servicos que so ela usa nascem na primeira vez que ela
+    // e ligada: quem nao usa a ilha nao paga nem a assinatura dos avisos de
+    // midia e de volume.
+    private IlhaWindow? _ilha;
+    private MidiaService? _midia;
+    private VolumeService? _volume;
     private D.Icon? _iconeAtual;
     private System.Windows.Controls.ContextMenu? _menu;
 
@@ -182,6 +189,8 @@ public partial class App : Application
         {
             _painel.Mostrar();
         }
+
+        AtualizarIlha();
 
         _iniciado = true;
 
@@ -418,6 +427,55 @@ public partial class App : Application
     {
         ThemeService.Aplicar(_cfg.Tema);
         AplicarAcento();
+        AtualizarIlha();
+    }
+
+    /// <summary>
+    /// Liga, desliga ou repinta a ilha do topo conforme a Personalizacao.
+    /// Chamada na abertura e a cada mudanca la — inclusive de cor e
+    /// transparencia, que a ilha segue.
+    /// </summary>
+    private void AtualizarIlha()
+    {
+        try
+        {
+            if (!_cfg.IlhaAtiva)
+            {
+                _ilha?.Desativar();
+                return;
+            }
+
+            if (_ilha is null)
+            {
+                _midia = new MidiaService();
+                _volume = new VolumeService();
+                _ilha = new IlhaWindow(_cfg, _sensores, _alertas, _midia, _volume);
+
+                _ilha.PedirPainel += () => _painel.Mostrar();
+                _ilha.PedirPersonalizacao += () =>
+                {
+                    _painel.Mostrar();
+                    _painel.AbrirPersonalizacao();
+                };
+                _ilha.PedirDesempenho += () =>
+                {
+                    _painel.Mostrar();
+                    _painel.AbrirDesempenho();
+                };
+
+                _ = _midia.IniciarAsync();
+                _ilha.Ativar();
+                return;
+            }
+
+            if (_ilha.Ativa) _ilha.AplicarConfiguracao();
+            else _ilha.Ativar();
+        }
+        catch (Exception ex)
+        {
+            // A ilha e um extra: falhar nela nao pode levar o painel junto.
+            Log.Erro("Ilha do topo", ex);
+        }
     }
 
     private void AplicarAcento()
@@ -583,6 +641,9 @@ public partial class App : Application
         Tentar(() => _bandeja.Visible = false);
         Tentar(() => _bandeja.Dispose());
         Tentar(() => _sensores.Dispose());
+        Tentar(() => _ilha?.Close());
+        Tentar(() => _midia?.Dispose());
+        Tentar(() => _volume?.Dispose());
         Tentar(() => _painel.GravarMaximos());
 
         // O ultimo trecho de consumo, entre a gravacao de 30 s e agora.

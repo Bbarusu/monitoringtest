@@ -144,6 +144,14 @@ acima de um limite em MB/s que o usuário define, na pasta que escolher.
 Acompanhar a cor de destaque do Windows (ligado, desativa a escolha manual), ou escolher entre
 seis cores. Ligar ou desligar transparência e ajustar a opacidade de 40 a 100%, com prévia.
 
+### Ilha no topo da tela
+Pílula no centro do topo, no mesmo visual do painel. Fechada: música tocando (capa e equalizador),
+temperatura de CPU e GPU, volume e, opcional, uso de RAM; um chip laranja aparece enquanto houver
+alerta de temperatura. Aberta (ao passar o mouse ou ao clicar): player com capa, controles e progresso,
+cartões de temperatura que ficam laranja acima do limite, volume com mudo, os três perfis de energia e
+atalhos para o painel e a Personalização. Avisos rápidos: volume por 2 s ao mudar, faixa nova por 3 s.
+Some em tela cheia. Ligada e configurada na Personalização; desligada por padrão.
+
 ### Componentes de energia
 As quantidades são **detectadas do hardware**; o usuário ajusta à mão apenas o que o PC não enxerga,
 como ventoinhas em controladora externa, peças com LED e bomba de water cooler. Também define

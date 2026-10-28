@@ -1616,7 +1616,10 @@ public partial class FlyoutWindow : Window
 
     private void Minimizar_Click(object sender, RoutedEventArgs e) => Esconder();
 
-    private void Personalizar_Click(object sender, RoutedEventArgs e)
+    private void Personalizar_Click(object sender, RoutedEventArgs e) => AbrirPersonalizacao();
+
+    /// <summary>Publica porque a ilha do topo tambem abre esta tela.</summary>
+    public void AbrirPersonalizacao()
     {
         // A tela aplica cor e transparencia na hora, para dar para ver o efeito
         // enquanto se mexe nos controles.
@@ -1699,7 +1702,8 @@ public partial class FlyoutWindow : Window
         _processos.Reiniciar();
     }
 
-    private void AbrirDesempenho()
+    /// <summary>Publica porque o botao Desempenho da ilha cai aqui.</summary>
+    public void AbrirDesempenho()
     {
         new DesempenhoWindow { Owner = this }.ShowDialog();
 
