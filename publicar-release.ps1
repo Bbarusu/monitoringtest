@@ -178,42 +178,53 @@ $alvo = "https://github.com/$repo/releases/latest/download/atualizacao.json"
 Write-Host ''
 Write-Host 'Conferindo pelo caminho que o app usa…'
 
-# Com tentativas: o GitHub leva alguns segundos para o caminho "latest"
-# enxergar uma release recém-criada. Sem isso, uma publicação perfeitamente
-# bem-sucedida terminaria com mensagem de erro — e já passamos tempo demais
-# nesta sessão perseguindo falhas que não eram falhas.
+# Esta conferência NÃO reprova a publicação, e isso é deliberado.
 #
-# Nada de Parar() dentro do try: exit dentro de bloco protegido é ambíguo, e a
-# mensagem certa poderia acabar substituída pela genérica do catch.
+# Quem decide se publicou é o gh, que já respondeu zero e imprimiu a URL da
+# release. O ponteiro "latest" do GitHub é atualizado depois, e demora: na
+# 0.1.3 ele levou mais que os vinte segundos que esta conferência esperava, e
+# o script reprovou uma release que estava perfeita — o terceiro caso nesta
+# sessão de eu transformar uma verificação opcional em veredito.
+#
+# Então aqui ela só informa. Confirmou, ótimo; não confirmou, diz onde olhar.
 $publicado = $null
 
-foreach ($tentativa in 1..4) {
+foreach ($tentativa in 1..6) {
     try {
-        $r = Invoke-WebRequest -Uri $alvo -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
+        $r = Invoke-WebRequest -Uri $alvo -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop
         $publicado = "$(($r.Content | ConvertFrom-Json).versao)".Trim()
         break
     }
     catch {
-        if ($tentativa -lt 4) {
-            Write-Host "  ainda não apareceu; tentando de novo em 5 s ($tentativa de 3)…"
-            Start-Sleep -Seconds 5
-        }
+        if ($tentativa -lt 6) { Start-Sleep -Seconds 10 }
     }
 }
 
-if (-not $publicado) {
-    Parar ("a release foi criada, mas $alvo não respondeu depois de 4 tentativas.`n" +
-           "Quase sempre é rascunho ou pre-release: abra`n" +
-           "https://github.com/$repo/releases e publique como versão normal.")
-}
-
-if ($publicado -ne $versao) {
-    Parar ("o caminho releases/latest devolve a versão '$publicado', e não '$versao'.`n" +
-           "Há outra release marcada como a mais recente.")
-}
-
 Write-Host ''
-Write-Host "=== Publicado: $versao está no ar ===" -ForegroundColor Green
+
+if ($publicado -eq $versao) {
+    Write-Host "=== Publicado: $versao está no ar ===" -ForegroundColor Green
+}
+elseif ($publicado) {
+    Write-Host "=== Publicado, mas confira ===" -ForegroundColor Yellow
+    Write-Host ''
+    Write-Host "O caminho releases/latest devolve a versão '$publicado', e não '$versao'."
+    Write-Host 'Há outra release marcada como a mais recente — veja se alguma ficou'
+    Write-Host 'como rascunho ou pre-release:'
+    Write-Host "  https://github.com/$repo/releases"
+}
+else {
+    Write-Host "=== Release $tag criada ===" -ForegroundColor Green
+    Write-Host ''
+    Write-Host 'O ponteiro "latest" do GitHub ainda não respondeu, o que é normal no'
+    Write-Host 'primeiro minuto. Confira daqui a pouco abrindo:'
+    Write-Host "  $alvo"
+    Write-Host ''
+    Write-Host 'Se continuar sem responder depois de alguns minutos, a release pode ter'
+    Write-Host 'ficado como rascunho ou pre-release:'
+    Write-Host "  https://github.com/$repo/releases"
+}
+
 Write-Host ''
 Write-Host 'Nas máquinas com a versão anterior, use "Procurar atualizações"'
 Write-Host 'no menu da bandeja.'
