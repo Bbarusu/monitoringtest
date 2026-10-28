@@ -21,9 +21,9 @@
             troca de um problema por outro. Aqui o conteúdo rola inteiro,
             botões incluídos: são poucas linhas e todas alcançáveis.
         -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
+        <ScrollViewer x:Name="Rolagem" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
-        <StackPanel>
+        <StackPanel x:Name="Conteudo">
 
             <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
@@ -129,7 +129,7 @@
                 aparência: ela não tem cor, tema nem transparência próprios —
                 segue o que está escolhido acima, e mexer lá repinta as duas.
             -->
-            <TextBlock Text="Ilha no topo da tela" FontSize="11" Margin="0,20,0,8"
+            <TextBlock x:Name="SecaoIlha" Text="Ilha no topo da tela" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
             <Border CornerRadius="12" Background="{DynamicResource Cartao}"
@@ -138,7 +138,7 @@
                     <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
                         <TextBlock Text="Mostrar ilha" FontSize="13" FontWeight="Medium"
                                    Foreground="{DynamicResource Texto}" />
-                        <TextBlock Text="Pílula no centro do topo com música, temperaturas e volume. Passe o mouse para abrir."
+                        <TextBlock Text="Pílula no topo da tela com música, temperaturas e volume. Passe o mouse para abrir; arraste para levá-la a outro monitor."
                                    FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
@@ -153,8 +153,11 @@
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">
                     <StackPanel>
-                        <TextBlock Text="Na pílula" FontSize="11" Margin="0,2,0,6"
+                        <TextBlock Text="Na pílula" FontSize="11" Margin="0,2,0,2"
                                    Foreground="{DynamicResource TextoFraco}" />
+                        <TextBlock Text="Sem nada marcado e nada tocando, ela vira um círculo."
+                                   FontSize="11" Margin="0,0,0,6" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextoMuitoFraco}" />
                         <Grid Margin="0,4">
                             <TextBlock Text="Música tocando" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
@@ -170,9 +173,23 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
+                            <TextBlock Text="Uso da CPU" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaCpuUso" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
                             <TextBlock Text="Temperatura da GPU" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             <CheckBox x:Name="IlhaGpu" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Uso da GPU" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaGpuUso" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
@@ -187,6 +204,27 @@
                             <TextBlock Text="Uso de RAM" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             <CheckBox x:Name="IlhaRam" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Temperatura do disco" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaDisco" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Potência total" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaPotencia" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Relógio" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaRelogio" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>

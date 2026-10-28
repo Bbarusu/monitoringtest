@@ -37,6 +37,22 @@ Personalização.
 Vem desligada. Uma janela sempre por cima de tudo não pode surgir sozinha numa
 atualização automática.
 
+Arrastar a ilha a leva para outro monitor, sempre para o topo dele e
+centralizada; a escolha fica em `IlhaMonitor`, pelo nome do dispositivo do
+Windows. Monitor desligado faz a ilha ir para o principal sem apagar a escolha.
+A posição é feita em pixels, por `SetWindowPos`, e não por `Left`/`Top` do WPF:
+entre monitores de escalas diferentes as unidades do WPF mudam no caminho e a
+conta de centralizar erraria no monitor de destino.
+
+Abrir ao passar o mouse é conferido pela posição do cursor na tela, dez vezes
+por segundo e só com a ilha visível. Por `MouseEnter`/`MouseLeave` não
+funcionava: a ilha nunca é a janela ativa, e ao mudar de tamanho o WPF dá o
+cursor como fora até ele se mexer — ela abria e fechava em seguida.
+
+Música pausada por três minutos sai da ilha; volta ao tocar ou quando o player
+anuncia outra faixa. Sem nada para mostrar, a pílula vira um círculo com um anel
+que respira devagar, a doze quadros por segundo.
+
 Não tem aparência própria: segue a cor de destaque, o tema e a transparência do
 painel, e mexer na Personalização repinta as duas.
 

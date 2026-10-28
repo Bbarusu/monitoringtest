@@ -1618,8 +1618,11 @@ public partial class FlyoutWindow : Window
 
     private void Personalizar_Click(object sender, RoutedEventArgs e) => AbrirPersonalizacao();
 
-    /// <summary>Publica porque a ilha do topo tambem abre esta tela.</summary>
-    public void AbrirPersonalizacao()
+    /// <summary>
+    /// Publica porque a ilha do topo tambem abre esta tela — e, vindo dela,
+    /// abre ja na secao da ilha.
+    /// </summary>
+    public void AbrirPersonalizacao(bool irParaIlha = false)
     {
         // A tela aplica cor e transparencia na hora, para dar para ver o efeito
         // enquanto se mexe nos controles.
@@ -1627,7 +1630,7 @@ public partial class FlyoutWindow : Window
         {
             (Application.Current as App)?.AplicarAparencia();
             AplicarTransparencia();
-        })
+        }, irParaIlha)
         { Owner = this };
 
         tela.ShowDialog();

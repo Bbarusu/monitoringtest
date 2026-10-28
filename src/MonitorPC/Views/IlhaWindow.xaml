@@ -59,13 +59,41 @@
             <Setter Property="Fill" Value="{DynamicResource Acento}" />
             <Setter Property="RenderTransformOrigin" Value="0.5,1" />
         </Style>
+        <!-- Botao redondo pequeno, para o mudo e a Personalizacao na pilula:
+             o quadrado de cantos 10 do rodape do painel destoava dentro de uma
+             ilha toda arredondada. -->
+        <Style x:Key="BotaoRedondoPequeno" TargetType="Button">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="18" Background="{DynamicResource Chip}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource Trilho}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="MiniCartao" TargetType="Border">
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="Background" Value="{DynamicResource Cartao}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
     </Window.Resources>
 
     <Border x:Name="Casca" Margin="16,6,16,28" CornerRadius="22"
             Background="{DynamicResource Fundo}"
             BorderBrush="{DynamicResource Borda}" BorderThickness="1"
-            MouseEnter="Casca_MouseEnter" MouseLeave="Casca_MouseLeave"
-            MouseLeftButtonUp="Casca_Clique">
+            PreviewMouseLeftButtonDown="Casca_Pressionada">
         <Border.Effect>
             <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Opacity="0.36" Color="Black" />
         </Border.Effect>
@@ -132,6 +160,21 @@
                     </StackPanel>
                 </Border>
 
+                <Border x:Name="ChipDisco" Style="{StaticResource ChipIlha}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource IconeChip}"
+                              Data="M5,5 L19,5 A2,2 0 0,1 21,7 L21,17 A2,2 0 0,1 19,19 L5,19 A2,2 0 0,1 3,17 L3,7 A2,2 0 0,1 5,5 Z M7,15 L7.01,15 M11,15 L17,15" />
+                        <TextBlock x:Name="TextoDisco" Style="{StaticResource TextoChip}" Text="Disco --" />
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="ChipPotencia" Style="{StaticResource ChipIlha}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource IconeChip}" Data="M13,2 L4,14 L11,14 L10,22 L19,10 L12,10 Z" />
+                        <TextBlock x:Name="TextoPotencia" Style="{StaticResource TextoChip}" Text="-- W" />
+                    </StackPanel>
+                </Border>
+
                 <Border x:Name="ChipVolume" Style="{StaticResource ChipIlha}">
                     <StackPanel Orientation="Horizontal">
                         <Path x:Name="IconeVolumeChip" Style="{StaticResource IconeChip}" />
@@ -139,11 +182,34 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Tudo desligado e nada tocando: a pílula ainda precisa de um
-                     rosto, senão vira um risco preto sem explicação. -->
-                <TextBlock x:Name="SemItens" Text="KInfo" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextoFraco}" VerticalAlignment="Center"
-                           Margin="10,0,4,0" Visibility="Collapsed" />
+                <Border x:Name="ChipRelogio" Style="{StaticResource ChipIlha}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource IconeChip}"
+                              Data="M12,3 A9,9 0 1,1 11.99,3 Z M12,7 L12,12 L15,14" />
+                        <TextBlock x:Name="TextoRelogio" Style="{StaticResource TextoChip}" Text="--:--" />
+                    </StackPanel>
+                </Border>
+
+                <Button x:Name="BotaoPersonalizarPilula" Style="{StaticResource BotaoRedondoPequeno}"
+                        Width="30" Height="30" Margin="6,0,0,0" VerticalAlignment="Center"
+                        ToolTip="Personalização" Click="Personalizar_Click">
+                    <Path Data="M12,3 A9,9 0 1,0 12,21 A2,2 0 0,0 14,19 C14,18 13,17.5 13,16.5 C13,15.5 13.7,15 15,15 L17,15 A3,3 0 0,0 20,12 C20,7 16,3 12,3 Z"
+                          Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                          Width="13" Height="13" Stretch="Uniform" />
+                </Button>
+
+                <!--
+                    Nada para mostrar: um anel, em vez de texto. A pílula vira
+                    um círculo com ele dentro — presença discreta, que ainda
+                    abre ao passar o mouse.
+                -->
+                <Grid x:Name="SemItens" Width="32" Height="32" VerticalAlignment="Center"
+                      Visibility="Collapsed">
+                    <Ellipse Width="30" Height="30" Stroke="{DynamicResource Acento}"
+                             StrokeThickness="1" Opacity="0.28" />
+                    <Ellipse x:Name="Anel" Width="21" Height="21" Stroke="{DynamicResource Acento}"
+                             StrokeThickness="3.5" RenderTransformOrigin="0.5,0.5" />
+                </Grid>
             </StackPanel>
 
             <!-- ===================== AVISO: VOLUME ====================== -->
@@ -291,13 +357,51 @@
                     </Border>
                 </UniformGrid>
 
+                <!-- Memoria, disco e energia -->
+                <UniformGrid Columns="3" Margin="0,12,0,0">
+                    <Border Style="{StaticResource MiniCartao}" Margin="0,0,6,0">
+                        <StackPanel>
+                            <TextBlock x:Name="RotuloRam" Text="RAM" FontSize="11"
+                                       Foreground="{DynamicResource TextoFraco}" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock x:Name="ValorRam" Text="--" FontSize="24" FontWeight="Light"
+                                           FontFamily="{StaticResource FonteNumero}" Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="%" FontSize="12" Margin="3,4,0,0" VerticalAlignment="Top"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource MiniCartao}" Margin="6,0,6,0">
+                        <StackPanel>
+                            <TextBlock Text="Disco" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock x:Name="ValorDisco" Text="--" FontSize="24" FontWeight="Light"
+                                           FontFamily="{StaticResource FonteNumero}" Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="°C" FontSize="12" Margin="3,4,0,0" VerticalAlignment="Top"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource MiniCartao}" Margin="6,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Energia" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock x:Name="ValorPotencia" Text="--" FontSize="24" FontWeight="Light"
+                                           FontFamily="{StaticResource FonteNumero}" Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="W" FontSize="12" Margin="3,4,0,0" VerticalAlignment="Top"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
                 <!-- Volume -->
                 <Border x:Name="BlocoVolume" Margin="0,12,0,0" CornerRadius="12" Padding="12"
                         Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                     <StackPanel>
                         <Grid>
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource BotaoIcone}" ToolTip="Silenciar ou voltar o som"
+                                <Button Style="{StaticResource BotaoRedondoPequeno}" ToolTip="Silenciar ou voltar o som"
                                         Click="Mudo_Click">
                                     <Path x:Name="IconeMudo" Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
                                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
@@ -336,14 +440,14 @@
                                    Foreground="{DynamicResource Icone}" VerticalAlignment="Center" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Style="{StaticResource BotaoIcone}" ToolTip="Abrir o painel completo"
+                        <Button Style="{StaticResource BotaoRedondoPequeno}" ToolTip="Abrir o painel completo"
                                 Click="AbrirPainel_Click">
                             <Path Data="M14,4 L20,4 L20,10 M10,14 L20,4 M19,14 L19,19 A1,1 0 0,1 18,20 L5,20 A1,1 0 0,1 4,19 L4,6 A1,1 0 0,1 5,5 L10,5"
                                   Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
                                   StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                                   Width="16" Height="16" Stretch="Uniform" />
                         </Button>
-                        <Button Style="{StaticResource BotaoIcone}" ToolTip="Personalização" Margin="8,0,0,0"
+                        <Button Style="{StaticResource BotaoRedondoPequeno}" ToolTip="Personalização" Margin="8,0,0,0"
                                 Click="Personalizar_Click">
                             <Path Data="M12,3 A9,9 0 1,0 12,21 A2,2 0 0,0 14,19 C14,18 13,17.5 13,16.5 C13,15.5 13.7,15 15,15 L17,15 A3,3 0 0,0 20,12 C20,7 16,3 12,3 Z"
                                   Stroke="{DynamicResource Icone}" StrokeThickness="1.8"

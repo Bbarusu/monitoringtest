@@ -22,9 +22,30 @@ public partial class PersonalizacaoWindow : Window
     private readonly Action _aoMudar;
     private bool _carregando = true;
 
-    public PersonalizacaoWindow(AppConfig cfg, Action aoMudar)
+    /// <param name="irParaIlha">
+    /// Aberta pela propria ilha: a tela ja comeca rolada ate a secao dela, em
+    /// vez de no tema, que nao e o que a pessoa veio mudar.
+    /// </param>
+    public PersonalizacaoWindow(AppConfig cfg, Action aoMudar, bool irParaIlha = false)
     {
         InitializeComponent();
+
+        if (irParaIlha)
+        {
+            // Depois do layout: antes dele a secao ainda nao tem posicao.
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() =>
+            {
+                try
+                {
+                    var y = SecaoIlha.TransformToAncestor(Conteudo).Transform(new Point(0, 0)).Y;
+                    Rolagem.ScrollToVerticalOffset(y);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Sem arvore visual montada: fica no topo, que tambem serve.
+                }
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
+        }
         Janelas.Acompanhar(this);
         _cfg = cfg;
         _aoMudar = aoMudar;
@@ -45,6 +66,11 @@ public partial class PersonalizacaoWindow : Window
         IlhaGpu.IsChecked = _cfg.IlhaGpu;
         IlhaVolume.IsChecked = _cfg.IlhaVolume;
         IlhaRam.IsChecked = _cfg.IlhaRam;
+        IlhaCpuUso.IsChecked = _cfg.IlhaCpuUso;
+        IlhaGpuUso.IsChecked = _cfg.IlhaGpuUso;
+        IlhaDisco.IsChecked = _cfg.IlhaDisco;
+        IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
+        IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
         IlhaAoPassar.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
         IlhaAoClicar.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
         IlhaTelaCheia.IsChecked = _cfg.IlhaEsconderEmTelaCheia;
@@ -148,6 +174,11 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaGpu = IlhaGpu.IsChecked == true;
         _cfg.IlhaVolume = IlhaVolume.IsChecked == true;
         _cfg.IlhaRam = IlhaRam.IsChecked == true;
+        _cfg.IlhaCpuUso = IlhaCpuUso.IsChecked == true;
+        _cfg.IlhaGpuUso = IlhaGpuUso.IsChecked == true;
+        _cfg.IlhaDisco = IlhaDisco.IsChecked == true;
+        _cfg.IlhaPotencia = IlhaPotencia.IsChecked == true;
+        _cfg.IlhaRelogio = IlhaRelogio.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
         _cfg.IlhaEsconderEmTelaCheia = IlhaTelaCheia.IsChecked == true;
         _cfg.IlhaAvisoDeVolume = IlhaAvisoVolume.IsChecked == true;

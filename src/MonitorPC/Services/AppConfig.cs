@@ -157,6 +157,18 @@ public sealed class AppConfig
     public bool IlhaGpu { get; set; } = true;
     public bool IlhaVolume { get; set; } = true;
     public bool IlhaRam { get; set; }
+    public bool IlhaCpuUso { get; set; }
+    public bool IlhaGpuUso { get; set; }
+    public bool IlhaDisco { get; set; }
+    public bool IlhaPotencia { get; set; }
+    public bool IlhaRelogio { get; set; }
+
+    /// <summary>
+    /// Monitor da ilha, pelo nome do dispositivo do Windows ("\\.\DISPLAY2").
+    /// Vazio e o principal. Monitor desligado faz a ilha ir para o principal
+    /// sem apagar a escolha: religado, ela volta para ele.
+    /// </summary>
+    public string? IlhaMonitor { get; set; }
 
     /// <summary>Abre ao passar o mouse; falso, so ao clicar.</summary>
     public bool IlhaAbrirAoPassarMouse { get; set; } = true;

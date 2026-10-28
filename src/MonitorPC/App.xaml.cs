@@ -455,7 +455,7 @@ public partial class App : Application
                 _ilha.PedirPersonalizacao += () =>
                 {
                     _painel.Mostrar();
-                    _painel.AbrirPersonalizacao();
+                    _painel.AbrirPersonalizacao(irParaIlha: true);
                 };
                 _ilha.PedirDesempenho += () =>
                 {
