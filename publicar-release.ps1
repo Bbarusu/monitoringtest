@@ -178,24 +178,44 @@ $alvo = "https://github.com/$repo/releases/latest/download/atualizacao.json"
 Write-Host ''
 Write-Host 'Conferindo pelo caminho que o app usa…'
 
-try {
-    $r = Invoke-WebRequest -Uri $alvo -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
-    $publicado = "$(($r.Content | ConvertFrom-Json).versao)".Trim()
+# Com tentativas: o GitHub leva alguns segundos para o caminho "latest"
+# enxergar uma release recém-criada. Sem isso, uma publicação perfeitamente
+# bem-sucedida terminaria com mensagem de erro — e já passamos tempo demais
+# nesta sessão perseguindo falhas que não eram falhas.
+#
+# Nada de Parar() dentro do try: exit dentro de bloco protegido é ambíguo, e a
+# mensagem certa poderia acabar substituída pela genérica do catch.
+$publicado = $null
 
-    if ($publicado -ne $versao) {
-        Parar "o caminho releases/latest devolve a versão '$publicado', e não '$versao'.`nHá outra release marcada como a mais recente."
+foreach ($tentativa in 1..4) {
+    try {
+        $r = Invoke-WebRequest -Uri $alvo -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop
+        $publicado = "$(($r.Content | ConvertFrom-Json).versao)".Trim()
+        break
     }
-
-    Write-Host ''
-    Write-Host "=== Publicado: $versao está no ar ===" -ForegroundColor Green
-    Write-Host ''
-    Write-Host 'Nas máquinas com a versão anterior, use "Procurar atualizações"'
-    Write-Host 'no menu da bandeja.'
-    Write-Host ''
-    exit 0
+    catch {
+        if ($tentativa -lt 4) {
+            Write-Host "  ainda não apareceu; tentando de novo em 5 s ($tentativa de 3)…"
+            Start-Sleep -Seconds 5
+        }
+    }
 }
-catch {
-    Parar ("a release foi criada, mas $alvo não responde.`n" +
+
+if (-not $publicado) {
+    Parar ("a release foi criada, mas $alvo não respondeu depois de 4 tentativas.`n" +
            "Quase sempre é rascunho ou pre-release: abra`n" +
            "https://github.com/$repo/releases e publique como versão normal.")
 }
+
+if ($publicado -ne $versao) {
+    Parar ("o caminho releases/latest devolve a versão '$publicado', e não '$versao'.`n" +
+           "Há outra release marcada como a mais recente.")
+}
+
+Write-Host ''
+Write-Host "=== Publicado: $versao está no ar ===" -ForegroundColor Green
+Write-Host ''
+Write-Host 'Nas máquinas com a versão anterior, use "Procurar atualizações"'
+Write-Host 'no menu da bandeja.'
+Write-Host ''
+exit 0
