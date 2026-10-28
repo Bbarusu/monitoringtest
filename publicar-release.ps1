@@ -43,11 +43,20 @@ function Parar($mensagem) {
 
 # Chama o gh e devolve código e saída juntos. Existe para o stderr do gh ser
 # dado, e não acidente.
+#  O nome NÃO pode ser "Gh". O PowerShell não diferencia maiúsculas e resolve
+#  funções antes de programas externos, então uma função chamada Gh sequestra
+#  toda chamada a "gh" — inclusive a de dentro dela mesma, que passa a ser
+#  recursão em vez de chamar o GitHub CLI. Foi o que aconteceu: o script
+#  imprimiu o próprio objeto de retorno no lugar da saída do gh.
+#
+#  Por isso também o executável é chamado pelo caminho resolvido, e não pelo
+#  nome: caminho não é ambíguo com nada.
+#
 #  O parâmetro é declarado como lista, e não deixado para $args: argumentos que
 #  começam com "-", como --repo, correm o risco de ser lidos como nome de
 #  parâmetro da própria função.
-function Gh([string[]]$Argumentos) {
-    $saida = & gh @Argumentos 2>&1 | Out-String
+function ChamarGh([string[]]$Argumentos) {
+    $saida = & $script:ghExe @Argumentos 2>&1 | Out-String
     return [pscustomobject]@{ Codigo = $LASTEXITCODE; Saida = $saida.Trim() }
 }
 
@@ -78,7 +87,12 @@ if ($versao -notmatch '^\d+\.\d+\.\d+$') {
 $tag = "v$versao"
 
 # --- O gh precisa estar instalado e autenticado ----------------------------
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+# -CommandType Application é parte do conserto: sem isso o Get-Command acharia
+# a própria função deste script e diria que o gh existe quando não existe.
+$comandoGh = Get-Command gh -CommandType Application -ErrorAction SilentlyContinue
+$script:ghExe = $comandoGh.Source
+
+if (-not $comandoGh) {
     Write-Host 'O GitHub CLI (gh) não está instalado ou não está no PATH.' -ForegroundColor Yellow
     Write-Host ''
     Write-Host 'Dá para publicar pelo navegador:'
@@ -113,14 +127,14 @@ Write-Host ''
 #  Código 0 aqui significa "achei", que é o caso ruim. Qualquer outro código é
 #  "não existe", que é o que queremos — inclusive com o gh escrevendo
 #  "release not found" no stderr.
-if ((Gh @('release','view',$tag,'--repo',$repo)).Codigo -eq 0) {
+if ((ChamarGh @('release','view',$tag,'--repo',$repo)).Codigo -eq 0) {
     Parar ("a release $tag já existe em $repo.`n" +
            "Suba a versão no Directory.Build.props, rode o publicar.cmd e volte aqui.`n" +
            "Republicar o mesmo número não adianta: o app compara versões, e igual não é mais novo.")
 }
 
 # --- Rascunhos não aparecem por tag, e atrapalham -------------------------
-$lista = Gh @('release','list','--repo',$repo,'--limit','30')
+$lista = ChamarGh @('release','list','--repo',$repo,'--limit','30')
 
 if ($lista.Codigo -eq 0 -and $lista.Saida -match 'Draft') {
     Write-Host 'Aviso: há rascunho de release neste repositório.' -ForegroundColor Yellow
@@ -147,7 +161,7 @@ Write-Host ''
 
 # Transmitido linha a linha para o progresso aparecer durante o envio, e
 # convertido para texto para o stderr do gh não sair pintado de erro.
-& gh @argumentos 2>&1 | ForEach-Object { Write-Host $_ }
+& $ghExe @argumentos 2>&1 | ForEach-Object { Write-Host $_ }
 $codigo = $LASTEXITCODE
 
 if ($codigo -ne 0) {
