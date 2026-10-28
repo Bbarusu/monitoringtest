@@ -1143,21 +1143,73 @@ public partial class FlyoutWindow : Window
         _atualizacaoOferecida = manifesto;
 
         AtualizacaoTitulo.Text = $"Versão {manifesto.Versao} disponível";
+        AtualizacaoDetalhe.Text = $"Você está na {AtualizacaoService.VersaoAtual}.";
 
-        var notas = string.IsNullOrWhiteSpace(manifesto.Notas)
-            ? ""
-            : $"\n\n{manifesto.Notas!.Trim()}";
+        MontarNovidades(manifesto.Notas);
 
-        // O aviso do Windows precisa ser dito aqui, antes de aparecer. O
-        // executavel nao e assinado — assinatura exige certificado pago —, e
-        // quem ve "editor desconhecido" sem ter sido avisado conclui, com
-        // razao, que pegou algo errado.
-        AtualizacaoDetalhe.Text =
-            $"Você tem a {AtualizacaoService.VersaoAtual}. O arquivo é conferido por " +
-            "SHA-256 antes de rodar. O Windows vai mostrar um aviso de editor " +
-            "desconhecido, porque o instalador não é assinado — é esperado." + notas;
-
+        AtualizacaoEstado.Visibility = Visibility.Collapsed;
         AvisoAtualizacao.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>
+    /// As notas da versao viram uma lista, uma novidade por linha.
+    ///
+    /// O arquivo de notas e escrito em linhas curtas justamente para isso:
+    /// despejado como paragrafo unico, dentro de um painel de 432 px, vira um
+    /// bloco que ninguem le. Linhas em branco separam itens e sao descartadas.
+    /// </summary>
+    private void MontarNovidades(string? notas)
+    {
+        ListaDeNovidades.Children.Clear();
+
+        var linhas = (notas ?? "")
+            .Replace("\r\n", "\n")
+            .Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0)
+            .ToList();
+
+        if (linhas.Count == 0)
+        {
+            CaixaDeNovidades.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        foreach (var linha in linhas)
+        {
+            var item = new Grid { Margin = new Thickness(0, 0, 0, 5) };
+            item.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            item.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var ponto = new TextBlock
+            {
+                Text = "•",
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 7, 0),
+                VerticalAlignment = VerticalAlignment.Top
+            };
+            ponto.SetResourceReference(TextBlock.ForegroundProperty, "Acento");
+
+            // Remove o traço de quem escreveu a nota já em lista: o marcador
+            // é desenhado aqui, e dois seguidos ficariam feios.
+            var texto = new TextBlock
+            {
+                Text = linha.TrimStart('-', '*', '•', ' '),
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap,
+                LineHeight = 15
+            };
+            texto.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
+            Grid.SetColumn(ponto, 0);
+            Grid.SetColumn(texto, 1);
+            item.Children.Add(ponto);
+            item.Children.Add(texto);
+
+            ListaDeNovidades.Children.Add(item);
+        }
+
+        CaixaDeNovidades.Visibility = Visibility.Visible;
     }
 
     private async void Atualizar_Click(object sender, RoutedEventArgs e)
@@ -1176,8 +1228,16 @@ public partial class FlyoutWindow : Window
         BotaoAtualizar.Content = "Cancelar";
         BotaoAdiarAtualizacao.IsEnabled = false;
 
+        // O estado vai na sua própria linha, e não no subtítulo: o subtítulo diz
+        // qual versão você tem, e isso continua verdade durante o download.
+        void Estado(string texto)
+        {
+            AtualizacaoEstado.Text = texto;
+            AtualizacaoEstado.Visibility = Visibility.Visible;
+        }
+
         var progresso = new Progress<double>(fracao =>
-            AtualizacaoDetalhe.Text = $"Baixando… {fracao * 100:F0}%");
+            Estado($"Baixando… {fracao * 100:F0}%"));
 
         try
         {
@@ -1188,22 +1248,21 @@ public partial class FlyoutWindow : Window
 
             if (cancelamento.IsCancellationRequested)
             {
-                AtualizacaoDetalhe.Text = "Download cancelado.";
+                Estado("Download cancelado.");
                 return;
             }
 
             if (arquivo is null)
             {
-                AtualizacaoDetalhe.Text = recusa
-                    ?? "Não foi possível baixar a atualização.";
+                Estado(recusa ?? "Não foi possível baixar a atualização.");
                 return;
             }
 
-            AtualizacaoDetalhe.Text = "Arquivo conferido. Abrindo o instalador…";
+            Estado("Arquivo conferido. Abrindo o instalador…");
 
             if (!AtualizacaoService.Executar(arquivo))
-                AtualizacaoDetalhe.Text = "O instalador foi baixado e conferido, mas não " +
-                                          "abriu. Ele está na pasta temporária.";
+                Estado("O instalador foi baixado e conferido, mas não abriu. " +
+                       "Ele está na pasta temporária.");
         }
         finally
         {

@@ -1,12 +1,7 @@
-Rolagem no painel, para tela de notebook. A aba Disco passava do fim da tela
-e ficava cortada; agora o conteúdo rola e o rodapé fica fixo, então Ajustes,
-Personalização e Todos os sensores continuam ao alcance. A altura das janelas
-também passou a respeitar a área útil do monitor.
+O aviso de atualização ficou mais claro, com as novidades em lista.
 
-As telas de Modo Desempenho, Teste de Estresse e Personalização ganharam
-rolagem pelo mesmo motivo.
+A aba Disco não fica mais cortada em telas menores: o painel agora rola, e os botões do rodapé continuam sempre visíveis.
 
-A verificação de atualização passou a distinguir "não há nada novo" de "não
-deu para verificar". Antes as duas davam a mesma resposta, e o app dizia que
-você já tinha a versão mais recente mesmo quando não havia conseguido
-perguntar.
+As telas de Modo Desempenho, Teste de Estresse e Personalização também passaram a rolar.
+
+Quando o app não consegue consultar se há versão nova, ele avisa — antes dizia que estava tudo em dia.
