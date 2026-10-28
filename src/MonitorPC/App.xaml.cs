@@ -210,24 +210,36 @@ public partial class App : Application
                     return;
             }
 
-            var manifesto = await _atualizacoes.ProcurarAsync();
+            var procura = await _atualizacoes.ProcurarAsync();
 
-            _cfg.UltimaVerificacaoDeAtualizacao = DateTime.UtcNow;
-            _cfg.Salvar();
+            // So conta como verificado o que de fato foi verificado. Gravar a
+            // data depois de uma falha trancaria a proxima tentativa por um
+            // dia inteiro por causa de uma queda de rede de um minuto.
+            if (procura.Verificou)
+            {
+                _cfg.UltimaVerificacaoDeAtualizacao = DateTime.UtcNow;
+                _cfg.Salvar();
+            }
 
             await Dispatcher.InvokeAsync(() =>
             {
-                if (manifesto is not null)
+                if (procura.TemNovidade)
                 {
-                    _painel.OferecerAtualizacao(manifesto);
+                    _painel.OferecerAtualizacao(procura.Manifesto!);
                     _painel.Mostrar();
+                    return;
                 }
-                else if (pedidaPeloUsuario)
-                {
-                    _painel.Mostrar();
-                    _painel.Recado($"Você já tem a versão mais recente " +
-                                   $"({AtualizacaoService.VersaoAtual}).");
-                }
+
+                // Procura automatica que nao encontrou nada e silencio, deu
+                // certo ou nao: quem nao pediu nada nao precisa saber que o app
+                // olhou, nem que a internet caiu.
+                if (!pedidaPeloUsuario) return;
+
+                _painel.Mostrar();
+
+                _painel.Recado(procura.Verificou
+                    ? $"Você já tem a versão mais recente ({AtualizacaoService.VersaoAtual})."
+                    : $"Não foi possível verificar: {procura.Motivo}.");
             });
         }
         catch (Exception ex)

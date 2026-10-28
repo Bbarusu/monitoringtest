@@ -1,4 +1,5 @@
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -28,6 +29,30 @@ public sealed record Manifesto
         && Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
         && !string.IsNullOrWhiteSpace(Sha256)
         && Sha256.Trim().Length == 64;
+}
+
+/// <summary>
+/// O que uma procura por atualizacao descobriu.
+///
+/// Tres estados, e nao dois, porque "nao ha nada novo" e "nao deu para saber"
+/// sao respostas diferentes e a primeira versao disto as juntava num <c>null</c>.
+/// O resultado era o app dizer "você já tem a versão mais recente" quando na
+/// verdade nem tinha conseguido perguntar — afirmacao confiante sobre o que nao
+/// se sabe, que e o pior defeito que um aviso pode ter.
+/// </summary>
+public sealed record Procura(Manifesto? Manifesto, bool Verificou, string? Motivo)
+{
+    /// <summary>Ha versao nova.</summary>
+    public static Procura Encontrou(Manifesto manifesto) => new(manifesto, true, null);
+
+    /// <summary>Perguntou e nao ha nada novo.</summary>
+    public static Procura JaEstaAtualizado() => new(null, true, null);
+
+    /// <summary>Nao deu para perguntar. <paramref name="motivo"/> completa
+    /// "Não foi possível verificar: …".</summary>
+    public static Procura Impedida(string motivo) => new(null, false, motivo);
+
+    public bool TemNovidade => Manifesto is not null;
 }
 
 /// <summary>
@@ -76,35 +101,55 @@ public sealed class AtualizacaoService
     /// Devolve o manifesto quando ha versao mais nova, ou <c>null</c> quando
     /// nao ha, quando nao deu para saber, ou quando o manifesto nao serve.
     /// </summary>
-    public async Task<Manifesto?> ProcurarAsync(CancellationToken ct = default)
+    public async Task<Procura> ProcurarAsync(CancellationToken ct = default)
     {
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd($"KInfo/{Versao.Texto}");
 
-            var texto = await http.GetStringAsync(UrlDoManifesto, ct);
+            using var resposta = await http.GetAsync(UrlDoManifesto, ct);
+
+            // 404 e o caso de nao haver release publicada, que e diferente de
+            // estar atualizado e diferente de falha de rede. Quem testa precisa
+            // dessa distincao: foi exatamente ela que faltou da primeira vez.
+            if (resposta.StatusCode == HttpStatusCode.NotFound)
+                return Procura.Impedida(
+                    "não há nenhuma versão publicada no repositório de releases");
+
+            if (!resposta.IsSuccessStatusCode)
+                return Procura.Impedida(
+                    $"o servidor respondeu {(int)resposta.StatusCode}");
+
+            var texto = await resposta.Content.ReadAsStringAsync(ct);
             var manifesto = JsonSerializer.Deserialize<Manifesto>(texto, Formato);
 
             if (manifesto is null || !manifesto.Utilizavel)
             {
-                Log.Nota("Manifesto de atualização ausente ou incompleto; nada a oferecer.");
-                return null;
+                Log.Nota("Manifesto de atualização publicado está incompleto.");
+                return Procura.Impedida("o arquivo de atualização publicado está incompleto");
             }
 
-            return Versao.EhMaisNova(manifesto.Versao) ? manifesto : null;
+            return Versao.EhMaisNova(manifesto.Versao)
+                ? Procura.Encontrou(manifesto)
+                : Procura.JaEstaAtualizado();
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
-                                      or JsonException)
+        catch (HttpRequestException)
         {
-            // Sem rede, sem release publicada ainda, ou JSON quebrado. Nenhuma
-            // das tres e defeito nosso nem merece incomodar o usuario.
-            return null;
+            return Procura.Impedida("não foi possível alcançar a internet agora");
+        }
+        catch (TaskCanceledException)
+        {
+            return Procura.Impedida("a consulta demorou demais e foi interrompida");
+        }
+        catch (JsonException)
+        {
+            return Procura.Impedida("o arquivo de atualização publicado não pôde ser lido");
         }
         catch (Exception ex)
         {
             Log.Erro("Procurar atualização", ex);
-            return null;
+            return Procura.Impedida("houve um erro na verificação; o motivo ficou no erro.log");
         }
     }
 
