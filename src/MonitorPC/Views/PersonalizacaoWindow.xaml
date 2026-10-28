@@ -14,6 +14,15 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
+        <!--
+            Rolagem para tela baixa. Esta janela cresce com o conteúdo, e num
+            notebook o conteúdo passa da altura útil; Janelas.LimitarAltura põe
+            o teto, e sem rolagem o teto cortaria em vez de passar da tela —
+            troca de um problema por outro. Aqui o conteúdo rola inteiro,
+            botões incluídos: são poucas linhas e todas alcançáveis.
+        -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
         <StackPanel>
 
             <!-- Cabecalho -->
@@ -119,5 +128,6 @@
                     Content="Restaurar padrão" Click="Restaurar_Click" />
 
         </StackPanel>
+        </ScrollViewer>
     </Border>
 </Window>

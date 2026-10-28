@@ -43,6 +43,8 @@ public static class Janelas
         {
             janela.UpdateLayout();
 
+            LimitarAltura(janela);
+
             // Sem altura ainda, qualquer conta pela base erra: espera o layout.
             if (janela.ActualHeight <= 0) return;
 
@@ -72,6 +74,42 @@ public static class Janelas
         {
             EmCurso.Remove(janela);
         }
+    }
+
+    /// <summary>
+    /// Impede a janela de passar da altura util do monitor.
+    ///
+    /// Todas as janelas do app usam <c>SizeToContent="Height"</c>: elas crescem
+    /// com o conteudo, o que e certo numa tela grande e vira defeito numa
+    /// pequena. Num notebook de tela baixa a aba Disco passava do fim da tela, e
+    /// <see cref="Conter"/> nao resolvia porque ele reposiciona e nunca encurta
+    /// — encostado no topo, o excedente continuava fora do alcance.
+    ///
+    /// E o teto daqui que faz a rolagem entrar em acao: sem ele, a janela pede
+    /// a altura inteira do conteudo, o ScrollViewer recebe tudo que pediu e
+    /// nunca mostra barra.
+    ///
+    /// Fica aqui, e nao na janela, porque e aqui que mora o conhecimento de qual
+    /// monitor e qual a area util dele — e porque vale para todas as janelas, e
+    /// nao so para o painel que levantou o problema.
+    /// </summary>
+    public static void LimitarAltura(Window janela)
+    {
+        // AreaDoMonitor ja devolve em unidades do WPF, convertidas pela escala
+        // do monitor. Misturar com pixel fisico aqui faria o teto nao valer
+        // nada numa tela com escala de 150%.
+        var teto = AreaDoMonitor(janela).Height;
+
+        // Um piso evita que uma leitura estranha da area util deixe a janela
+        // inutilizavel.
+        if (teto < 240) return;
+
+        // Reatribuir a cada ancoragem dispararia layout a cada leitura de
+        // sensor, porque SizeChanged chama Ancorar.
+        if (Math.Abs(janela.MaxHeight - teto) < 0.5) return;
+
+        janela.MaxHeight = teto;
+        janela.UpdateLayout();
     }
 
     /// <summary>

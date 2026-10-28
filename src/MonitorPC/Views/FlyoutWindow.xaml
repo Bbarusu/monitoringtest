@@ -15,6 +15,31 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
+        <!--
+            Duas faixas: o conteúdo rola, o rodapé fica.
+
+            O painel cresce com o conteúdo, e num notebook de tela baixa a aba
+            Disco passava do fim da tela. A rolagem resolve o alcance, mas se o
+            rodapé rolasse junto, a tela cortada levaria embora justamente
+            Ajustes, Personalização e Todos os sensores — que são as saídas.
+            Por isso ele fica numa faixa própria, sempre visível.
+
+            O teto de altura que faz a barra aparecer vem de
+            Janelas.LimitarAltura: sem ele a janela pede a altura inteira do
+            conteúdo, o ScrollViewer recebe tudo que pediu e nunca rola.
+
+            O conteúdo abaixo manteve a indentação de antes, de propósito:
+            reindentar setecentas linhas esconderia a mudança de verdade no
+            meio de um diff ilegível.
+        -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
         <StackPanel>
 
             <!-- Cabecalho: o titulo e os chips mudam conforme a aba -->
@@ -787,8 +812,11 @@
                 </Button>
             </StackPanel>
 
+        </StackPanel>
+            </ScrollViewer>
+
             <!-- ========================= RODAPE ========================== -->
-            <Grid Margin="0,16,0,0">
+            <Grid Grid.Row="1" Margin="0,16,0,0">
                 <TextBlock x:Name="Status" VerticalAlignment="Center" FontSize="12"
                            Foreground="{DynamicResource Icone}" Text="Sensores ativos" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -812,6 +840,6 @@
                 </StackPanel>
             </Grid>
 
-        </StackPanel>
+        </Grid>
     </Border>
 </Window>
