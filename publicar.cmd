@@ -97,6 +97,9 @@ echo Para instalar, execute o arquivo acima. Ele pedira confirmacao do Windows
 echo uma vez, porque escreve em Arquivos de Programas e registra a tarefa que
 echo da acesso aos sensores.
 echo.
+echo Para publicar esta versao e as outras maquinas encontrarem:
+echo   publicar-release.cmd
+echo.
 exit /b 0
 
 :falhou

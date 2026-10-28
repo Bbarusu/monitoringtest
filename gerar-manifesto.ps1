@@ -1,4 +1,4 @@
-# ---------------------------------------------------------------------------
+﻿# ---------------------------------------------------------------------------
 #  Gera o atualizacao.json ao lado do instalador.
 #
 #  Chamado pelo publicar.cmd. É o arquivo que o app baixa para saber se existe
@@ -66,15 +66,12 @@ Write-Host ''
 Write-Host "  versão : $versao"
 Write-Host "  sha256 : $hash"
 Write-Host ''
-Write-Host 'Para publicar, crie a release com a TAG v' -NoNewline
-Write-Host "$versao" -NoNewline
-Write-Host ' no repositório público e anexe os dois arquivos:'
+Write-Host 'Para publicar, rode:' -ForegroundColor Cyan
+Write-Host '  publicar-release.cmd'
 Write-Host ''
-Write-Host "  gh release create v$versao ``"
-Write-Host "    `"$exe`" ``"
-Write-Host "    `"$destino`" ``"
-Write-Host "    --repo Bbarusu/kinfo-releases --title `"KInfo $versao`" --notes-file notas-da-versao.md"
-Write-Host ''
-Write-Host 'A url dentro do manifesto aponta para essa tag, então ela precisa'
-Write-Host 'bater. O app lê o manifesto por releases/latest/download.'
+Write-Host 'Não rode o gh à mão daqui. Sem --repo ele usa o repositório desta'
+Write-Host 'pasta, que é o do código-fonte e é privado — a release vai para o'
+Write-Host 'lugar que o app não consegue ler. O script cuida disso, anexa os'
+Write-Host 'dois arquivos e não marca como pre-release, que o caminho'
+Write-Host 'releases/latest ignora.'
 Write-Host ''
