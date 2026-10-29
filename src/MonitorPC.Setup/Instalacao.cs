@@ -555,10 +555,10 @@ public static class Instalacao
             bool? Lido(string nome) => chave?.GetValue(nome) is int v ? v != 0 : null;
 
             var tarefa = Lido("OpcaoSensores")
-                         ?? Executar("schtasks.exe", $"/Query /TN "{NomeDaTarefa}"").Codigo == 0;
+                         ?? Executar("schtasks.exe", $"/Query /TN \"{NomeDaTarefa}\"").Codigo == 0;
 
             var logon = Lido("OpcaoLogon") ?? (tarefa
-                ? Executar("schtasks.exe", $"/Query /TN "{NomeDaTarefa}" /XML").Saida.Contains("LogonTrigger")
+                ? Executar("schtasks.exe", $"/Query /TN \"{NomeDaTarefa}\" /XML").Saida.Contains("LogonTrigger")
                 : File.Exists(AtalhoDeInicializacao()));
 
             var atalho = Lido("OpcaoAtalho") ?? File.Exists(AtalhoDaAreaDeTrabalho());
