@@ -123,6 +123,21 @@ public sealed class SensorService : IDisposable
 
     public void Iniciar()
     {
+        // Antes de abrir a biblioteca, e nao depois: o PawnIO fica registrado
+        // e parado ate alguem pedir para carregar, e a biblioteca nao pede —
+        // ela tenta usar e falha calada. Aberta com o driver parado, ela cria
+        // os sensores vazios e nao os preenche nunca mais, nem quando o driver
+        // sobe depois.
+        //
+        // Foi o que fez a leitura inteira morrer no primeiro reinicio de uma
+        // maquina onde ela funcionava: logo apos instalar, o PawnIO fica
+        // rodando; depois do reboot, volta parado.
+        var pawnIo = Diagnostico.GarantirPawnIo();
+
+        // "Ja estava rodando" e o caso normal e nao merece uma linha por
+        // abertura. O resto merece: ou o app fez algo, ou nao conseguiu.
+        if (pawnIo != "já estava rodando") Log.Nota($"PawnIO: {pawnIo}.");
+
         _pc.Open();
         _pc.Accept(_visitor);
 

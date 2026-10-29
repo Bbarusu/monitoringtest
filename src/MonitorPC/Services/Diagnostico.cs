@@ -181,10 +181,77 @@ public static class Diagnostico
     /// E o mesmo erro que o aviso do painel cometia antes: conferir que a coisa
     /// existe e concluir que ela funciona.
     /// </summary>
-    public static string EstadoDoPawnIo { get; } = ConsultarEstadoDoPawnIo();
+    /// <remarks>
+    /// Consultado a cada leitura, e nao guardado: o app sobe o driver quando
+    /// ele esta parado, e um valor de antes dessa tentativa faria o relatorio
+    /// descrever um estado que ja nao existe.
+    /// </remarks>
+    public static string EstadoDoPawnIo => ConsultarEstadoDoPawnIo();
 
     private const int AcessoDeConsulta = 0x0004;      // SERVICE_QUERY_STATUS
+    private const int AcessoParaIniciar = 0x0014;     // SERVICE_START | SERVICE_QUERY_STATUS
     private const int AcessoAoGerenciador = 0x0001;   // SC_MANAGER_CONNECT
+
+    /// <summary>
+    /// Sobe o PawnIO quando ele esta registrado e parado. Devolve o que
+    /// aconteceu, para quem chama registrar.
+    ///
+    /// Existe porque o PawnIO e instalado com inicio sob demanda: ele fica
+    /// registrado e parado ate alguem pedir para carregar. A biblioteca de
+    /// sensores nao pede — ela tenta usar e falha calada —, e por isso a
+    /// leitura funcionava logo depois de instalar o PawnIO, que o deixa
+    /// rodando, e morria no primeiro reinicio, quando ele voltava parado.
+    /// Sem isto, toda maquina perde os sensores no primeiro reboot.
+    ///
+    /// Subir o driver e acao de sistema, e e deliberada: foi o nosso
+    /// instalador que o instalou, para este fim, e o app roda elevado
+    /// justamente para falar com ele. Nada e instalado nem configurado aqui —
+    /// so e carregado o que ja estava registrado.
+    /// </summary>
+    public static string GarantirPawnIo()
+    {
+        var gerenciador = IntPtr.Zero;
+        var servico = IntPtr.Zero;
+
+        try
+        {
+            gerenciador = OpenSCManager(null, null, AcessoAoGerenciador);
+            if (gerenciador == IntPtr.Zero)
+                return "não foi possível falar com o gerenciador de serviços";
+
+            servico = OpenService(gerenciador, "PawnIO", AcessoParaIniciar);
+            if (servico == IntPtr.Zero)
+                return "PawnIO não está registrado neste Windows";
+
+            var estado = new EstadoDeServico();
+            if (QueryServiceStatus(servico, ref estado) && estado.EstadoAtual == 4)
+                return "já estava rodando";
+
+            if (StartService(servico, 0, null))
+                return "iniciado pelo app";
+
+            var erro = Marshal.GetLastWin32Error();
+
+            // 1056 é ERROR_SERVICE_ALREADY_RUNNING: outro processo subiu o
+            // driver entre a conferência e a tentativa. Não é falha.
+            if (erro == 1056) return "já estava rodando";
+
+            // 5 é acesso negado, e nesse caso a causa é elevação, não o driver.
+            return erro == 5
+                ? "sem privilégio para iniciar o PawnIO"
+                : $"não foi possível iniciar o PawnIO: erro {erro} do Windows";
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Iniciar PawnIO", ex);
+            return "falha ao tentar iniciar o PawnIO";
+        }
+        finally
+        {
+            if (servico != IntPtr.Zero) CloseServiceHandle(servico);
+            if (gerenciador != IntPtr.Zero) CloseServiceHandle(gerenciador);
+        }
+    }
 
     private static string ConsultarEstadoDoPawnIo()
     {
@@ -247,6 +314,10 @@ public static class Diagnostico
     [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool QueryServiceStatus(IntPtr servico, ref EstadoDeServico estado);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool StartService(IntPtr servico, int quantosArgumentos, string[]? argumentos);
 
     [DllImport("advapi32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -352,13 +423,20 @@ public static class Diagnostico
         // ja mandou uma investigacao para o lado errado: o relatorio dizia
         // "PawnIO Instalado: True" numa maquina onde a leitura de MSR tinha
         // parado por completo depois de um reinicio.
+        // Chegar aqui com o serviço parado significa que a tentativa de subir
+        // falhou, porque o app pede isso a cada abertura. Então o recado não é
+        // mais "reinicie o PC": é dizer o que impediu.
         if (EstadoDoPawnIo.StartsWith("PARADO", StringComparison.Ordinal))
-            return "Temperatura de CPU e placa-mãe indisponíveis: o PawnIO está " +
-                   "instalado mas não carregou. É o driver que dá acesso a esses " +
-                   "sensores, e registrado sem estar rodando ele não lê nada. " +
-                   "Reiniciar o PC costuma resolver; se voltar a acontecer, " +
-                   "reinstale o PawnIO em pawnio.eu. Placa de vídeo, discos, " +
-                   "memória e uso de CPU não dependem dele e continuam normais.";
+            return Elevado
+                ? "Temperatura de CPU e placa-mãe indisponíveis: o PawnIO está " +
+                  "instalado, o app tentou carregá-lo e o Windows recusou. O erro " +
+                  "exato ficou no erro.log. Reinstalar o PawnIO em pawnio.eu " +
+                  "costuma resolver. Placa de vídeo, discos, memória e uso de CPU " +
+                  "não dependem dele e continuam normais."
+                : "Temperatura de CPU e placa-mãe indisponíveis: o PawnIO está " +
+                  "instalado mas parado, e carregá-lo exige privilégio de " +
+                  "administrador, que este app não tem agora. Pelo atalho " +
+                  "instalado isso acontece sozinho.";
 
         if (EstadoDoPawnIo == "não registrado")
             return "Temperatura de CPU e placa-mãe indisponíveis: o serviço do " +
