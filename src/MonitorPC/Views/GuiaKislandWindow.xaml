@@ -1,0 +1,350 @@
+<Window x:Class="MonitorPC.Views.GuiaKislandWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Conhecendo a Kisland"
+        Width="520" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
+        FontFamily="{StaticResource FonteUI}">
+
+    <!--
+        O guia da Kisland: cinco passos, cada um com uma prévia desenhada e o
+        controle de verdade. O que se mexe aqui vale na hora — não é demonstração,
+        é a própria configuração, então ninguém precisa repetir tudo depois na
+        Personalização.
+    -->
+
+    <Window.Resources>
+        <Style x:Key="ChipGuia" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Chip}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Trilho}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="9,4" />
+            <Setter Property="Margin" Value="5,0,0,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="TextoChipGuia" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource Texto}" />
+        </Style>
+        <Style x:Key="TituloPasso" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource Texto}" />
+            <Setter Property="Margin" Value="0,18,0,0" />
+        </Style>
+        <Style x:Key="TextoPasso" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="LineHeight" Value="20" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource Icone}" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+        <Style x:Key="Mesa" TargetType="Border">
+            <Setter Property="Height" Value="150" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Background" Value="#0C0D10" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="ClipToBounds" Value="True" />
+        </Style>
+        <Style x:Key="PilulaGuia" TargetType="Border">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Padding" Value="5,0,7,0" />
+            <Setter Property="Background" Value="{DynamicResource Fundo}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Margin" Value="0,12,0,0" />
+        </Style>
+        <Style x:Key="BotaoPrincipalGuia" TargetType="Button">
+            <Setter Property="Height" Value="44" />
+            <Setter Property="Padding" Value="22,0" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="12" Background="{DynamicResource Acento}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="LinhaItem" TargetType="Border">
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Background" Value="{DynamicResource Cartao}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Borda}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Painel" Margin="20" CornerRadius="16" Padding="22"
+            Background="{DynamicResource Fundo}"
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1"
+            MouseLeftButtonDown="Painel_Arrastar">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.36" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+
+            <!-- Cabeçalho -->
+            <Grid>
+                <TextBlock x:Name="Contagem" Text="Conhecendo a Kisland · 1 de 5" FontSize="12" FontWeight="Medium"
+                           VerticalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
+                <Button HorizontalAlignment="Right" Cursor="Hand" Click="Pular_Click" ToolTip="Fechar o guia">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bg" CornerRadius="10" Padding="12,7" Background="Transparent">
+                                <TextBlock Text="Pular" FontSize="12" FontWeight="Medium"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bg" Property="Background" Value="{DynamicResource Cartao}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+
+            <!-- Os passos ocupam a mesma altura, para os botões não pularem. -->
+            <Grid Height="440" Margin="0,16,0,0">
+
+                <!-- ========================= PASSO 1 ========================= -->
+                <StackPanel x:Name="Passo1">
+                    <Border Style="{StaticResource Mesa}">
+                        <Grid>
+                            <Border Width="180" Height="90" CornerRadius="0,0,10,10" Background="#2B2F38"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top" Margin="40,0,0,0" />
+                            <Border Width="150" Height="70" CornerRadius="0,0,10,10" Background="{DynamicResource Acento}"
+                                    Opacity="0.45" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,50,0" />
+                            <Border Style="{StaticResource PilulaGuia}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="26" Height="26" Fill="{DynamicResource Chip}" />
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,2,0">
+                                        <Rectangle Width="2" Height="6" RadiusX="1" RadiusY="1" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" Margin="0,0,2,0" />
+                                        <Rectangle Width="2" Height="12" RadiusX="1" RadiusY="1" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" Margin="0,0,2,0" />
+                                        <Rectangle Width="2" Height="8" RadiusX="1" RadiusY="1" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" />
+                                    </StackPanel>
+                                    <Border Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></Border>
+                                    <Border Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 58°" /></Border>
+                                    <Border Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="70%" /></Border>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Oi, essa é a Kisland" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Sabe aquela barrinha no topo dos iPhones mais novos? A Kisland é a versão do KInfo para o seu PC: mostra o que está tocando, a temperatura e o volume, sem tirar você do que está fazendo." />
+                    <Border Style="{StaticResource LinhaItem}" Margin="0,16,0,0" Padding="12,10">
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
+                                <TextBlock Text="Ligar a Kisland" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="Mudou de ideia? É só desligar na Personalização." FontSize="11"
+                                           Margin="0,2,0,0" Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <CheckBox x:Name="Ligar" Style="{StaticResource Interruptor}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- ========================= PASSO 2 ========================= -->
+                <StackPanel x:Name="Passo2" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <Border Width="300" Height="128" Margin="0,10,0,0" CornerRadius="12" Padding="12"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                Background="{DynamicResource Fundo}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                            <StackPanel>
+                                <Grid>
+                                    <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource Chip}"
+                                            HorizontalAlignment="Left" />
+                                    <StackPanel Margin="44,6,40,0">
+                                        <Border Height="6" Width="120" CornerRadius="3" Background="#3A4150" HorizontalAlignment="Left" />
+                                        <Border Height="6" Width="80" CornerRadius="3" Margin="0,6,0,0" Background="{DynamicResource Trilho}" HorizontalAlignment="Left" />
+                                    </StackPanel>
+                                    <Ellipse Width="26" Height="26" Fill="{DynamicResource Acento}" HorizontalAlignment="Right" />
+                                </Grid>
+                                <Grid Height="4" Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="2*" />
+                                        <ColumnDefinition Width="3*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.ColumnSpan="2" CornerRadius="2" Background="{DynamicResource Trilho}" />
+                                    <Border CornerRadius="2" Background="{DynamicResource Acento}" />
+                                </Grid>
+                                <UniformGrid Columns="2" Margin="0,10,0,0">
+                                    <Border Height="34" CornerRadius="8" Margin="0,0,3,0" Padding="8,0"
+                                            Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                                        <TextBlock Text="62°" FontSize="18" FontWeight="Light" FontFamily="{StaticResource FonteNumero}"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                    </Border>
+                                    <Border Height="34" CornerRadius="8" Margin="3,0,0,0" Padding="8,0"
+                                            Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                                        <TextBlock Text="58°" FontSize="18" FontWeight="Light" FontFamily="{StaticResource FonteNumero}"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                    </Border>
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Passou o mouse, ela abre" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Passa o mouse por cima e pronto: aparecem o player, as temperaturas, o volume e os modos de energia. Tirou o mouse, ela se recolhe de novo." />
+                    <Border CornerRadius="14" Margin="0,16,0,0" Padding="4" Background="{DynamicResource Cartao}"
+                            BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                        <UniformGrid Columns="2">
+                            <RadioButton x:Name="AbrirPassando" Style="{StaticResource Aba}" GroupName="AberturaGuia"
+                                         Content="Passando o mouse" Checked="Opcao_Alterada" />
+                            <RadioButton x:Name="AbrirClicando" Style="{StaticResource Aba}" GroupName="AberturaGuia"
+                                         Content="Clicando" Checked="Opcao_Alterada" />
+                        </UniformGrid>
+                    </Border>
+                </StackPanel>
+
+                <!-- ========================= PASSO 3 ========================= -->
+                <StackPanel x:Name="Passo3" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <Border Style="{StaticResource PilulaGuia}" Margin="0,16,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="PreviaMusica" Width="26" Height="26" Fill="{DynamicResource Chip}" />
+                                <Border x:Name="PreviaCpu" Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></Border>
+                                <Border x:Name="PreviaGpu" Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 58°" /></Border>
+                                <Border x:Name="PreviaRam" Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="RAM 53%" /></Border>
+                                <Border x:Name="PreviaVolume" Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="70%" /></Border>
+                                <Border x:Name="PreviaRelogio" Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" x:Name="PreviaHora" Text="--:--" /></Border>
+                                <Ellipse x:Name="PreviaAnel" Width="16" Height="16" Margin="5,0,0,0"
+                                         Stroke="{DynamicResource Acento}" StrokeThickness="3" />
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Você escolhe o que aparece" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Marca o que você quer ver. Se não marcar nada e não tiver música tocando, ela vira só um circulozinho no topo." />
+                    <UniformGrid Columns="2" Margin="0,14,0,0">
+                        <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,8">
+                            <Grid>
+                                <TextBlock Text="Música" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemMusica" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="4,0,0,8">
+                            <Grid>
+                                <TextBlock Text="CPU" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemCpu" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,8">
+                            <Grid>
+                                <TextBlock Text="GPU" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemGpu" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="4,0,0,8">
+                            <Grid>
+                                <TextBlock Text="Volume" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemVolume" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,0">
+                            <Grid>
+                                <TextBlock Text="RAM" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemRam" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="4,0,0,0">
+                            <Grid>
+                                <TextBlock Text="Relógio" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemRelogio" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+
+                <!-- ========================= PASSO 4 ========================= -->
+                <StackPanel x:Name="Passo4" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Border Width="150" Height="96" CornerRadius="8" Background="{DynamicResource Cartao}"
+                                    BorderBrush="{DynamicResource Trilho}" BorderThickness="2" />
+                            <Path Data="M2,8 L32,8 M26,2 L32,8 L26,14" Stroke="{DynamicResource Acento}" StrokeThickness="2"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  Width="36" Height="16" Stretch="None" Margin="22,0" VerticalAlignment="Center" />
+                            <Border Width="150" Height="96" CornerRadius="8" Background="{DynamicResource Cartao}"
+                                    BorderBrush="{DynamicResource Acento}" BorderThickness="2">
+                                <Border Width="64" Height="12" CornerRadius="6" Margin="0,6,0,0"
+                                        HorizontalAlignment="Center" VerticalAlignment="Top"
+                                        Background="{DynamicResource Fundo}" BorderBrush="#3A4150" BorderThickness="1" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Funciona em qualquer tela" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Tem mais de um monitor? Arrasta a Kisland para onde quiser, que ela se ajeita no topo e lembra da escolha. Jogo ou filme em tela cheia? Ela sai da frente sozinha." />
+                </StackPanel>
+
+                <!-- ========================= PASSO 5 ========================= -->
+                <StackPanel x:Name="Passo5" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <Border Style="{StaticResource PilulaGuia}" Margin="0,16,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="26" Height="26" Fill="{DynamicResource Chip}" />
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,2,0">
+                                    <Rectangle Width="2" Height="6" RadiusX="1" RadiusY="1" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" Margin="0,0,2,0" />
+                                    <Rectangle Width="2" Height="12" RadiusX="1" RadiusY="1" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" Margin="0,0,2,0" />
+                                    <Rectangle Width="2" Height="8" RadiusX="1" RadiusY="1" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" />
+                                </StackPanel>
+                                <Border Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></Border>
+                                <Border Style="{StaticResource ChipGuia}"><TextBlock Style="{StaticResource TextoChipGuia}" x:Name="PreviaHora5" Text="--:--" /></Border>
+                                <Border Width="26" Height="26" CornerRadius="13" Margin="5,0,0,0" Background="{DynamicResource Chip}">
+                                    <Ellipse Width="10" Height="10" Stroke="{DynamicResource Acento}" StrokeThickness="2" />
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Combina com o seu KInfo" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="A Kisland usa as mesmas cores do KInfo: trocou lá, troca aqui também. Escolhe uma para testar. E aquele botãozinho redondo nela leva direto para os ajustes." />
+                    <UniformGrid x:Name="Cores" Columns="6" Margin="0,16,0,0" />
+                </StackPanel>
+            </Grid>
+
+            <!-- Rodapé -->
+            <Grid Margin="0,18,0,0">
+                <StackPanel x:Name="Pontos" Orientation="Horizontal" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="BotaoVoltar" Style="{StaticResource BotaoLargo}" Width="96" Margin="0,0,8,0"
+                            Content="Voltar" Click="Voltar_Click" />
+                    <Button x:Name="BotaoAvancar" Style="{StaticResource BotaoPrincipalGuia}" MinWidth="110"
+                            Content="Próximo" Click="Avancar_Click" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>

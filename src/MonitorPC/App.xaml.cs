@@ -191,6 +191,7 @@ public partial class App : Application
         }
 
         AtualizarIlha();
+        ConvidarParaAKisland();
 
         _iniciado = true;
 
@@ -428,6 +429,31 @@ public partial class App : Application
         ThemeService.Aplicar(_cfg.Tema);
         AplicarAcento();
         AtualizarIlha();
+    }
+
+    /// <summary>
+    /// Uma vez só, na primeira abertura de uma versão que tem o guia: o painel
+    /// abre com o convite para conhecer a Kisland. Vale para quem instalou
+    /// agora — depois da configuração inicial, que vem antes — e para quem
+    /// atualizou. Fica marcado como visto no momento em que aparece: ignorar
+    /// também é resposta, e um convite que volta a cada abertura vira cobrança.
+    /// </summary>
+    private void ConvidarParaAKisland()
+    {
+        if (_cfg.GuiaKislandVisto) return;
+
+        try
+        {
+            _cfg.GuiaKislandVisto = true;
+            _cfg.Salvar();
+
+            _painel.Mostrar();
+            _painel.MostrarConviteKisland();
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Convite da Kisland", ex);
+        }
     }
 
     /// <summary>

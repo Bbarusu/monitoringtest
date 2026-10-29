@@ -163,6 +163,13 @@ public sealed class AppConfig
     public bool IlhaPotencia { get; set; }
     public bool IlhaRelogio { get; set; }
 
+    /// <summary>
+    /// O convite para conhecer a Kisland ja apareceu. Aparece uma vez so, na
+    /// primeira abertura de uma versao que tem o guia — para quem instalou
+    /// agora e para quem atualizou. Depois, o guia fica na Personalizacao.
+    /// </summary>
+    public bool GuiaKislandVisto { get; set; }
+
     /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
     public bool IlhaBotaoPersonalizacao { get; set; } = true;
 

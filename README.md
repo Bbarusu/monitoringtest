@@ -24,7 +24,23 @@ disponíveis.
 **Estado atual:** as cinco abas funcionais (Geral, CPU, GPU, Disco e Energia), com leitura real dos sensores,
 mais a tela de Personalização e os perfis de energia.
 
-## Ilha no topo da tela
+## Kisland (a ilha no topo da tela)
+
+Para quem usa, o nome é **Kisland**, inspirada na ilha dos iPhones mais novos.
+No código o nome continua "ilha" (`IlhaWindow`, `Ilha*` na configuração):
+renomear tudo mudaria as chaves do `config.json` e jogaria fora o que cada
+pessoa já configurou.
+
+### Guia
+
+`GuiaKislandWindow` são cinco passos com prévia desenhada e o controle de
+verdade: o que se mexe ali grava na configuração na hora. Aparece uma vez só,
+pelo convite que o painel mostra na primeira abertura de uma versão que tem o
+guia (`GuiaKislandVisto`), para quem instalou agora e para quem atualizou. Fica
+marcado como visto no momento em que aparece: ignorar também é resposta. Para
+rever, Personalização → Ver o guia da Kisland.
+
+### Funcionamento
 
 Uma pílula no centro do topo da tela, ligada em **Personalização → Ilha no topo
 da tela**. Fechada, mostra o que está tocando, as temperaturas de CPU e GPU e o

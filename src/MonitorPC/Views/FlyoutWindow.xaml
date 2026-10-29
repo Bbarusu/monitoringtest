@@ -113,6 +113,66 @@
                 </StackPanel>
             </Border>
 
+            <!--
+                Convite para conhecer a Kisland. Aparece uma vez só, na
+                primeira abertura de uma versão que tem o guia; qualquer um dos
+                dois botões o encerra para sempre. Depois, o guia fica na
+                Personalização.
+            -->
+            <Border x:Name="ConviteKisland" Visibility="Collapsed" Margin="0,16,0,0"
+                    CornerRadius="12" Background="{DynamicResource InfoFundo}"
+                    BorderBrush="{DynamicResource Acento}" BorderThickness="1" Padding="14">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <!-- A Kisland em miniatura, no topo de uma "tela". -->
+                        <Border Width="56" Height="36" CornerRadius="10" Background="#0C0D10"
+                                VerticalAlignment="Top" Margin="0,2,12,0">
+                            <Border Width="34" Height="10" CornerRadius="5" Margin="0,5,0,0"
+                                    HorizontalAlignment="Center" VerticalAlignment="Top"
+                                    Background="{DynamicResource Fundo}" BorderBrush="#3A4150" BorderThickness="1">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Rectangle Width="2" Height="4" Fill="{DynamicResource Acento}" Margin="0,0,2,0" VerticalAlignment="Bottom" />
+                                    <Rectangle Width="2" Height="6" Fill="{DynamicResource Acento}" Margin="0,0,2,0" VerticalAlignment="Bottom" />
+                                    <Rectangle Width="2" Height="3" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" />
+                                </StackPanel>
+                            </Border>
+                        </Border>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Novidade" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource InfoTexto}" />
+                            <TextBlock Text="Conheça a Kisland" FontSize="13" FontWeight="SemiBold" Margin="0,3,0,0"
+                                       Foreground="{DynamicResource Texto}" />
+                            <TextBlock FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap" LineHeight="17"
+                                       Foreground="{DynamicResource Icone}"
+                                       Text="Inspirada nos iPhones mais novos: música, temperatura e volume ali no topo da tela, sem atrapalhar nada. Bora dar uma olhada?" />
+                        </StackPanel>
+                    </Grid>
+                    <UniformGrid Columns="2" Margin="0,12,0,0">
+                        <Button Style="{StaticResource BotaoLargo}" Margin="0,0,4,0"
+                                Content="Depois" Click="ConviteDepois_Click" />
+                        <Button Margin="4,0,0,0" Height="44" Cursor="Hand" Click="ConviteVer_Click">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bg" CornerRadius="12" Background="{DynamicResource Acento}">
+                                        <TextBlock Text="Bora ver" FontSize="13" FontWeight="SemiBold" Foreground="White"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bg" Property="Opacity" Value="0.88" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
             <!-- Aviso: versão nova disponível.
                  Cores de cartão, e não de alerta: atualização é notícia, não
                  problema, e gastar o vermelho nela baratearia o vermelho. -->

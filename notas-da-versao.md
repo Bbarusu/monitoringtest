@@ -1,5 +1,5 @@
-A ilha agora mostra o que está tocando de verdade. Antes ela ficava presa no último app que tocou algo, como uma mensagem de áudio pausada no WhatsApp, com a mesma foto, mesmo com o som vindo de outro lugar. Agora ela acompanha todos os players ao mesmo tempo e mostra o que está tocando. Se mais de um estiver tocando, aparece o que começou por último.
+A ilha do topo agora tem nome: Kisland. É inspirada na barrinha dos iPhones mais novos e mostra a música, a temperatura e o volume no topo da tela.
 
-Música parada há mais de 3 minutos sai da ilha, mesmo se o app continuar aberto.
+Na primeira vez que você abrir o KInfo nesta versão, vai aparecer um convite para conhecer a Kisland. O guia tem 5 passos rapidinhos, e o que você mexe nele já vale: ligar a Kisland, escolher o que aparece, como ela abre e a cor.
 
-A capa da música não é mais reaproveitada entre apps diferentes.
+O convite aparece uma vez só. Se quiser rever o guia depois, ele está na Personalização, em "Ver o guia da Kisland".

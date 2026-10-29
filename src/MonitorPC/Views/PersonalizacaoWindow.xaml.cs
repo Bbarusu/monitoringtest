@@ -52,31 +52,7 @@ public partial class PersonalizacaoWindow : Window
 
         MontarPaleta();
 
-        TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
-        TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
-        TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
-
-        SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
-        Transparencia.IsChecked = _cfg.Transparencia;
-        Opacidade.Value = Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
-
-        IlhaAtiva.IsChecked = _cfg.IlhaAtiva;
-        IlhaMusica.IsChecked = _cfg.IlhaMusica;
-        IlhaCpu.IsChecked = _cfg.IlhaCpu;
-        IlhaGpu.IsChecked = _cfg.IlhaGpu;
-        IlhaVolume.IsChecked = _cfg.IlhaVolume;
-        IlhaRam.IsChecked = _cfg.IlhaRam;
-        IlhaCpuUso.IsChecked = _cfg.IlhaCpuUso;
-        IlhaGpuUso.IsChecked = _cfg.IlhaGpuUso;
-        IlhaDisco.IsChecked = _cfg.IlhaDisco;
-        IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
-        IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
-        IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
-        IlhaAoPassar.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
-        IlhaAoClicar.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
-        IlhaTelaCheia.IsChecked = _cfg.IlhaEsconderEmTelaCheia;
-        IlhaAvisoVolume.IsChecked = _cfg.IlhaAvisoDeVolume;
-        IlhaAvisoFaixa.IsChecked = _cfg.IlhaAvisoDeFaixa;
+        Carregar();
 
         AtualizarEstados();
         AplicarFundo();
@@ -158,6 +134,54 @@ public partial class PersonalizacaoWindow : Window
 
         _cfg.Opacidade = (int)e.NewValue;
         Confirmar();
+    }
+
+    /// <summary>
+    /// Poe na tela o que esta na configuracao. Tambem roda na volta do guia
+    /// da Kisland, que muda a configuracao por conta propria.
+    /// </summary>
+    private void Carregar()
+    {
+        TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
+        TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
+
+        SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
+        Transparencia.IsChecked = _cfg.Transparencia;
+        Opacidade.Value = Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
+
+        IlhaAtiva.IsChecked = _cfg.IlhaAtiva;
+        IlhaMusica.IsChecked = _cfg.IlhaMusica;
+        IlhaCpu.IsChecked = _cfg.IlhaCpu;
+        IlhaGpu.IsChecked = _cfg.IlhaGpu;
+        IlhaVolume.IsChecked = _cfg.IlhaVolume;
+        IlhaRam.IsChecked = _cfg.IlhaRam;
+        IlhaCpuUso.IsChecked = _cfg.IlhaCpuUso;
+        IlhaGpuUso.IsChecked = _cfg.IlhaGpuUso;
+        IlhaDisco.IsChecked = _cfg.IlhaDisco;
+        IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
+        IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
+        IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
+        IlhaAoPassar.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
+        IlhaAoClicar.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
+        IlhaTelaCheia.IsChecked = _cfg.IlhaEsconderEmTelaCheia;
+        IlhaAvisoVolume.IsChecked = _cfg.IlhaAvisoDeVolume;
+        IlhaAvisoFaixa.IsChecked = _cfg.IlhaAvisoDeFaixa;
+
+        foreach (var filho in Cores.Children.OfType<RadioButton>())
+            filho.IsChecked = string.Equals((string)filho.Tag, _cfg.CorDestaque, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void GuiaKisland_Click(object sender, RoutedEventArgs e)
+    {
+        new GuiaKislandWindow(_cfg, _aoMudar) { Owner = this }.ShowDialog();
+
+        _carregando = true;
+        Carregar();
+        _carregando = false;
+
+        AtualizarEstados();
+        AplicarFundo();
     }
 
     /// <summary>

@@ -1641,6 +1641,45 @@ public partial class FlyoutWindow : Window
         tela.ShowDialog();
     }
 
+    // ------------------------------------------------------------------
+    // Convite e guia da Kisland
+
+    /// <summary>
+    /// Mostra o convite para conhecer a Kisland. Chamado pelo App uma vez so;
+    /// quem marca que ja foi visto e o App, na hora de mostrar — fechar o
+    /// painel sem responder tambem conta como visto, para ele nunca voltar.
+    /// </summary>
+    public void MostrarConviteKisland()
+    {
+        ConviteKisland.Visibility = Visibility.Visible;
+        if (IsVisible) Posicionar();
+    }
+
+    private void ConviteDepois_Click(object sender, RoutedEventArgs e) => FecharConvite();
+
+    private void ConviteVer_Click(object sender, RoutedEventArgs e)
+    {
+        FecharConvite();
+        AbrirGuiaKisland();
+    }
+
+    private void FecharConvite()
+    {
+        ConviteKisland.Visibility = Visibility.Collapsed;
+        if (IsVisible) Posicionar();
+    }
+
+    /// <summary>O guia muda a configuracao na hora, como a Personalizacao.</summary>
+    public void AbrirGuiaKisland()
+    {
+        new GuiaKislandWindow(_cfg, () =>
+        {
+            (Application.Current as App)?.AplicarAparencia();
+            AplicarTransparencia();
+        })
+        { Owner = this }.ShowDialog();
+    }
+
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
 
     private void Sensores_Click(object sender, RoutedEventArgs e) =>
