@@ -1,4 +1,5 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using LibreHardwareMonitor.Hardware;
@@ -168,6 +169,89 @@ public static class Diagnostico
     /// metade — servico sem arquivo, por exemplo — aparece no relatorio em vez
     /// de virar um "nao instalado" que mandaria instalar de novo.
     /// </summary>
+    /// <summary>
+    /// O estado real do servico do PawnIO: rodando, parado, ou nem registrado.
+    ///
+    /// Existe porque <see cref="PawnIo"/> respondia "instalado" olhando so a
+    /// chave do registro — presenca, nao funcionamento. Numa maquina em que a
+    /// leitura inteira de MSR parou depois de um reinicio, o relatorio dizia
+    /// "PawnIO Instalado: True" e mandava procurar noutro lugar, quando o
+    /// problema era o driver registrado e nao carregado.
+    ///
+    /// E o mesmo erro que o aviso do painel cometia antes: conferir que a coisa
+    /// existe e concluir que ela funciona.
+    /// </summary>
+    public static string EstadoDoPawnIo { get; } = ConsultarEstadoDoPawnIo();
+
+    private const int AcessoDeConsulta = 0x0004;      // SERVICE_QUERY_STATUS
+    private const int AcessoAoGerenciador = 0x0001;   // SC_MANAGER_CONNECT
+
+    private static string ConsultarEstadoDoPawnIo()
+    {
+        var gerenciador = IntPtr.Zero;
+        var servico = IntPtr.Zero;
+
+        try
+        {
+            gerenciador = OpenSCManager(null, null, AcessoAoGerenciador);
+            if (gerenciador == IntPtr.Zero) return "não foi possível consultar o gerenciador de serviços";
+
+            servico = OpenService(gerenciador, "PawnIO", AcessoDeConsulta);
+            if (servico == IntPtr.Zero) return "não registrado";
+
+            var estado = new EstadoDeServico();
+            if (!QueryServiceStatus(servico, ref estado)) return "registrado, estado ilegível";
+
+            return estado.EstadoAtual switch
+            {
+                1 => "PARADO — registrado, mas não carregado",
+                2 => "iniciando",
+                3 => "parando",
+                4 => "rodando",
+                5 => "continuando",
+                6 => "pausando",
+                7 => "pausado",
+                _ => $"desconhecido ({estado.EstadoAtual})"
+            };
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Consultar PawnIO", ex);
+            return "falha ao consultar";
+        }
+        finally
+        {
+            if (servico != IntPtr.Zero) CloseServiceHandle(servico);
+            if (gerenciador != IntPtr.Zero) CloseServiceHandle(gerenciador);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct EstadoDeServico
+    {
+        public int Tipo;
+        public int EstadoAtual;
+        public int ControlesAceitos;
+        public int CodigoDeSaida;
+        public int CodigoEspecifico;
+        public int PontoDeVerificacao;
+        public int DicaDeEspera;
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr OpenSCManager(string? maquina, string? base_, int acesso);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr OpenService(IntPtr gerenciador, string nome, int acesso);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryServiceStatus(IntPtr servico, ref EstadoDeServico estado);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool CloseServiceHandle(IntPtr handle);
+
     private static string? AcharPawnIo()
     {
         var achados = new List<string>();
@@ -264,6 +348,23 @@ public static class Diagnostico
                    "isso, placa de vídeo, discos, memória e uso de CPU " +
                    "continuam funcionando normalmente.";
 
+        // Instalado nao e o mesmo que carregado, e a diferenca entre os dois
+        // ja mandou uma investigacao para o lado errado: o relatorio dizia
+        // "PawnIO Instalado: True" numa maquina onde a leitura de MSR tinha
+        // parado por completo depois de um reinicio.
+        if (EstadoDoPawnIo.StartsWith("PARADO", StringComparison.Ordinal))
+            return "Temperatura de CPU e placa-mãe indisponíveis: o PawnIO está " +
+                   "instalado mas não carregou. É o driver que dá acesso a esses " +
+                   "sensores, e registrado sem estar rodando ele não lê nada. " +
+                   "Reiniciar o PC costuma resolver; se voltar a acontecer, " +
+                   "reinstale o PawnIO em pawnio.eu. Placa de vídeo, discos, " +
+                   "memória e uso de CPU não dependem dele e continuam normais.";
+
+        if (EstadoDoPawnIo == "não registrado")
+            return "Temperatura de CPU e placa-mãe indisponíveis: o serviço do " +
+                   "PawnIO não está registrado neste Windows, mesmo havendo " +
+                   "arquivos dele no disco. Reinstale em pawnio.eu e reabra o app.";
+
         if (!Elevado)
             return "Temperatura de CPU e placa-mãe indisponíveis. O driver que lê " +
                    "esses valores só carrega com privilégio de administrador — pelo " +
@@ -350,6 +451,11 @@ public static class Diagnostico
 
         t.AppendLine("--- PawnIO (a dependência que importa) ---");
         t.AppendLine($"Instalado : {PawnIo}");
+
+        // O estado vem antes de "Onde" porque e ele que decide. Instalado e
+        // parado le tanto quanto nao instalado, e esta linha e a diferenca
+        // entre procurar o problema no lugar certo e no lugar errado.
+        t.AppendLine($"Serviço   : {EstadoDoPawnIo}");
         t.AppendLine($"Onde      : {DetalheDoPawnIo ?? "não encontrado"}");
         t.AppendLine();
 

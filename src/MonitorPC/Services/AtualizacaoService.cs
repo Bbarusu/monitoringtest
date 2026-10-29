@@ -168,13 +168,20 @@ public sealed class AtualizacaoService
         Action<string>? problema = null)
     {
         var pasta = Path.Combine(Path.GetTempPath(), "KInfo-atualizacao");
-        var parcial = Path.Combine(pasta, $"KInfo-Setup-{manifesto.Versao}.parcial");
-        var destino = Path.Combine(pasta, $"KInfo-Setup-{manifesto.Versao}.exe");
+
+        // Nome unico por tentativa. Antes o nome vinha so da versao, e a
+        // primeira coisa que o metodo fazia era apagar o arquivo anterior —
+        // que falhava com "acesso negado" quando o instalador daquela mesma
+        // versao ainda estava aberto, derrubando a atualizacao inteira por
+        // causa de uma sobra. Com nome unico nao ha o que apagar.
+        var marca = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var parcial = Path.Combine(pasta, $"KInfo-Setup-{manifesto.Versao}-{marca}.parcial");
+        var destino = Path.Combine(pasta, $"KInfo-Setup-{manifesto.Versao}-{marca}.exe");
 
         try
         {
             Directory.CreateDirectory(pasta);
-            if (File.Exists(destino)) File.Delete(destino);
+            LimparSobras(pasta, manifesto.Versao);
 
             using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(15) };
             http.DefaultRequestHeaders.UserAgent.ParseAdd($"KInfo/{Versao.Texto}");
@@ -233,6 +240,44 @@ public sealed class AtualizacaoService
         finally
         {
             try { if (File.Exists(parcial)) File.Delete(parcial); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// Apaga instaladores de tentativas anteriores, e nunca lanca.
+    ///
+    /// Limpeza e cortesia, nao requisito: um arquivo que nao sai — porque
+    /// aquele instalador ainda esta aberto, ou porque o antivirus o segura —
+    /// nao pode impedir a atualizacao de hoje. Era isso que acontecia: o metodo
+    /// comecava apagando o arquivo da mesma versao e morria com acesso negado
+    /// antes de baixar qualquer coisa.
+    /// </summary>
+    private static void LimparSobras(string pasta, string? versao)
+    {
+        try
+        {
+            foreach (var velho in Directory.GetFiles(pasta, "KInfo-Setup-*"))
+            {
+                try
+                {
+                    // Sobra de hoje da mesma versao pode estar em uso; as
+                    // outras ja nao servem para nada.
+                    if (DateTime.UtcNow - File.GetLastWriteTimeUtc(velho) < TimeSpan.FromHours(1)
+                        && versao is not null
+                        && Path.GetFileName(velho).Contains(versao, StringComparison.Ordinal))
+                        continue;
+
+                    File.Delete(velho);
+                }
+                catch
+                {
+                    // Em uso ou sem permissao: segue para o proximo.
+                }
+            }
+        }
+        catch
+        {
+            // Pasta ilegivel nao impede baixar.
         }
     }
 
