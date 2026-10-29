@@ -31,28 +31,16 @@ No código o nome continua "ilha" (`IlhaWindow`, `Ilha*` na configuração):
 renomear tudo mudaria as chaves do `config.json` e jogaria fora o que cada
 pessoa já configurou.
 
-### Tamanho e vidro
+### Tamanho
 
 O tamanho (`IlhaEscala`, 70 a 100%, padrão 85) é um `LayoutTransform` na
 Kisland inteira, para texto, cantos e ícones encolherem juntos.
 
-O efeito vidro (`IlhaVidro`) tem duas partes. A desenhada — um fio de luz na
-borda, mais forte em cima, e um brilho que some até a metade — funciona sempre.
-A do Windows é o desfoque do que está atrás, pedido por
-`SetWindowCompositionAttribute`, a mesma via que apps de terceiros usam para o
-acrílico; não é documentada para isso, e se o Windows recusar sobra a parte
-desenhada. O desfoque vale para a janela inteira, então a janela é recortada no
-formato da Kisland (`SetWindowRgn`) a cada mudança de tamanho ou de estado — e,
-com o recorte, a sombra sai.
-
-O recorte não vale em janela transparente por pixel (`AllowsTransparency`), que
-é o tipo normal da Kisland: ali o Windows desfocava o retângulo inteiro, com a
-margem da sombra, e saía um retângulo cinza em volta. Com o vidro ligado a
-Kisland usa uma janela comum, sem margem, com o vidro do Windows estendido por
-ela toda (`DwmExtendFrameIntoClientArea`) — onde o WPF não pinta, aparece o
-desfoque, e o recorte funciona. O tipo é escolhido na criação, então ligar ou
-desligar o vidro recria a janela; os serviços de mídia e volume continuam. A refração das bordas do Liquid Glass, que curva a
-imagem como lente, não tem equivalente para janelas do Windows.
+Houve um efeito vidro, inspirado no Liquid Glass, entre a 0.1.13 e a 0.1.17.
+Saiu: o desfoque do Windows atrás de uma janela de formato arredondado não
+ficou bom em nenhuma das duas tentativas (janela transparente desfoca o
+retângulo todo; janela comum recortada perde a suavização das bordas e a
+sombra). A chave `IlhaVidro` de configurações antigas é ignorada.
 
 ### Contador de FPS
 

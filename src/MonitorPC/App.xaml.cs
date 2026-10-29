@@ -471,15 +471,6 @@ public partial class App : Application
                 return;
             }
 
-            // O vidro e decidido na criacao da janela: trocou, recria. Os
-            // servicos de midia e volume continuam, so a janela muda.
-            if (_ilha is not null && _ilha.ModoVidro != _cfg.IlhaVidro)
-            {
-                _ilha.Desativar();
-                _ilha.Close();
-                _ilha = null;
-            }
-
             if (_ilha is null)
             {
                 var primeiraVez = _midia is null;

@@ -89,15 +89,6 @@ public partial class IlhaWindow : Window
     {
         InitializeComponent();
 
-        // O vidro precisa de outro tipo de janela, escolhido antes de ela
-        // existir. Transparente por pixel (o normal), o Windows desfoca o
-        // retangulo inteiro da janela, sombra incluida, e ignora o recorte no
-        // formato da Kisland — saia um retangulo cinza em volta dela. Comum,
-        // com o vidro do proprio Windows estendido por ela toda, o recorte
-        // vale. Por isso ligar ou desligar o vidro recria a janela (App).
-        ModoVidro = cfg.IlhaVidro;
-        AllowsTransparency = !ModoVidro;
-
         _cfg = cfg;
         _sensores = sensores;
         _alertas = alertas;
@@ -111,14 +102,8 @@ public partial class IlhaWindow : Window
         SourceInitialized += (_, _) =>
         {
             NaoRoubarFoco();
-            PrepararVidro();
-            AplicarVidro();
         };
-        SizeChanged += (_, _) =>
-        {
-            Posicionar();
-            AtualizarRecorte();
-        };
+        SizeChanged += (_, _) => Posicionar();
         DpiChanged += (_, _) => Posicionar();
 
         // Monitor ligado, desligado ou com resolucao nova: a ilha volta ao
@@ -128,8 +113,8 @@ public partial class IlhaWindow : Window
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= Telas_Mudaram;
 
-            // A janela pode ser recriada (troca do vidro), e os servicos ficam:
-            // sem soltar, a janela fechada continuaria recebendo os avisos.
+            // Os servicos vivem mais que a janela: sem soltar, uma janela
+            // fechada continuaria recebendo os avisos.
             _sensores.Atualizado -= Sensores_Atualizados;
             _midia.Mudou -= Midia_Mudou;
             _volume.Mudou -= Volume_Mudou;
@@ -146,9 +131,6 @@ public partial class IlhaWindow : Window
     private void Sensores_Atualizados(Snapshot snap) => Dispatcher.BeginInvoke(() => AplicarSensores(snap));
     private void Midia_Mudou(EstadoDeMidia? _) => Dispatcher.BeginInvoke(() => AplicarMidia(true));
     private void Volume_Mudou(int nivel, bool mudo) => Dispatcher.BeginInvoke(() => AplicarVolume(nivel, mudo, true));
-
-    /// <summary>Esta janela foi criada para o vidro. Fixo: trocar exige outra janela.</summary>
-    public bool ModoVidro { get; }
 
     private static DispatcherTimer Temporizador(TimeSpan intervalo, Action acao)
     {
@@ -197,29 +179,16 @@ public partial class IlhaWindow : Window
         Hide();
     }
 
-    /// <summary>A sombra do XAML, guardada para voltar quando o vidro e desligado.</summary>
-    private System.Windows.Media.Effects.Effect? _sombra;
-
     /// <summary>
     /// Aplica o que a Personalizacao decide: fundo, transparencia e o que a
     /// pilula mostra. Chamada a cada mudanca la, para o efeito ser visto na hora.
     /// </summary>
     public void AplicarConfiguracao()
     {
-        _sombra ??= Casca.Effect;
-
         // Mesma regra do painel: a transparencia vai no alpha do fundo, e nao na
         // opacidade da janela, que desbotaria texto e icones junto.
         var fundo = ThemeService.CorDeFundo;
-        if (ModoVidro)
-        {
-            // Com o vidro, o fundo vira so um veu sobre o que o Windows desfoca
-            // atras. Opaco demais esconderia o desfoque; a opacidade escolhida
-            // ainda conta, para quem quer mais ou menos contraste.
-            var alpha = (byte)(Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100) * 150 / 100);
-            Casca.Background = new SolidColorBrush(Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
-        }
-        else if (_cfg.Transparencia)
+        if (_cfg.Transparencia)
         {
             var alpha = (byte)(Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
             Casca.Background = new SolidColorBrush(Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
@@ -233,15 +202,6 @@ public partial class IlhaWindow : Window
         // continuar com as mesmas proporcoes em qualquer tamanho.
         var escala = Math.Clamp(_cfg.IlhaEscala, 70, 100) / 100.0;
         Casca.LayoutTransform = new ScaleTransform(escala, escala);
-
-        BrilhoVidro.Visibility = Visivel(ModoVidro);
-        FioVidro.Visibility = Visivel(ModoVidro);
-
-        // No vidro a janela e a propria Kisland: sem margem e sem sombra, que
-        // ficaria fora do recorte. O espaco do topo vai no posicionamento.
-        Casca.Effect = ModoVidro ? null : _sombra;
-        if (ModoVidro) Casca.Margin = new Thickness(0);
-        AplicarVidro();
 
         // No modo jogo, so o FPS (e um aviso de temperatura, se houver): o
         // resto disputaria a atencao com o jogo, na mesma tela.
@@ -316,10 +276,7 @@ public partial class IlhaWindow : Window
             var largura = (int)Math.Round(ActualWidth * escala);
             var x = area.Left + (area.Width - largura) / 2;
 
-            // Sem a margem da sombra, o respiro do topo vem daqui.
-            var respiro = ModoVidro ? (int)Math.Round(6 * VisualTreeHelper.GetDpi(this).DpiScaleY) : 0;
-
-            SetWindowPos(_handle, IntPtr.Zero, x, area.Top + respiro, 0, 0,
+            SetWindowPos(_handle, IntPtr.Zero, x, area.Top, 0, 0,
                          SemTamanho | SemOrdem | SemAtivarJanela);
         }
         catch (Exception ex)
@@ -739,10 +696,6 @@ public partial class IlhaWindow : Window
 
         Casca.CornerRadius = new CornerRadius(_expandida ? 16 : aviso == Aviso.Faixa ? 28 : 22);
 
-        // O canto muda com o estado; o recorte do vidro acompanha depois do
-        // novo tamanho estar medido.
-        Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(AtualizarRecorte));
-
         // Animacoes paradas quando ninguem as ve.
         var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && Compacta.Visibility == Visibility.Visible;
 
@@ -1132,166 +1085,6 @@ public partial class IlhaWindow : Window
         Recolher();
         PedirPersonalizacao?.Invoke();
     }
-
-    // ------------------------------------------------------------------
-    // Vidro
-
-    /// <summary>
-    /// Liga ou desliga o desfoque do Windows atras da Kisland.
-    ///
-    /// E o efeito de "acrilico" que o proprio Windows usa no menu Iniciar,
-    /// pedido pela via que os apps de terceiros usam para isso
-    /// (SetWindowCompositionAttribute). Nao e documentada para esse uso — se o
-    /// Windows recusar, sobra o vidro desenhado, que ja funciona sozinho.
-    ///
-    /// O que o iPhone faz alem disso, curvar a imagem nas bordas como uma
-    /// lente, nao tem equivalente para janelas do Windows.
-    /// </summary>
-    private void AplicarVidro()
-    {
-        if (_handle == IntPtr.Zero) return;
-
-        try
-        {
-            var politica = new PoliticaDeComposicao
-            {
-                Estado = ModoVidro ? DesfoqueAtras : Desligado
-            };
-
-            var tamanho = Marshal.SizeOf(politica);
-            var ponteiro = Marshal.AllocHGlobal(tamanho);
-
-            try
-            {
-                Marshal.StructureToPtr(politica, ponteiro, false);
-
-                var dados = new DadosDeComposicao
-                {
-                    Atributo = PoliticaDeDestaque,
-                    Dados = ponteiro,
-                    Tamanho = tamanho
-                };
-
-                SetWindowCompositionAttribute(_handle, ref dados);
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(ponteiro);
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Erro("Kisland: vidro", ex);
-        }
-
-        AtualizarRecorte();
-    }
-
-    /// <summary>
-    /// Janela comum com o vidro do Windows estendido por toda ela: onde o WPF
-    /// nao pinta, aparece o que o Windows desenha atras — com o desfoque
-    /// ligado, o desfoque. Sem isto, o transparente de uma janela comum sai
-    /// preto.
-    /// </summary>
-    private void PrepararVidro()
-    {
-        if (!ModoVidro || _handle == IntPtr.Zero) return;
-
-        try
-        {
-            if (HwndSource.FromHwnd(_handle) is { CompositionTarget: { } alvo })
-                alvo.BackgroundColor = Colors.Transparent;
-
-            var margens = new Margens { Esquerda = -1, Direita = -1, Topo = -1, Baixo = -1 };
-            DwmExtendFrameIntoClientArea(_handle, ref margens);
-        }
-        catch (Exception ex)
-        {
-            Log.Erro("Kisland: preparar vidro", ex);
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Margens
-    {
-        public int Esquerda;
-        public int Direita;
-        public int Topo;
-        public int Baixo;
-    }
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmExtendFrameIntoClientArea(IntPtr janela, ref Margens margens);
-
-    /// <summary>
-    /// Recorta a janela no formato da Kisland. O desfoque do Windows vale para
-    /// a janela inteira, e a janela e maior que a Kisland — tem a margem da
-    /// sombra. Sem o recorte, apareceria um retangulo desfocado em volta.
-    /// </summary>
-    private void AtualizarRecorte()
-    {
-        if (_handle == IntPtr.Zero) return;
-
-        try
-        {
-            if (!ModoVidro || Casca.ActualWidth <= 0)
-            {
-                SetWindowRgn(_handle, IntPtr.Zero, true);
-                return;
-            }
-
-            var dpi = VisualTreeHelper.GetDpi(this);
-            var area = Casca.TransformToAncestor(this)
-                .TransformBounds(new Rect(0, 0, Casca.ActualWidth, Casca.ActualHeight));
-
-            var escala = Math.Clamp(_cfg.IlhaEscala, 70, 100) / 100.0;
-            var raio = Casca.CornerRadius.TopLeft * escala;
-
-            var x1 = (int)Math.Round(area.Left * dpi.DpiScaleX);
-            var y1 = (int)Math.Round(area.Top * dpi.DpiScaleY);
-            var x2 = (int)Math.Round(area.Right * dpi.DpiScaleX) + 1;
-            var y2 = (int)Math.Round(area.Bottom * dpi.DpiScaleY) + 1;
-            var diametro = (int)Math.Round(raio * 2 * dpi.DpiScaleX);
-
-            // A regiao passa a ser do Windows depois de entregue: nao se apaga.
-            var regiao = CreateRoundRectRgn(x1, y1, x2, y2, diametro, diametro);
-            SetWindowRgn(_handle, regiao, true);
-        }
-        catch (Exception ex)
-        {
-            Log.Erro("Kisland: recorte", ex);
-        }
-    }
-
-    private const int PoliticaDeDestaque = 19;
-    private const int Desligado = 0;
-    private const int DesfoqueAtras = 3;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct PoliticaDeComposicao
-    {
-        public int Estado;
-        public int Sinalizadores;
-        public uint Cor;
-        public int Animacao;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct DadosDeComposicao
-    {
-        public int Atributo;
-        public IntPtr Dados;
-        public int Tamanho;
-    }
-
-    [DllImport("user32.dll")]
-    private static extern int SetWindowCompositionAttribute(IntPtr janela, ref DadosDeComposicao dados);
-
-    [DllImport("user32.dll")]
-    private static extern int SetWindowRgn(IntPtr janela, IntPtr regiao, bool redesenhar);
-
-    [DllImport("gdi32.dll")]
-    private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int larguraDoCanto, int alturaDoCanto);
 
     // ------------------------------------------------------------------
 

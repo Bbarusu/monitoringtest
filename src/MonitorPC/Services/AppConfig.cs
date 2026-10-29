@@ -189,11 +189,6 @@ public sealed class AppConfig
     /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;
 
-    /// <summary>
-    /// Efeito vidro na Kisland: desfoca o que esta atras dela, com brilho na
-    /// borda, inspirado no Liquid Glass do iPhone. So nela; o painel nao muda.
-    /// </summary>
-    public bool IlhaVidro { get; set; } = true;
 
     /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
     public bool IlhaBotaoPersonalizacao { get; set; } = true;

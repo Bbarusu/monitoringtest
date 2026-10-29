@@ -162,7 +162,6 @@ public partial class PersonalizacaoWindow : Window
         IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
         IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
-        IlhaVidro.IsChecked = _cfg.IlhaVidro;
         IlhaFps.IsChecked = _cfg.IlhaFps;
         IlhaFicarEmTelaCheia.IsChecked = _cfg.IlhaFicarEmTelaCheia;
 
@@ -228,7 +227,6 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaPotencia = IlhaPotencia.IsChecked == true;
         _cfg.IlhaRelogio = IlhaRelogio.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
-        _cfg.IlhaVidro = IlhaVidro.IsChecked == true;
         _cfg.IlhaFps = IlhaFps.IsChecked == true;
         _cfg.IlhaFicarEmTelaCheia = IlhaFicarEmTelaCheia.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
