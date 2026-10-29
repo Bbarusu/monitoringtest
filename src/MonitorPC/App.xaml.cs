@@ -471,10 +471,20 @@ public partial class App : Application
                 return;
             }
 
+            // O vidro e decidido na criacao da janela: trocou, recria. Os
+            // servicos de midia e volume continuam, so a janela muda.
+            if (_ilha is not null && _ilha.ModoVidro != _cfg.IlhaVidro)
+            {
+                _ilha.Desativar();
+                _ilha.Close();
+                _ilha = null;
+            }
+
             if (_ilha is null)
             {
-                _midia = new MidiaService();
-                _volume = new VolumeService();
+                var primeiraVez = _midia is null;
+                _midia ??= new MidiaService();
+                _volume ??= new VolumeService();
                 _ilha = new IlhaWindow(_cfg, _sensores, _alertas, _midia, _volume);
 
                 _ilha.PedirPainel += () => _painel.Mostrar();
@@ -489,7 +499,7 @@ public partial class App : Application
                     _painel.AbrirDesempenho();
                 };
 
-                _ = _midia.IniciarAsync();
+                if (primeiraVez) _ = _midia.IniciarAsync();
                 _ilha.Ativar();
                 return;
             }

@@ -1,1 +1,1 @@
-O guia da Kisland ganhou um passo sobre o contador de FPS: "Tá jogando? Ela conta o FPS". Dá para ligar o contador ali mesmo. Para rever o guia, vá em Personalização, em "Ver o guia da Kisland".
+Corrigido o efeito vidro da Kisland. Ele desfocava um retângulo cinza em volta dela, maior que a própria Kisland. Agora o desfoque fica só dentro do formato dela.

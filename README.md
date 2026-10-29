@@ -43,7 +43,15 @@ A do Windows é o desfoque do que está atrás, pedido por
 acrílico; não é documentada para isso, e se o Windows recusar sobra a parte
 desenhada. O desfoque vale para a janela inteira, então a janela é recortada no
 formato da Kisland (`SetWindowRgn`) a cada mudança de tamanho ou de estado — e,
-com o recorte, a sombra sai. A refração das bordas do Liquid Glass, que curva a
+com o recorte, a sombra sai.
+
+O recorte não vale em janela transparente por pixel (`AllowsTransparency`), que
+é o tipo normal da Kisland: ali o Windows desfocava o retângulo inteiro, com a
+margem da sombra, e saía um retângulo cinza em volta. Com o vidro ligado a
+Kisland usa uma janela comum, sem margem, com o vidro do Windows estendido por
+ela toda (`DwmExtendFrameIntoClientArea`) — onde o WPF não pinta, aparece o
+desfoque, e o recorte funciona. O tipo é escolhido na criação, então ligar ou
+desligar o vidro recria a janela; os serviços de mídia e volume continuam. A refração das bordas do Liquid Glass, que curva a
 imagem como lente, não tem equivalente para janelas do Windows.
 
 ### Contador de FPS
