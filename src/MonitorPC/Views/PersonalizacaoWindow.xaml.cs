@@ -162,6 +162,8 @@ public partial class PersonalizacaoWindow : Window
         IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
         IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
+        IlhaVidro.IsChecked = _cfg.IlhaVidro;
+        EscalaIlha.Value = Math.Clamp(_cfg.IlhaEscala, 70, 100);
         IlhaAoPassar.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
         IlhaAoClicar.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
         IlhaTelaCheia.IsChecked = _cfg.IlhaEsconderEmTelaCheia;
@@ -170,6 +172,15 @@ public partial class PersonalizacaoWindow : Window
 
         foreach (var filho in Cores.Children.OfType<RadioButton>())
             filho.IsChecked = string.Equals((string)filho.Tag, _cfg.CorDestaque, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void EscalaIlha_Alterada(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        ValorEscalaIlha.Text = $"{e.NewValue:F0}%";
+        if (_carregando) return;
+
+        _cfg.IlhaEscala = (int)e.NewValue;
+        Confirmar();
     }
 
     private void GuiaKisland_Click(object sender, RoutedEventArgs e)
@@ -205,6 +216,7 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaPotencia = IlhaPotencia.IsChecked == true;
         _cfg.IlhaRelogio = IlhaRelogio.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
+        _cfg.IlhaVidro = IlhaVidro.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
         _cfg.IlhaEsconderEmTelaCheia = IlhaTelaCheia.IsChecked == true;
         _cfg.IlhaAvisoDeVolume = IlhaAvisoVolume.IsChecked == true;

@@ -100,6 +100,36 @@
 
         <Grid>
 
+            <!--
+                Vidro: dois realces por cima de tudo, sem receber clique. Um
+                fio de luz na borda, mais forte em cima, e um brilho suave que
+                some até a metade — o que faz a Kisland parecer uma peça de
+                vidro e não um retângulo pintado. O desfoque do que está atrás
+                vem do Windows (IlhaWindow.AplicarVidro). Some com o vidro
+                desligado.
+            -->
+            <Border x:Name="BrilhoVidro" Panel.ZIndex="10" IsHitTestVisible="False" Visibility="Collapsed"
+                    CornerRadius="{Binding CornerRadius, ElementName=Casca}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#1FFFFFFF" Offset="0" />
+                        <GradientStop Color="#08FFFFFF" Offset="0.45" />
+                        <GradientStop Color="#00FFFFFF" Offset="0.7" />
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <Border x:Name="FioVidro" Panel.ZIndex="11" IsHitTestVisible="False" Visibility="Collapsed"
+                    CornerRadius="{Binding CornerRadius, ElementName=Casca}" BorderThickness="1">
+                <Border.BorderBrush>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#73FFFFFF" Offset="0" />
+                        <GradientStop Color="#1AFFFFFF" Offset="0.4" />
+                        <GradientStop Color="#0DFFFFFF" Offset="0.75" />
+                        <GradientStop Color="#33FFFFFF" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.BorderBrush>
+            </Border>
+
             <!-- ========================= PÍLULA ========================= -->
             <StackPanel x:Name="Compacta" Orientation="Horizontal" Height="44" Margin="6,0,8,0">
 

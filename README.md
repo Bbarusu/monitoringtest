@@ -31,6 +31,21 @@ No código o nome continua "ilha" (`IlhaWindow`, `Ilha*` na configuração):
 renomear tudo mudaria as chaves do `config.json` e jogaria fora o que cada
 pessoa já configurou.
 
+### Tamanho e vidro
+
+O tamanho (`IlhaEscala`, 70 a 100%, padrão 85) é um `LayoutTransform` na
+Kisland inteira, para texto, cantos e ícones encolherem juntos.
+
+O efeito vidro (`IlhaVidro`) tem duas partes. A desenhada — um fio de luz na
+borda, mais forte em cima, e um brilho que some até a metade — funciona sempre.
+A do Windows é o desfoque do que está atrás, pedido por
+`SetWindowCompositionAttribute`, a mesma via que apps de terceiros usam para o
+acrílico; não é documentada para isso, e se o Windows recusar sobra a parte
+desenhada. O desfoque vale para a janela inteira, então a janela é recortada no
+formato da Kisland (`SetWindowRgn`) a cada mudança de tamanho ou de estado — e,
+com o recorte, a sombra sai. A refração das bordas do Liquid Glass, que curva a
+imagem como lente, não tem equivalente para janelas do Windows.
+
 ### Guia
 
 `GuiaKislandWindow` são cinco passos com prévia desenhada e o controle de
