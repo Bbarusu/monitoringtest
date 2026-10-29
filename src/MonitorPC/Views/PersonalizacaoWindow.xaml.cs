@@ -127,6 +127,14 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
+    private void OpacidadeIlha_Alterada(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_carregando) return;
+
+        _cfg.IlhaOpacidade = (int)e.NewValue;
+        Confirmar();
+    }
+
     private void Opacidade_Alterada(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         ValorOpacidade.Text = $"{e.NewValue:F0}%";
@@ -149,6 +157,7 @@ public partial class PersonalizacaoWindow : Window
         SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
         Transparencia.IsChecked = _cfg.Transparencia;
         Opacidade.Value = Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
+        OpacidadeIlha.Value = Math.Clamp(_cfg.IlhaOpacidade ?? _cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
 
         IlhaAtiva.IsChecked = _cfg.IlhaAtiva;
         IlhaMusica.IsChecked = _cfg.IlhaMusica;
@@ -246,6 +255,7 @@ public partial class PersonalizacaoWindow : Window
         _cfg.CorDestaque = padrao.CorDestaque;
         _cfg.Transparencia = padrao.Transparencia;
         _cfg.Opacidade = padrao.Opacidade;
+        _cfg.IlhaOpacidade = padrao.IlhaOpacidade;
         _cfg.Tema = padrao.Tema;
 
         _carregando = true;
@@ -256,6 +266,7 @@ public partial class PersonalizacaoWindow : Window
         SeguirSistema.IsChecked = _cfg.AcompanharCorDoSistema;
         Transparencia.IsChecked = _cfg.Transparencia;
         Opacidade.Value = _cfg.Opacidade;
+        OpacidadeIlha.Value = Math.Clamp(_cfg.IlhaOpacidade ?? _cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
         TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
         TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
         TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
@@ -290,6 +301,7 @@ public partial class PersonalizacaoWindow : Window
             : "A cor vale para anéis, abas e botões do painel.";
 
         Opacidade.IsEnabled = Transparencia.IsChecked == true;
+        OpacidadeIlha.IsEnabled = Transparencia.IsChecked == true;
 
         // So faz sentido com o contador: e ele que diz qual janela e o jogo.
         // A excecao so existe com a regra (esconder) e o contador ligados.

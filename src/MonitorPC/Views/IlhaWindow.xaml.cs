@@ -190,7 +190,9 @@ public partial class IlhaWindow : Window
         var fundo = ThemeService.CorDeFundo;
         if (_cfg.Transparencia)
         {
-            var alpha = (byte)(Math.Clamp(_cfg.Opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
+            // A Kisland tem opacidade propria; sem ela definida, segue a do painel.
+            var opacidade = _cfg.IlhaOpacidade ?? _cfg.Opacidade;
+            var alpha = (byte)(Math.Clamp(opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
             Casca.Background = new SolidColorBrush(Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
         }
         else

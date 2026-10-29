@@ -142,6 +142,12 @@ public sealed class AppConfig
     public bool Transparencia { get; set; } = true;
     public int Opacidade { get; set; } = 85;
 
+    /// <summary>
+    /// Opacidade da Kisland, separada da do painel. Vazia segue a do painel:
+    /// e o que quem ja usava via, e continua vendo ate mexer na barra dela.
+    /// </summary>
+    public int? IlhaOpacidade { get; set; }
+
     // --- Ilha no topo da tela ---
 
     /// <summary>

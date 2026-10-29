@@ -121,6 +121,14 @@
                         <TextBlock Text="100% · sólido" FontSize="11"
                                    Foreground="{DynamicResource TextoMuitoFraco}" HorizontalAlignment="Right" />
                     </Grid>
+
+                    <!-- A da Kisland, separada da do painel. -->
+                    <TextBlock Text="Kisland" FontSize="13" FontWeight="Medium" Margin="0,16,0,0"
+                               Foreground="{DynamicResource Texto}" />
+                    <Slider x:Name="OpacidadeIlha" IsMoveToPointEnabled="True" Minimum="15" Maximum="100" Margin="0,8,0,0"
+                            IsSnapToTickEnabled="True" TickFrequency="1"
+                            Foreground="{DynamicResource Acento}"
+                            ValueChanged="OpacidadeIlha_Alterada" />
                 </StackPanel>
             </Border>
 

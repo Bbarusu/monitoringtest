@@ -1,1 +1,1 @@
-Na Personalização, a opção do FPS por cima dos jogos agora fica dentro de "Esconder em tela cheia", como "Menos o FPS dos jogos". Ela funciona igual a antes, e só pode ser marcada com "Esconder em tela cheia" e o contador de FPS ligados.
+A Kisland agora tem a própria opacidade. Na Personalização, logo abaixo da barra de opacidade do painel, há uma barra só para ela. Até você mexer nela, a Kisland continua com a mesma opacidade do painel.
