@@ -1,7 +1,5 @@
-Novo contador de FPS na Kisland. Quando um jogo está rodando, em qualquer monitor, ela mostra o FPS dele. Liga em Personalização, em "FPS em jogos".
+Nova opção experimental: "FPS por cima de jogo em tela cheia", em Personalização, logo abaixo de "Esconder em tela cheia". Com o contador de FPS ligado, a Kisland tenta continuar visível, só com o FPS, mesmo quando o jogo diz estar em tela cheia exclusiva.
 
-Se o jogo estiver em tela cheia sem borda no mesmo monitor da Kisland, ela fica pequena, só com o FPS, e não abre ao passar o mouse, para não atrapalhar. Em tela cheia exclusiva, nada consegue aparecer por cima do jogo, então ela some como antes.
+Em muitos jogos isso funciona, porque o Windows roda o jogo sem borda por baixo dos panos. Nos de tela cheia exclusiva de verdade ela não aparece, e em alguns a tela pode piscar ou o jogo perder o foco. Por isso a opção vem desligada: se acontecer, é só desligar.
 
-Ela também deixou de sumir quando a tela cheia está em outro monitor.
-
-O contador precisa do KInfo instalado com acesso completo aos sensores, e funciona com jogos em DirectX, que são a maioria. Jogos só em Vulkan ou OpenGL podem não aparecer.
+Com o jogo na tela, a Kisland agora também se reafirma por cima dele a cada segundo, para o jogo não a esconder atrás.

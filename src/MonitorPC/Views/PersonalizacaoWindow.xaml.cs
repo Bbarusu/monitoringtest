@@ -164,6 +164,7 @@ public partial class PersonalizacaoWindow : Window
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
         IlhaVidro.IsChecked = _cfg.IlhaVidro;
         IlhaFps.IsChecked = _cfg.IlhaFps;
+        IlhaFicarEmTelaCheia.IsChecked = _cfg.IlhaFicarEmTelaCheia;
 
         // A contagem usa o rastreamento de eventos do Windows, que exige o app
         // elevado. Sem isso a caixa fica apagada e diz por quê, em vez de
@@ -171,6 +172,7 @@ public partial class PersonalizacaoWindow : Window
         if (!AtualizacaoService.Elevado())
         {
             IlhaFps.IsEnabled = false;
+            IlhaFicarEmTelaCheia.IsEnabled = false;
             DetalheFps.Text = "Precisa do KInfo instalado com acesso completo aos sensores (rodando como administrador).";
         }
         EscalaIlha.Value = Math.Clamp(_cfg.IlhaEscala, 70, 100);
@@ -228,6 +230,7 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
         _cfg.IlhaVidro = IlhaVidro.IsChecked == true;
         _cfg.IlhaFps = IlhaFps.IsChecked == true;
+        _cfg.IlhaFicarEmTelaCheia = IlhaFicarEmTelaCheia.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
         _cfg.IlhaEsconderEmTelaCheia = IlhaTelaCheia.IsChecked == true;
         _cfg.IlhaAvisoDeVolume = IlhaAvisoVolume.IsChecked == true;
@@ -289,6 +292,9 @@ public partial class PersonalizacaoWindow : Window
             : "A cor vale para anéis, abas e botões do painel.";
 
         Opacidade.IsEnabled = Transparencia.IsChecked == true;
+
+        // So faz sentido com o contador: e ele que diz qual janela e o jogo.
+        IlhaFicarEmTelaCheia.IsEnabled = IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
 
         // Com a ilha desligada as opcoes dela ficam a mostra, mas apagadas:
         // assim da para ver o que ela faz antes de ligar.

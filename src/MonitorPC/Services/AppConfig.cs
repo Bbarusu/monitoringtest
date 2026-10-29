@@ -177,6 +177,15 @@ public sealed class AppConfig
     /// </summary>
     public bool IlhaFps { get; set; }
 
+    /// <summary>
+    /// Tentar ficar visivel com o jogo em tela cheia "exclusiva". Muitos jogos
+    /// que dizem isso rodam, na verdade, convertidos pelo Windows para sem
+    /// borda, e ai a Kisland aparece. Nos de exclusiva de verdade ela nao
+    /// aparece, e em alguns a tela pode piscar ou o jogo perder o foco quando
+    /// ela tenta — por isso vem desligado.
+    /// </summary>
+    public bool IlhaFicarEmTelaCheia { get; set; }
+
     /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;
 

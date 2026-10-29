@@ -319,6 +319,22 @@
                 </Border>
 
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
+                            <TextBlock Text="FPS por cima de jogo em tela cheia" FontSize="13" FontWeight="Medium"
+                                       Foreground="{DynamicResource Texto}" />
+                            <TextBlock x:Name="DetalheTelaCheia" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}"
+                                       Text="Experimental. Funciona em jogos que o Windows roda sem borda por baixo dos panos. Em tela cheia exclusiva de verdade ela não aparece, e em alguns jogos a tela pode piscar." />
+                        </StackPanel>
+                        <CheckBox x:Name="IlhaFicarEmTelaCheia" Style="{StaticResource Interruptor}"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                    </Grid>
+                </Border>
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">
                     <StackPanel>
                         <TextBlock Text="Avisos rápidos" FontSize="11" Margin="0,2,0,6"

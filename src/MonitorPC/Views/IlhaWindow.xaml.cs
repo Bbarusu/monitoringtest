@@ -549,14 +549,31 @@ public partial class IlhaWindow : Window
     private void ConferirTelaCheia()
     {
         var estado = TelaCheia.Consultar(_handle);
-        var aqui = estado.Exclusiva ||
-                   (estado.Janela != IntPtr.Zero && estado.Monitor == TelaCheia.MonitorDe(_handle));
+        var meuMonitor = TelaCheia.MonitorDe(_handle);
 
-        var ehOJogo = _cfg.IlhaFps && _jogo is { } jogo && estado.Janela != IntPtr.Zero &&
-                      ProcessoDaJanela(estado.Janela) == jogo.Pid;
+        // Exclusiva: o Windows nao diz o monitor, mas o jogo do contador tem
+        // janela, e a janela diz. Sem jogo conhecido, vale o lado seguro.
+        var aqui = estado.Exclusiva
+            ? _jogo is not { } j || TelaCheia.MonitorDe(j.Janela) == meuMonitor
+            : estado.Janela != IntPtr.Zero && estado.Monitor == meuMonitor;
 
-        var modoJogo = aqui && !estado.Exclusiva && ehOJogo;
+        bool ehOJogo;
+        if (!_cfg.IlhaFps || _jogo is not { } jogo)
+            ehOJogo = false;
+        else if (estado.Exclusiva)
+            // So com a opcao ligada, e so se quem esta na frente e o jogo.
+            ehOJogo = _cfg.IlhaFicarEmTelaCheia && ProcessoDaJanela(PrimeiroPlano()) == jogo.Pid;
+        else
+            ehOJogo = estado.Janela != IntPtr.Zero && ProcessoDaJanela(estado.Janela) == jogo.Pid;
+
+        var modoJogo = aqui && ehOJogo;
         var esconder = aqui && !modoJogo && _cfg.IlhaEsconderEmTelaCheia;
+
+        // O jogo, ao tomar a tela, costuma passar a frente de tudo — inclusive
+        // de janelas "sempre por cima". Reafirmar a cada segundo e o que mantem
+        // a Kisland visivel por cima dele. Sem ativar: o foco continua no jogo.
+        if (modoJogo && IsVisible)
+            SetWindowPos(_handle, PorCimaDeTudo, 0, 0, 0, 0, SemTamanho | SemMover | SemAtivarJanela);
 
         if (modoJogo != _modoJogo)
         {
@@ -631,6 +648,8 @@ public partial class IlhaWindow : Window
 
         if (mudou) AplicarConfiguracao();
     }
+
+    private static IntPtr PrimeiroPlano() => GetForegroundWindow();
 
     private static int ProcessoDaJanela(IntPtr janela)
     {
@@ -1219,6 +1238,8 @@ public partial class IlhaWindow : Window
     private const uint SemTamanho = 0x0001;
     private const uint SemOrdem = 0x0004;
     private const uint SemAtivarJanela = 0x0010;
+    private const uint SemMover = 0x0002;
+    private static readonly IntPtr PorCimaDeTudo = new(-1);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Ponto
@@ -1248,6 +1269,9 @@ public partial class IlhaWindow : Window
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr janela, out int processo);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int tecla);
