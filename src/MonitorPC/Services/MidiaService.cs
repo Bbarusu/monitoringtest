@@ -9,6 +9,7 @@ namespace MonitorPC.Services;
 
 /// <summary>O que esta tocando agora, num instante.</summary>
 public sealed record EstadoDeMidia(
+    string Origem,
     string Titulo,
     string Artista,
     string App,
@@ -38,22 +39,40 @@ public sealed record EstadoDeMidia(
 /// Le e controla a midia pelo controle de transporte do proprio Windows — o
 /// mesmo que poe a musica no painel de volume e na tela de bloqueio.
 ///
-/// Por ali vem qualquer player que se anuncie ao sistema: Spotify, navegador
-/// tocando YouTube, o player do Windows. Nao ha integracao por app, e nenhum
-/// deles precisa saber que o KInfo existe.
-///
-/// Nao consulta nada em intervalo: o Windows avisa quando a sessao, a faixa ou
-/// o estado mudam, e o servico so le nessa hora.
+/// Acompanha todas as sessoes, e nao so a que o Windows chama de "atual". A
+/// atual e a ultima que se anunciou, e o Windows a mantem ali mesmo pausada:
+/// uma mensagem de audio parada no WhatsApp continuava sendo "o que esta
+/// tocando" por horas, com a mesma foto, enquanto o som vinha de outro app.
+/// Agora a escolha e de quem toca de fato; ninguem tocando, de quem tocou por
+/// ultimo — e so ate tres minutos depois de parar.
 /// </summary>
 public sealed class MidiaService : IDisposable
 {
+    /// <summary>Parado ha mais que isto, o player deixa de ser "o que esta tocando".</summary>
+    public static readonly TimeSpan Validade = TimeSpan.FromMinutes(3);
+
+    /// <summary>O que se sabe de cada sessao, pelo id do app.</summary>
+    private sealed class Registro
+    {
+        public required SessaoDeMidia Sessao { get; init; }
+        public bool Tocando { get; set; }
+
+        /// <summary>Quando comecou a tocar desta vez: entre dois tocando, vence o mais recente.</summary>
+        public DateTime ComecouEm { get; set; } = DateTime.MinValue;
+
+        /// <summary>A ultima vez em que estava tocando. Parado ha muito, sai da disputa.</summary>
+        public DateTime TocouEm { get; set; } = DateTime.MinValue;
+    }
+
+    private readonly object _trava = new();
+    private readonly Dictionary<string, Registro> _sessoes = new();
     private GerenciadorDeMidia? _gerenciador;
-    private SessaoDeMidia? _sessao;
+    private string? _escolhida;
     private int _geracao;
 
     /// <summary>
-    /// Disparado em thread qualquer, com nulo quando nada esta tocando nem
-    /// pausado em player nenhum.
+    /// Disparado em thread qualquer, com nulo quando nada toca nem tocou nos
+    /// ultimos minutos.
     /// </summary>
     public event Action<EstadoDeMidia?>? Mudou;
 
@@ -64,8 +83,8 @@ public sealed class MidiaService : IDisposable
         try
         {
             _gerenciador = await GerenciadorDeMidia.RequestAsync();
-            _gerenciador.CurrentSessionChanged += (_, _) => TrocarSessao();
-            TrocarSessao();
+            _gerenciador.SessionsChanged += (_, _) => Sincronizar();
+            Sincronizar();
         }
         catch (Exception ex)
         {
@@ -75,40 +94,171 @@ public sealed class MidiaService : IDisposable
         }
     }
 
-    private void TrocarSessao()
+    /// <summary>
+    /// Chamada a cada segundo pela ilha. E o que tira da tela um player que
+    /// parou ha mais de tres minutos: nenhum aviso do Windows chega nessa
+    /// hora, porque nada mudou — so o tempo passou.
+    /// </summary>
+    public void Conferir() => Escolher();
+
+    // ------------------------------------------------------------------
+    // Sessoes
+
+    private void Sincronizar()
     {
         try
         {
-            if (_sessao is not null)
+            var atuais = _gerenciador?.GetSessions();
+            if (atuais is null) return;
+
+            lock (_trava)
             {
-                _sessao.MediaPropertiesChanged -= Sessao_Mudou;
-                _sessao.PlaybackInfoChanged -= Sessao_Mudou;
-                _sessao.TimelinePropertiesChanged -= Sessao_Mudou;
+                var vistas = new HashSet<string>();
+
+                foreach (var sessao in atuais)
+                {
+                    var id = sessao.SourceAppUserModelId ?? "";
+                    if (!vistas.Add(id)) continue;
+                    if (_sessoes.ContainsKey(id)) continue;
+
+                    var tocando = EstaTocando(sessao);
+                    var agora = DateTime.UtcNow;
+
+                    _sessoes[id] = new Registro
+                    {
+                        Sessao = sessao,
+                        Tocando = tocando,
+
+                        // Pausada quando o app a encontrou: sem como saber ha
+                        // quanto tempo, conta como antiga. Quem abre o PC nao
+                        // quer ver a musica que pausou ontem.
+                        ComecouEm = tocando ? agora : DateTime.MinValue,
+                        TocouEm = tocando ? agora : DateTime.MinValue
+                    };
+
+                    sessao.PlaybackInfoChanged += Estado_Mudou;
+                    sessao.MediaPropertiesChanged += Conteudo_Mudou;
+                    sessao.TimelinePropertiesChanged += Conteudo_Mudou;
+                }
+
+                foreach (var id in _sessoes.Keys.Where(k => !vistas.Contains(k)).ToList())
+                {
+                    Desligar(_sessoes[id].Sessao);
+                    _sessoes.Remove(id);
+                }
             }
 
-            _sessao = _gerenciador?.GetCurrentSession();
-
-            if (_sessao is not null)
-            {
-                _sessao.MediaPropertiesChanged += Sessao_Mudou;
-                _sessao.PlaybackInfoChanged += Sessao_Mudou;
-                _sessao.TimelinePropertiesChanged += Sessao_Mudou;
-            }
-
-            _ = LerAsync();
+            Escolher();
         }
         catch (Exception ex)
         {
-            Log.Erro("Mídia: trocar sessão", ex);
+            Log.Erro("Mídia: sessões", ex);
         }
     }
 
-    private void Sessao_Mudou(SessaoDeMidia sender, object args) => _ = LerAsync();
+    private static bool EstaTocando(SessaoDeMidia sessao)
+    {
+        try
+        {
+            return sessao.GetPlaybackInfo()?.PlaybackStatus ==
+                   GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void Estado_Mudou(SessaoDeMidia sessao, object args)
+    {
+        var id = sessao.SourceAppUserModelId ?? "";
+        var tocando = EstaTocando(sessao);
+        var agora = DateTime.UtcNow;
+
+        lock (_trava)
+        {
+            if (!_sessoes.TryGetValue(id, out var registro)) return;
+
+            if (tocando && !registro.Tocando) registro.ComecouEm = agora;
+
+            // Tocando agora, ou parando agora: nos dois casos, este foi o
+            // ultimo instante em que estava tocando.
+            if (tocando || registro.Tocando) registro.TocouEm = agora;
+
+            registro.Tocando = tocando;
+        }
+
+        // Mudou de estado a que esta na tela: relê para o icone de play e
+        // pausa acompanharem. Outra sessao: pode ter passado a frente.
+        if (!Escolher() && id == _escolhida) _ = LerAsync();
+    }
+
+    private void Conteudo_Mudou(SessaoDeMidia sessao, object args)
+    {
+        if ((sessao.SourceAppUserModelId ?? "") == _escolhida) _ = LerAsync();
+    }
 
     /// <summary>
-    /// Le a sessao inteira. Os avisos chegam em rajada — trocar de faixa dispara
-    /// os tres de uma vez — e cada leitura carrega a capa: a geracao faz so a
-    /// ultima leitura publicar o resultado.
+    /// Quem aparece: entre as que tocam, a que comecou por ultimo; nenhuma
+    /// tocando, a que tocou por ultimo, se faz menos de tres minutos.
+    /// Devolve verdadeiro quando a escolha mudou (e ja mandou ler).
+    /// </summary>
+    private bool Escolher()
+    {
+        string? nova;
+        var agora = DateTime.UtcNow;
+
+        lock (_trava)
+        {
+            var tocando = _sessoes
+                .Where(p => p.Value.Tocando)
+                .OrderByDescending(p => p.Value.ComecouEm)
+                .Select(p => p.Key)
+                .FirstOrDefault();
+
+            nova = tocando ?? _sessoes
+                .Where(p => agora - p.Value.TocouEm < Validade)
+                .OrderByDescending(p => p.Value.TocouEm)
+                .Select(p => p.Key)
+                .FirstOrDefault();
+
+            if (nova == _escolhida) return false;
+            _escolhida = nova;
+        }
+
+        _ = LerAsync();
+        return true;
+    }
+
+    private SessaoDeMidia? SessaoEscolhida()
+    {
+        lock (_trava)
+        {
+            return _escolhida is not null && _sessoes.TryGetValue(_escolhida, out var r) ? r.Sessao : null;
+        }
+    }
+
+    private void Desligar(SessaoDeMidia sessao)
+    {
+        try
+        {
+            sessao.PlaybackInfoChanged -= Estado_Mudou;
+            sessao.MediaPropertiesChanged -= Conteudo_Mudou;
+            sessao.TimelinePropertiesChanged -= Conteudo_Mudou;
+        }
+        catch
+        {
+            // Sessao que ja sumiu do lado do Windows.
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Leitura
+
+    /// <summary>
+    /// Le a sessao escolhida inteira. Os avisos chegam em rajada — trocar de
+    /// faixa dispara os tres de uma vez — e cada leitura carrega a capa: a
+    /// geracao faz so a ultima leitura publicar o resultado.
     /// </summary>
     private async Task LerAsync()
     {
@@ -116,7 +266,7 @@ public sealed class MidiaService : IDisposable
 
         try
         {
-            var sessao = _sessao;
+            var sessao = SessaoEscolhida();
 
             if (sessao is null)
             {
@@ -124,6 +274,7 @@ public sealed class MidiaService : IDisposable
                 return;
             }
 
+            var origem = sessao.SourceAppUserModelId ?? "";
             var props = await sessao.TryGetMediaPropertiesAsync();
             var info = sessao.GetPlaybackInfo();
             var linha = sessao.GetTimelineProperties();
@@ -135,10 +286,14 @@ public sealed class MidiaService : IDisposable
                 return;
             }
 
+            var artista = props?.Artist?.Trim() ?? "";
             var tocando = info?.PlaybackStatus ==
                           GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
 
-            var capa = Atual is { } anterior && anterior.Titulo == titulo && anterior.Capa is not null
+            // A capa so e reaproveitada se for do mesmo app e da mesma faixa.
+            // Pelo titulo apenas, a foto de um app ia parar em outro.
+            var capa = Atual is { } anterior && anterior.Origem == origem &&
+                       anterior.Titulo == titulo && anterior.Artista == artista
                 ? anterior.Capa
                 : await LerCapaAsync(props!);
 
@@ -151,9 +306,10 @@ public sealed class MidiaService : IDisposable
             if (lidaEm.Year < 2000) lidaEm = DateTimeOffset.Now;
 
             Publicar(minha, new EstadoDeMidia(
+                origem,
                 titulo,
-                props?.Artist?.Trim() ?? "",
-                NomeDoApp(sessao.SourceAppUserModelId),
+                artista,
+                NomeDoApp(origem),
                 tocando,
                 capa,
                 posicao < TimeSpan.Zero ? TimeSpan.Zero : posicao,
@@ -222,6 +378,9 @@ public sealed class MidiaService : IDisposable
         var minusculo = id.ToLowerInvariant();
 
         if (minusculo.Contains("spotify")) return "Spotify";
+        if (minusculo.Contains("whatsapp")) return "WhatsApp";
+        if (minusculo.Contains("telegram")) return "Telegram";
+        if (minusculo.Contains("discord")) return "Discord";
         if (minusculo.Contains("msedge")) return "Edge";
         if (minusculo.Contains("chrome")) return "Chrome";
         if (minusculo.Contains("firefox") || minusculo == "308046b0af4a39cb") return "Firefox";
@@ -255,7 +414,7 @@ public sealed class MidiaService : IDisposable
     {
         try
         {
-            if (_sessao is { } sessao) await acao(sessao);
+            if (SessaoEscolhida() is { } sessao) await acao(sessao);
         }
         catch (Exception ex)
         {
@@ -265,21 +424,13 @@ public sealed class MidiaService : IDisposable
 
     public void Dispose()
     {
-        try
+        lock (_trava)
         {
-            if (_sessao is not null)
-            {
-                _sessao.MediaPropertiesChanged -= Sessao_Mudou;
-                _sessao.PlaybackInfoChanged -= Sessao_Mudou;
-                _sessao.TimelinePropertiesChanged -= Sessao_Mudou;
-            }
-        }
-        catch
-        {
-            // Encerrando: nada a fazer com a falha.
+            foreach (var registro in _sessoes.Values) Desligar(registro.Sessao);
+            _sessoes.Clear();
+            _escolhida = null;
         }
 
-        _sessao = null;
         _gerenciador = null;
     }
 }

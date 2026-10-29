@@ -464,6 +464,10 @@ public partial class IlhaWindow : Window
         }
 
         ConferirTelaCheia();
+
+        // Quem parou ha mais de tres minutos sai daqui: o servico so fica
+        // sabendo que o tempo passou se alguem perguntar.
+        _midia.Conferir();
         OuvirSaida();
         ConferirSilencio();
         AtualizarRelogio();
@@ -645,7 +649,7 @@ public partial class IlhaWindow : Window
     // ------------------------------------------------------------------
     // Midia
 
-    private static string Chave(EstadoDeMidia e) => e.Titulo + "\u0001" + e.Artista;
+    private static string Chave(EstadoDeMidia e) => e.Origem + "\u0001" + e.Titulo + "\u0001" + e.Artista;
 
     /// <summary>O que a ilha mostra: o que toca, menos o que ja foi dispensado por silencio.</summary>
     private EstadoDeMidia? MidiaVisivel()
