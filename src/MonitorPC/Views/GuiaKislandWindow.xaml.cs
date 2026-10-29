@@ -210,10 +210,9 @@ public partial class GuiaKislandWindow : Window
                     ItemGpu.IsChecked == true || ItemRam.IsChecked == true ||
                     ItemVolume.IsChecked == true || ItemRelogio.IsChecked == true;
 
+        // Como na Kisland: com algo a mostrar, o botao de Personalizacao no
+        // fim; sem nada, so o anel.
         PreviaAnel.Visibility = Visivel(!algum);
-
-        // O primeiro chip visivel sem o espaco da esquerda, para a pilula
-        // ficar centrada no anel ou na capa.
-        PreviaAnel.Margin = new Thickness(algum ? 5 : 2, 0, 2, 0);
+        PreviaBotao.Visibility = Visivel(algum && _cfg.IlhaBotaoPersonalizacao);
     }
 }
