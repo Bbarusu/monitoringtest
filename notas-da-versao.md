@@ -1,1 +1,1 @@
-O efeito vidro da Kisland foi removido. Ela volta ao visual normal, com a mesma cor, transparência e sombra do painel.
+Na Personalização, a opção do FPS por cima dos jogos agora fica dentro de "Esconder em tela cheia", como "Menos o FPS dos jogos". Ela funciona igual a antes, e só pode ser marcada com "Esconder em tela cheia" e o contador de FPS ligados.

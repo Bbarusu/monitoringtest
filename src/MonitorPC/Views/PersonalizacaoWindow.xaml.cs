@@ -292,7 +292,10 @@ public partial class PersonalizacaoWindow : Window
         Opacidade.IsEnabled = Transparencia.IsChecked == true;
 
         // So faz sentido com o contador: e ele que diz qual janela e o jogo.
-        IlhaFicarEmTelaCheia.IsEnabled = IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
+        // A excecao so existe com a regra (esconder) e o contador ligados.
+        var excecaoValida = IlhaTelaCheia.IsChecked == true && IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
+        IlhaFicarEmTelaCheia.IsEnabled = excecaoValida;
+        LinhaFpsTelaCheia.Opacity = excecaoValida ? 1 : 0.5;
 
         // Com a ilha desligada as opcoes dela ficam a mostra, mas apagadas:
         // assim da para ver o que ela faz antes de ligar.
