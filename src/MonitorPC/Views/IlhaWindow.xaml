@@ -315,9 +315,9 @@
                         <Border CornerRadius="3" Background="{DynamicResource Acento}" />
                     </Grid>
                     <Grid Margin="0,6,0,0">
-                        <TextBlock x:Name="TempoAtual" FontSize="11" Foreground="{DynamicResource TextoMuitoFraco}"
+                        <TextBlock x:Name="TempoAtual" FontSize="11" Foreground="{DynamicResource TextoFraco}"
                                    HorizontalAlignment="Left" />
-                        <TextBlock x:Name="TempoTotal" FontSize="11" Foreground="{DynamicResource TextoMuitoFraco}"
+                        <TextBlock x:Name="TempoTotal" FontSize="11" Foreground="{DynamicResource TextoFraco}"
                                    HorizontalAlignment="Right" />
                     </Grid>
                 </StackPanel>

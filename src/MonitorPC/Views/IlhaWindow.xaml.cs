@@ -205,6 +205,8 @@ public partial class IlhaWindow : Window
         var escala = Math.Clamp(_cfg.IlhaEscala, 70, 100) / 100.0;
         Casca.LayoutTransform = new ScaleTransform(escala, escala);
 
+        AplicarContorno();
+
         // No modo jogo, so o FPS (e um aviso de temperatura, se houver): o
         // resto disputaria a atencao com o jogo, na mesma tela.
         var normal = !_modoJogo;
@@ -222,6 +224,41 @@ public partial class IlhaWindow : Window
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
         AtualizarRelogio();
         AplicarMidia(false);
+    }
+
+    /// <summary>
+    /// Contorno suave, na cor do fundo da Kisland, nos textos que ficam direto
+    /// sobre o fundo dela — titulo da musica, app, tempos, rodape, avisos.
+    ///
+    /// Com transparencia, esse fundo deixa passar o que esta atras, e no tema
+    /// claro um texto cinza sobre uma janela escura atras some. Os cartoes nao
+    /// precisam: sao opacos. O contorno devolve ao texto o fundo que ele
+    /// perdeu, so em volta das letras, sem mudar o visual do resto.
+    /// </summary>
+    private void AplicarContorno()
+    {
+        System.Windows.Media.Effects.Effect? contorno = null;
+
+        if (_cfg.Transparencia)
+        {
+            var efeito = new System.Windows.Media.Effects.DropShadowEffect
+            {
+                Color = ThemeService.CorDeFundo,
+                BlurRadius = 6,
+                ShadowDepth = 0,
+                Opacity = 1,
+                RenderingBias = System.Windows.Media.Effects.RenderingBias.Quality
+            };
+            efeito.Freeze();
+            contorno = efeito;
+        }
+
+        foreach (var texto in new UIElement[]
+                 {
+                     AppMidia, TituloMidia, ArtistaMidia, TempoAtual, TempoTotal,
+                     Rodape, TituloAviso, ArtistaAviso, ValorAvisoVolume
+                 })
+            texto.Effect = contorno;
     }
 
     private static Visibility Visivel(bool sim) => sim ? Visibility.Visible : Visibility.Collapsed;
