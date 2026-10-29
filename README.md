@@ -72,6 +72,29 @@ fica sempre no começo da pílula. A Kisland aberta tem ainda até seis apps ou
 sites (`IlhaAtalhos`). Como o KInfo costuma rodar elevado, `AtalhoService` abre
 tudo pelo Explorer, para o navegador e os apps não herdarem o administrador.
 
+### Roda do mouse, saídas de som e bandeja
+
+A roda e o clique do meio chegam por mensagem do Windows (`WM_MOUSEWHEEL`,
+`WM_MBUTTONUP`), lidas num gancho da janela antes do WPF, que nem sempre entrega
+a roda a uma janela sem foco. Cada clique da roda muda 2%, o passo do Windows;
+touchpads mandam pedaços menores, que se somam. Depende da opção do Windows
+"rolar janelas inativas ao passar o mouse", que vem ligada. No modo jogo não age.
+
+As saídas de som são os aparelhos ativos do Core Audio, com o nome do painel de
+som. Trocar a padrão usa `IPolicyConfig`, a interface não documentada do próprio
+painel de som, a mesma dos apps de troca de áudio; a troca vale para os três
+papéis (console, multimídia e comunicação).
+
+A bandeja recebe arquivos por `WM_DROPFILES` (`DragAcceptFiles`), e não pelo
+arrastar do WPF: o Windows não deixa o Explorer arrastar para um app elevado
+pelo OLE, e pelo caminho antigo deixa, liberadas `WM_DROPFILES`, `WM_COPYDATA` e
+`WM_COPYGLOBALDATA` com `ChangeWindowMessageFilterEx`. Por isso a Kisland não
+pode ter elementos com `AllowDrop` (uma caixa de texto, por exemplo): o WPF
+registraria o OLE e o caminho antigo pararia. Guarda só os caminhos, até 12, e
+só enquanto o app está aberto. Clique abre pelo Explorer; arrastar para fora usa
+o OLE, que com o app elevado pode não chegar ao Explorer — para isso há o
+copiar, que põe os arquivos na área de transferência para colar numa pasta.
+
 `DetectorDeJogo` decide quem é jogo: quem entrega pelo menos 10 quadros por
 segundo, não está na lista de programas que desenham muito sem serem jogos
 (navegadores, Discord, OBS, players de vídeo…) e tem uma janela visível que

@@ -222,6 +222,18 @@ public sealed class AppConfig
     public bool IlhaAbertaCalendario { get; set; } = true;
     public bool IlhaAbertaAtalhos { get; set; } = true;
 
+    /// <summary>Botoes para trocar a saida de som (fone, caixa, monitor), junto do volume.</summary>
+    public bool IlhaSaidasDeSom { get; set; } = true;
+
+    /// <summary>
+    /// Bandeja de arquivos: arrastar um arquivo ate a Kisland deixa ele ali, a
+    /// mao, ate ser usado. Guarda so o caminho, e so enquanto o app esta aberto.
+    /// </summary>
+    public bool IlhaBandeja { get; set; } = true;
+
+    /// <summary>A roda do mouse em cima da Kisland muda o volume, e o clique da roda pausa a musica.</summary>
+    public bool IlhaRodaMudaVolume { get; set; } = true;
+
     /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
     public bool IlhaBotaoPersonalizacao { get; set; } = true;
 

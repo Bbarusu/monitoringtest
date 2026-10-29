@@ -111,6 +111,13 @@ public partial class IlhaWindow : Window
         SourceInitialized += (_, _) =>
         {
             NaoRoubarFoco();
+
+            // Roda do mouse, clique do meio e arquivos soltos chegam como
+            // mensagens do Windows, lidas antes do WPF: a Kisland nunca e a
+            // janela ativa, e o WPF nem sempre entrega a roda a quem nao tem
+            // foco.
+            HwndSource.FromHwnd(_handle)?.AddHook(Mensagem);
+            PrepararBandeja();
         };
         SizeChanged += (_, _) => Posicionar();
         DpiChanged += (_, _) => Posicionar();
@@ -238,6 +245,9 @@ public partial class IlhaWindow : Window
         GradePerfis.Visibility = Visivel(_cfg.IlhaAbertaPerfis);
         BlocoCalendario.Visibility = Visivel(_cfg.IlhaAbertaCalendario);
         MontarAtalhos();
+        MontarBandeja();
+        if (_handle != IntPtr.Zero) DragAcceptFiles(_handle, _cfg.IlhaBandeja);
+        if (_expandida) MontarSaidas();
 
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
         AtualizarRelogio();
@@ -294,7 +304,7 @@ public partial class IlhaWindow : Window
         var blocos = new FrameworkElement[]
         {
             BlocoMidia, BlocoProgresso, SemMidia, BlocoCalendario, GradeTemperaturas,
-            GradeSistema, BlocoVolume, GradePerfis, BlocoAtalhos, BlocoRodape
+            GradeSistema, BlocoVolume, GradePerfis, BlocoAtalhos, BlocoBandeja, BlocoRodape
         };
 
         _margens ??= blocos.ToDictionary(b => b, b => b.Margin);
@@ -329,6 +339,7 @@ public partial class IlhaWindow : Window
                     ChipPotencia.Visibility == Visibility.Visible ||
                     ChipVolume.Visibility == Visibility.Visible ||
                     ChipRelogio.Visibility == Visibility.Visible ||
+                    ChipBandeja.Visibility == Visibility.Visible ||
                     ChipFps.Visibility == Visibility.Visible;
 
         var ia = _modoJogo ? null : AtalhoService.IaEscolhida(_cfg);
@@ -569,6 +580,8 @@ public partial class IlhaWindow : Window
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
         AplicarMidia(false);
         AplicarVolume(_volume.Nivel, _volume.Mudo, false);
+        MontarSaidas();
+        MontarBandeja();
         AtualizarProgresso();
 
         MostrarEstado();
@@ -1382,6 +1395,473 @@ public partial class IlhaWindow : Window
     private void Mudo_Click(object sender, RoutedEventArgs e) => _volume.AlternarMudo();
 
     // ------------------------------------------------------------------
+    // Roda do mouse e clique do meio
+
+    private int _rodaAcumulada;
+
+    /// <summary>Quanto cada "clique" da roda muda o volume: o mesmo passo do Windows.</summary>
+    private const int PassoDaRoda = 2;
+
+    private IntPtr Mensagem(IntPtr janela, int mensagem, IntPtr w, IntPtr l, ref bool tratada)
+    {
+        switch (mensagem)
+        {
+            case RodaDoMouse:
+                tratada = GirarRoda((short)((w.ToInt64() >> 16) & 0xFFFF));
+                break;
+
+            case BotaoDoMeioSolto:
+                if (_cfg.IlhaRodaMudaVolume && !_modoJogo && _midia.Atual is not null)
+                {
+                    _ = _midia.TocarPausar();
+                    tratada = true;
+                }
+                break;
+
+            case ArquivosSoltos:
+                ReceberArquivos(w);
+                tratada = true;
+                break;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    /// <summary>
+    /// A roda em cima da Kisland muda o volume, de 2 em 2%. O giro chega em
+    /// partes de 120 por clique; touchpads mandam pedacos menores, que se
+    /// somam ate dar um passo. No modo jogo nao: o mouse passa por ali no meio
+    /// da partida.
+    /// </summary>
+    private bool GirarRoda(int giro)
+    {
+        if (!_cfg.IlhaRodaMudaVolume || _modoJogo || !_volume.Disponivel) return false;
+
+        _rodaAcumulada += giro;
+        var passos = _rodaAcumulada / 120;
+        if (passos == 0) return true;
+        _rodaAcumulada -= passos * 120;
+
+        var nivel = Math.Clamp(_volume.Nivel + passos * PassoDaRoda, 0, 100);
+
+        // Subir o volume com o som mudo tira o mudo, como no Windows.
+        var mudo = _volume.Mudo;
+        if (mudo && passos > 0)
+        {
+            _volume.AlternarMudo();
+            mudo = false;
+        }
+
+        _volume.Definir(nivel);
+
+        // Mudanca feita pela propria Kisland nao vira aviso sozinha. Fechada,
+        // ela mostra o aviso de volume aqui, para a roda ter resposta na hora.
+        AplicarVolume(nivel, mudo, false);
+        if (!_expandida) MostrarAviso(Aviso.Volume, TimeSpan.FromSeconds(1.5));
+
+        return true;
+    }
+
+    // ------------------------------------------------------------------
+    // Saidas de som
+
+    /// <summary>
+    /// Um botao por saida ativa, com a atual marcada como o perfil escolhido
+    /// no painel. So aparece com mais de uma: com uma, nao ha o que trocar.
+    /// </summary>
+    private void MontarSaidas()
+    {
+        SaidasDeSom.Children.Clear();
+
+        var saidas = _cfg.IlhaSaidasDeSom && _volume.Disponivel
+            ? _volume.Saidas()
+            : Array.Empty<SaidaDeSom>();
+
+        SaidasDeSom.Visibility = Visivel(saidas.Count > 1);
+        if (saidas.Count < 2) return;
+
+        foreach (var saida in saidas)
+        {
+            var icone = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse(DesenhoDaSaida(saida.Nome)),
+                StrokeThickness = 1.6,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+                StrokeLineJoin = PenLineJoin.Round,
+                Width = 13,
+                Height = 13,
+                Stretch = Stretch.Uniform,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var nome = new TextBlock
+            {
+                Text = saida.Nome,
+                FontSize = 11.5,
+                FontWeight = FontWeights.Medium,
+                Margin = new Thickness(6, 0, 0, 0),
+                MaxWidth = 180,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            var linha = new StackPanel { Orientation = Orientation.Horizontal };
+            linha.Children.Add(icone);
+            linha.Children.Add(nome);
+
+            var fundo = new Border
+            {
+                CornerRadius = new CornerRadius(13),
+                Padding = new Thickness(10, 5, 10, 5),
+                BorderThickness = new Thickness(1),
+                Child = linha
+            };
+
+            // As mesmas cores do perfil escolhido no painel.
+            fundo.SetResourceReference(Border.BackgroundProperty, saida.Padrao ? "InfoFundo" : "Chip");
+            fundo.SetResourceReference(Border.BorderBrushProperty, saida.Padrao ? "Acento" : "Trilho");
+            icone.SetResourceReference(Shape.StrokeProperty, saida.Padrao ? "InfoTexto" : "TextoFraco");
+            nome.SetResourceReference(TextBlock.ForegroundProperty, saida.Padrao ? "InfoTexto" : "Texto");
+
+            var botao = new Button
+            {
+                Style = (Style)FindResource("BotaoSemMoldura"),
+                Content = fundo,
+                Tag = saida.Id,
+                ToolTip = saida.Padrao ? $"{saida.Nome} (em uso)" : $"Tocar em {saida.Nome}",
+                Margin = new Thickness(0, 0, 6, 6)
+            };
+            botao.Click += Saida_Click;
+            SaidasDeSom.Children.Add(botao);
+        }
+    }
+
+    private void Saida_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string id }) return;
+
+        _volume.UsarSaida(id);
+
+        // O aparelho novo tem o volume dele.
+        AplicarVolume(_volume.Nivel, _volume.Mudo, false);
+        MontarSaidas();
+    }
+
+    /// <summary>Fone, monitor ou caixa, pelo nome que o Windows da ao aparelho.</summary>
+    private static string DesenhoDaSaida(string nome)
+    {
+        var n = nome.ToLowerInvariant();
+
+        if (new[] { "fone", "headphone", "headset", "airpods", "buds", "earphone", "auricular" }.Any(n.Contains))
+            return "M4,15 L4,12 A8,8 0 0,1 20,12 L20,15 " +
+                   "M4,15 A2,2 0 0,1 6,13 L7,13 A1,1 0 0,1 8,14 L8,19 A1,1 0 0,1 7,20 L6,20 A2,2 0 0,1 4,18 Z " +
+                   "M20,15 A2,2 0 0,0 18,13 L17,13 A1,1 0 0,0 16,14 L16,19 A1,1 0 0,0 17,20 L18,20 A2,2 0 0,0 20,18 Z";
+
+        if (new[] { "monitor", "hdmi", "displayport", "display", " tv", "nvidia", "amd high definition" }.Any(n.Contains))
+            return "M4,5 L20,5 A1,1 0 0,1 21,6 L21,15 A1,1 0 0,1 20,16 L4,16 A1,1 0 0,1 3,15 L3,6 A1,1 0 0,1 4,5 Z " +
+                   "M9,20 L15,20 M12,16 L12,20";
+
+        return Corpo + OndaPerto;
+    }
+
+    // ------------------------------------------------------------------
+    // Bandeja de arquivos
+
+    /// <summary>Caminhos guardados, do mais antigo ao mais novo. So nesta sessao.</summary>
+    private readonly List<string> _bandeja = new();
+
+    /// <summary>Duas fileiras de seis.</summary>
+    private const int MaximoNaBandeja = 12;
+
+    private Point? _inicioDoArrasto;
+    private DispatcherTimer? _fimDoRecado;
+
+    /// <summary>
+    /// Aceitar arquivos soltos em cima da Kisland.
+    ///
+    /// Pelo jeito antigo do Windows (WM_DROPFILES), e nao pelo arrastar do
+    /// WPF, de proposito: o KInfo costuma rodar como administrador, e o
+    /// Windows nao deixa o Explorer, que roda como usuario comum, arrastar
+    /// para um app elevado pelo caminho novo. Pelo antigo deixa, desde que o
+    /// app libere estas tres mensagens.
+    /// </summary>
+    private void PrepararBandeja()
+    {
+        try
+        {
+            ChangeWindowMessageFilterEx(_handle, ArquivosSoltos, Permitir, IntPtr.Zero);
+            ChangeWindowMessageFilterEx(_handle, CopiaDeDados, Permitir, IntPtr.Zero);
+            ChangeWindowMessageFilterEx(_handle, CopiaDeDadosGlobal, Permitir, IntPtr.Zero);
+            DragAcceptFiles(_handle, _cfg.IlhaBandeja);
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Bandeja: preparar", ex);
+        }
+    }
+
+    private void ReceberArquivos(IntPtr soltos)
+    {
+        var novos = new List<string>();
+
+        try
+        {
+            var quantos = DragQueryFile(soltos, 0xFFFFFFFF, null, 0);
+            for (uint i = 0; i < quantos; i++)
+            {
+                var tamanho = DragQueryFile(soltos, i, null, 0);
+                var texto = new System.Text.StringBuilder((int)tamanho + 1);
+                if (DragQueryFile(soltos, i, texto, (uint)texto.Capacity) > 0)
+                    novos.Add(texto.ToString());
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Bandeja: receber", ex);
+        }
+        finally
+        {
+            DragFinish(soltos);
+        }
+
+        if (!_cfg.IlhaBandeja || novos.Count == 0) return;
+
+        // Soltar de novo o mesmo arquivo so o traz para o fim; passar do
+        // limite tira os mais antigos.
+        foreach (var caminho in novos)
+        {
+            _bandeja.Remove(caminho);
+            _bandeja.Add(caminho);
+        }
+        while (_bandeja.Count > MaximoNaBandeja) _bandeja.RemoveAt(0);
+
+        MontarBandeja();
+        AtualizarSemItens();
+        MostrarEstado();
+
+        // Abre para mostrar onde o arquivo foi parar.
+        if (!_expandida && !_modoJogo) Expandir();
+    }
+
+    /// <summary>
+    /// Refaz a bandeja. Arquivo apagado ou movido desde que entrou sai dela:
+    /// a bandeja guarda so o caminho, e um caminho que nao leva a nada nao
+    /// serve.
+    /// </summary>
+    private void MontarBandeja()
+    {
+        _bandeja.RemoveAll(c => !File.Exists(c) && !Directory.Exists(c));
+
+        GradeBandeja.Children.Clear();
+        foreach (var caminho in _bandeja)
+            GradeBandeja.Children.Add(ItemDaBandeja(caminho));
+
+        var quantos = _bandeja.Count;
+        GradeBandeja.Visibility = Visivel(quantos > 0);
+        AcoesBandeja.Visibility = Visivel(quantos > 0);
+        DicaBandeja.Visibility = Visivel(quantos == 0);
+        TituloDaBandeja();
+
+        BlocoBandeja.Visibility = Visivel(_cfg.IlhaBandeja);
+        ChipBandeja.Visibility = Visivel(_cfg.IlhaBandeja && quantos > 0 && !_modoJogo);
+        TextoBandeja.Text = quantos.ToString();
+    }
+
+    private void TituloDaBandeja()
+    {
+        var quantos = _bandeja.Count;
+        TituloBandeja.Text = quantos switch
+        {
+            0 => "Bandeja",
+            1 => "Bandeja · 1 arquivo",
+            _ => $"Bandeja · {quantos} arquivos"
+        };
+    }
+
+    private UIElement ItemDaBandeja(string caminho)
+    {
+        var pasta = Directory.Exists(caminho);
+
+        var circulo = new Border
+        {
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(12),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
+
+        if (!pasta && AtalhoService.Icone(caminho) is { } icone)
+        {
+            var imagem = new Image { Source = icone, Width = 24, Height = 24 };
+            RenderOptions.SetBitmapScalingMode(imagem, BitmapScalingMode.HighQuality);
+            circulo.Child = imagem;
+        }
+        else
+        {
+            var desenho = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse(pasta
+                    ? "M3,7 A2,2 0 0,1 5,5 L9,5 L11,7 L19,7 A2,2 0 0,1 21,9 L21,18 A2,2 0 0,1 19,20 L5,20 A2,2 0 0,1 3,18 Z"
+                    : "M6,3 L14,3 L19,8 L19,19 A2,2 0 0,1 17,21 L7,21 A2,2 0 0,1 5,19 L5,4 A1,1 0 0,1 6,3 Z M14,3 L14,8 L19,8"),
+                StrokeThickness = 1.6,
+                StrokeLineJoin = PenLineJoin.Round,
+                Width = 18,
+                Height = 18,
+                Stretch = Stretch.Uniform
+            };
+            desenho.SetResourceReference(Shape.StrokeProperty, "Icone");
+            circulo.Child = desenho;
+        }
+
+        var nome = System.IO.Path.GetFileName(caminho.TrimEnd('\\'));
+        var rotulo = new TextBlock
+        {
+            Text = string.IsNullOrEmpty(nome) ? caminho : nome,
+            FontSize = 10.5,
+            Margin = new Thickness(0, 5, 0, 0),
+            MaxWidth = 64,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        rotulo.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+
+        var conteudo = new StackPanel();
+        conteudo.Children.Add(circulo);
+        conteudo.Children.Add(rotulo);
+
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoAtalho"),
+            Content = conteudo,
+            Tag = caminho,
+            ToolTip = caminho + "\nClique para abrir, ou arraste para levar a outro lugar"
+        };
+        botao.Click += ItemDaBandeja_Click;
+        botao.PreviewMouseLeftButtonDown += (_, e) => _inicioDoArrasto = e.GetPosition(this);
+        botao.PreviewMouseMove += ItemDaBandeja_Arrastar;
+
+        var x = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse("M6,6 L18,18 M18,6 L6,18"),
+            StrokeThickness = 2,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            Width = 7,
+            Height = 7,
+            Stretch = Stretch.Uniform
+        };
+        x.SetResourceReference(Shape.StrokeProperty, "Icone");
+
+        var tirar = new Button
+        {
+            Style = (Style)FindResource("BotaoRedondoPequeno"),
+            Width = 18,
+            Height = 18,
+            Content = x,
+            Tag = caminho,
+            ToolTip = "Tirar da bandeja",
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 2, 4, 0)
+        };
+        tirar.Click += TirarDaBandeja_Click;
+
+        var grade = new Grid();
+        grade.Children.Add(botao);
+        grade.Children.Add(tirar);
+        return grade;
+    }
+
+    private void ItemDaBandeja_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string caminho }) return;
+
+        Recolher();
+        AtalhoService.Abrir(caminho);
+    }
+
+    /// <summary>
+    /// Arrastar um item leva o arquivo para onde ele for solto: uma pasta, um
+    /// e-mail, um chat. Movido para outro lugar, sai da bandeja.
+    /// </summary>
+    private void ItemDaBandeja_Arrastar(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed || _inicioDoArrasto is not { } inicio ||
+            sender is not Button { Tag: string caminho } botao)
+            return;
+
+        var agora = e.GetPosition(this);
+        if (Math.Abs(agora.X - inicio.X) < SystemParameters.MinimumHorizontalDragDistance &&
+            Math.Abs(agora.Y - inicio.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+
+        _inicioDoArrasto = null;
+        botao.ReleaseMouseCapture();
+
+        try
+        {
+            var dados = new DataObject(DataFormats.FileDrop, new[] { caminho });
+            DragDrop.DoDragDrop(botao, dados, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Bandeja: arrastar", ex);
+        }
+
+        // Movido (ou apagado): o caminho nao existe mais, e MontarBandeja o tira.
+        MontarBandeja();
+        AtualizarSemItens();
+    }
+
+    private void TirarDaBandeja_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string caminho }) return;
+
+        _bandeja.Remove(caminho);
+        MontarBandeja();
+        AtualizarSemItens();
+    }
+
+    /// <summary>
+    /// Copia todos para a area de transferencia, como um Ctrl+C no Explorer:
+    /// colar numa pasta copia os arquivos para la. Funciona tambem com o app
+    /// elevado, onde arrastar para fora pode nao funcionar.
+    /// </summary>
+    private void CopiarBandeja_Click(object sender, RoutedEventArgs e)
+    {
+        if (_bandeja.Count == 0) return;
+
+        try
+        {
+            var lista = new System.Collections.Specialized.StringCollection();
+            lista.AddRange(_bandeja.ToArray());
+            Clipboard.SetFileDropList(lista);
+
+            TituloBandeja.Text = "Copiado! Cole com Ctrl+V numa pasta";
+            _fimDoRecado?.Stop();
+            _fimDoRecado = Temporizador(TimeSpan.FromSeconds(2.5), () =>
+            {
+                _fimDoRecado?.Stop();
+                TituloDaBandeja();
+            });
+            _fimDoRecado.Start();
+        }
+        catch (Exception ex)
+        {
+            // A area de transferencia pode estar presa por outro app.
+            Log.Erro("Bandeja: copiar", ex);
+        }
+    }
+
+    private void LimparBandeja_Click(object sender, RoutedEventArgs e)
+    {
+        _bandeja.Clear();
+        MontarBandeja();
+        AtualizarSemItens();
+    }
+
+    // ------------------------------------------------------------------
     // Perfis e atalhos para o painel
 
     /// <summary>O plano pode ter mudado fora do app; vale o que esta em vigor.</summary>
@@ -1431,6 +1911,13 @@ public partial class IlhaWindow : Window
 
     // ------------------------------------------------------------------
 
+    private const int RodaDoMouse = 0x020A;
+    private const int BotaoDoMeioSolto = 0x0208;
+    private const int ArquivosSoltos = 0x0233;
+    private const uint CopiaDeDados = 0x004A;
+    private const uint CopiaDeDadosGlobal = 0x0049;
+    private const uint Permitir = 1;
+
     private const int EstiloEstendido = -20;
     private const int SemAtivar = 0x08000000;
     private const int JanelaDeFerramenta = 0x00000080;
@@ -1466,6 +1953,19 @@ public partial class IlhaWindow : Window
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetCursorPos(out Ponto ponto);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ChangeWindowMessageFilterEx(IntPtr janela, uint mensagem, uint acao, IntPtr extra);
+
+    [DllImport("shell32.dll")]
+    private static extern void DragAcceptFiles(IntPtr janela, [MarshalAs(UnmanagedType.Bool)] bool aceitar);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint DragQueryFile(IntPtr soltos, uint indice, System.Text.StringBuilder? arquivo, uint tamanho);
+
+    [DllImport("shell32.dll")]
+    private static extern void DragFinish(IntPtr soltos);
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr janela, out int processo);

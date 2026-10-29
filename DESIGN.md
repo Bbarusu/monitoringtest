@@ -159,6 +159,11 @@ quando há um escolhido. Os atalhos de apps e sites ficam em círculos com o íc
 inicial do site na cor de destaque. Ícone de volume pequeno, de cantos redondos e traço 1.6,
 desenhado sempre no mesmo tamanho, com ou sem as ondas.
 
+Saídas de som em botões de canto 13 sob o volume, a atual nas cores do perfil escolhido (fundo
+InfoFundo, borda na cor de destaque); ícone de fone, monitor ou caixa pelo nome do aparelho. Bandeja
+de arquivos num minicartão: título com a contagem, copiar e esvaziar em botões redondos, e os
+arquivos em quadros de canto 12 com o ícone do Windows; na pílula, um chip com a contagem.
+
 ### Guia da Kisland
 Convite único no painel (cartão "Novidade", botões "Depois" e "Bora ver") e guia de cinco passos, em
 linguagem próxima: "Oi, essa é a Kisland", "Passou o mouse, ela abre", "Você escolhe o que aparece",

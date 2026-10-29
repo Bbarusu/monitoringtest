@@ -370,6 +370,17 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
+                                <TextBlock Text="Trocar a saída de som" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="Fone, caixa ou monitor, junto do volume. Aparece com mais de uma saída ligada." FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <CheckBox x:Name="IlhaSaidasDeSom" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
                             <TextBlock Text="Modos de energia" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             <CheckBox x:Name="IlhaAbertaPerfis" Style="{StaticResource CaixaDeSelecao}"
@@ -380,6 +391,17 @@
                             <TextBlock Text="Atalhos" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             <CheckBox x:Name="IlhaAbertaAtalhos" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
+                                <TextBlock Text="Bandeja de arquivos" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="Arraste arquivos até a Kisland para deixá-los à mão. Ficam até você fechar o KInfo." FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <CheckBox x:Name="IlhaBandeja" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
@@ -532,6 +554,22 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                     </StackPanel>
+                </Border>
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
+                            <TextBlock Text="Roda do mouse muda o volume" FontSize="13" FontWeight="Medium"
+                                       Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="Com o mouse em cima da Kisland, cada giro muda 2%. O clique da roda pausa ou volta a música."
+                                       FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
+                        <CheckBox x:Name="IlhaRodaVolume" Style="{StaticResource Interruptor}"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                    </Grid>
                 </Border>
 
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"

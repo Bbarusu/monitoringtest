@@ -175,6 +175,9 @@ public partial class PersonalizacaoWindow : Window
         IlhaData.IsChecked = _cfg.IlhaData;
         IlhaAbertaCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
         IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
+        IlhaSaidasDeSom.IsChecked = _cfg.IlhaSaidasDeSom;
+        IlhaBandeja.IsChecked = _cfg.IlhaBandeja;
+        IlhaRodaVolume.IsChecked = _cfg.IlhaRodaMudaVolume;
         IlhaIa.SelectedIndex = Math.Max(0, _idsDeIa.IndexOf(_cfg.IlhaIa ?? ""));
         IlhaIaEndereco.Text = _cfg.IlhaIaEndereco ?? "";
         MontarListaDeAtalhos();
@@ -251,6 +254,9 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaData = IlhaData.IsChecked == true;
         _cfg.IlhaAbertaCalendario = IlhaAbertaCalendario.IsChecked == true;
         _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
+        _cfg.IlhaSaidasDeSom = IlhaSaidasDeSom.IsChecked == true;
+        _cfg.IlhaBandeja = IlhaBandeja.IsChecked == true;
+        _cfg.IlhaRodaMudaVolume = IlhaRodaVolume.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
         _cfg.IlhaAbertaPlayer = IlhaAbertaPlayer.IsChecked == true;
         _cfg.IlhaAbertaTemperaturas = IlhaAbertaTemperaturas.IsChecked == true;

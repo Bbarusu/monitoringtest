@@ -2,6 +2,9 @@ using System.Runtime.InteropServices;
 
 namespace MonitorPC.Services;
 
+/// <summary>Um aparelho de saida de som ativo: fone, caixa, monitor.</summary>
+public sealed record SaidaDeSom(string Id, string Nome, bool Padrao);
+
 /// <summary>
 /// Volume geral do Windows, pelo Core Audio — a mesma interface que o controle
 /// de volume da barra de tarefas usa.
@@ -136,6 +139,104 @@ public sealed class VolumeService : IDisposable
     }
 
     /// <summary>
+    /// As saidas de som ligadas agora, na ordem do Windows, com a padrao
+    /// marcada. Aparelho desconectado ou desativado nao entra.
+    /// </summary>
+    public IReadOnlyList<SaidaDeSom> Saidas()
+    {
+        var lista = new List<SaidaDeSom>();
+
+        try
+        {
+            var enumerador = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+
+            string? padrao = null;
+            if (enumerador.GetDefaultAudioEndpoint(0 /* saida */, 1 /* multimidia */, out var atual) == 0)
+                atual.GetId(out padrao);
+
+            if (enumerador.EnumAudioEndpoints(0 /* saida */, 1 /* ativos */, out var colecao) != 0)
+                return lista;
+
+            colecao.GetCount(out var quantos);
+            for (uint i = 0; i < quantos; i++)
+            {
+                colecao.Item(i, out var aparelho);
+                aparelho.GetId(out var id);
+                lista.Add(new SaidaDeSom(id, NomeDe(aparelho) ?? "Saída de som", id == padrao));
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Volume: listar saídas", ex);
+        }
+
+        return lista;
+    }
+
+    /// <summary>"Alto-falantes (Realtek Audio)": o nome que o painel de som do Windows mostra.</summary>
+    private static string? NomeDe(IMMDevice aparelho)
+    {
+        try
+        {
+            aparelho.OpenPropertyStore(0 /* leitura */, out var propriedades);
+
+            var chave = NomeAmigavel;
+            if (propriedades.GetValue(ref chave, out var valor) != 0) return null;
+
+            try
+            {
+                return valor.Tipo == TextoUnicode ? Marshal.PtrToStringUni(valor.Ponteiro) : null;
+            }
+            finally
+            {
+                PropVariantClear(ref valor);
+            }
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Torna a saida a padrao do Windows, para musica, jogos e chamadas — o
+    /// mesmo que escolher no menu de som da barra de tarefas.
+    ///
+    /// O Windows nao publica uma forma oficial de fazer isso: a interface usada
+    /// (IPolicyConfig) e a do proprio painel de som, a mesma que os apps de
+    /// troca de audio usam desde o Windows 7. Se um dia ela mudar, a troca so
+    /// deixa de funcionar e fica registrada no log; nada mais e afetado.
+    /// </summary>
+    public bool UsarSaida(string id)
+    {
+        try
+        {
+            var politica = (IPolicyConfig)new PolicyConfigClient();
+
+            var ok = true;
+            for (var papel = 0; papel < 3; papel++) // console, multimidia, comunicacao
+                ok &= politica.SetDefaultEndpoint(id, papel) == 0;
+
+            // O volume passa a ser o do aparelho novo.
+            Conferir();
+            return ok;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Volume: trocar saída", ex);
+            return false;
+        }
+    }
+
+    private const ushort TextoUnicode = 31; // VT_LPWSTR
+
+    private static readonly ChaveDePropriedade NomeAmigavel =
+        new() { Formato = new Guid("A45C254E-DF1C-4EFD-8020-67D146A850E0"), Id = 14 };
+
+    [DllImport("ole32.dll")]
+    private static extern int PropVariantClear(ref PropVariant valor);
+
+    /// <summary>
     /// O aviso traz quem mudou o volume. Mudanca feita pela propria ilha nao
     /// precisa virar aviso na ilha — o usuario esta olhando o controle.
     /// </summary>
@@ -216,7 +317,7 @@ internal class MMDeviceEnumerator { }
  InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMMDeviceEnumerator
 {
-    [PreserveSig] int EnumAudioEndpoints(int fluxo, int estado, out IntPtr colecao);
+    [PreserveSig] int EnumAudioEndpoints(int fluxo, int estado, out IMMDeviceCollection colecao);
     [PreserveSig] int GetDefaultAudioEndpoint(int fluxo, int papel, out IMMDevice aparelho);
 }
 
@@ -226,7 +327,7 @@ internal interface IMMDevice
 {
     void Activate(ref Guid iid, int contexto, IntPtr parametros,
                   [MarshalAs(UnmanagedType.IUnknown)] out object interfaceAtivada);
-    void OpenPropertyStore(int acesso, out IntPtr propriedades);
+    void OpenPropertyStore(int acesso, out IPropertyStore propriedades);
     void GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
     void GetState(out int estado);
 }
@@ -262,4 +363,64 @@ internal interface IAudioEndpointVolumeCallback
 internal interface IAudioMeterInformation
 {
     void GetPeakValue(out float pico);
+}
+
+[ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IMMDeviceCollection
+{
+    void GetCount(out uint quantos);
+    void Item(uint indice, out IMMDevice aparelho);
+}
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct ChaveDePropriedade
+{
+    public Guid Formato;
+    public int Id;
+}
+
+/// <summary>
+/// PROPVARIANT, so com o que se le aqui: o tipo e o ponteiro do texto. O
+/// tamanho e o do maior caso (24 bytes em 64 bits), para o Windows ter onde
+/// escrever qualquer valor.
+/// </summary>
+[StructLayout(LayoutKind.Explicit, Size = 24)]
+internal struct PropVariant
+{
+    [FieldOffset(0)] public ushort Tipo;
+    [FieldOffset(8)] public IntPtr Ponteiro;
+}
+
+[ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IPropertyStore
+{
+    [PreserveSig] int GetCount(out uint quantos);
+    [PreserveSig] int GetAt(uint indice, out ChaveDePropriedade chave);
+    [PreserveSig] int GetValue(ref ChaveDePropriedade chave, out PropVariant valor);
+}
+
+// Painel de som do Windows. Nao documentada; os metodos antes de
+// SetDefaultEndpoint so existem para manter a ordem da tabela.
+
+[ComImport, Guid("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9")]
+internal class PolicyConfigClient { }
+
+[ComImport, Guid("F8679F50-850A-41CF-9C72-430F290290C8"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IPolicyConfig
+{
+    [PreserveSig] int GetMixFormat(IntPtr a, IntPtr b);
+    [PreserveSig] int GetDeviceFormat(IntPtr a, int b, IntPtr c);
+    [PreserveSig] int ResetDeviceFormat(IntPtr a);
+    [PreserveSig] int SetDeviceFormat(IntPtr a, IntPtr b, IntPtr c);
+    [PreserveSig] int GetProcessingPeriod(IntPtr a, int b, IntPtr c, IntPtr d);
+    [PreserveSig] int SetProcessingPeriod(IntPtr a, IntPtr b);
+    [PreserveSig] int GetShareMode(IntPtr a, IntPtr b);
+    [PreserveSig] int SetShareMode(IntPtr a, IntPtr b);
+    [PreserveSig] int GetPropertyValue(IntPtr a, int b, IntPtr c, IntPtr d);
+    [PreserveSig] int SetPropertyValue(IntPtr a, int b, IntPtr c, IntPtr d);
+    [PreserveSig] int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string id, int papel);
+    [PreserveSig] int SetEndpointVisibility(IntPtr a, int b);
 }
