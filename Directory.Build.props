@@ -13,7 +13,7 @@
     valor em tempo de execução por Comum/Versao.cs.
   -->
   <PropertyGroup>
-    <Version>0.1.23</Version>
+    <Version>0.1.24</Version>
   </PropertyGroup>
 
 </Project>

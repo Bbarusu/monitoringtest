@@ -23,29 +23,14 @@ public partial class PersonalizacaoWindow : Window
     private bool _carregando = true;
 
     /// <param name="irParaIlha">
-    /// Aberta pela propria ilha: a tela ja comeca rolada ate a secao dela, em
-    /// vez de no tema, que nao e o que a pessoa veio mudar.
+    /// Aberta pela propria Kisland: a tela ja comeca na aba dela, e nao na do
+    /// painel, que nao e o que a pessoa veio mudar.
     /// </param>
     public PersonalizacaoWindow(AppConfig cfg, Action aoMudar, bool irParaIlha = false)
     {
         InitializeComponent();
 
-        if (irParaIlha)
-        {
-            // Depois do layout: antes dele a secao ainda nao tem posicao.
-            Loaded += (_, _) => Dispatcher.BeginInvoke(() =>
-            {
-                try
-                {
-                    var y = SecaoIlha.TransformToAncestor(Conteudo).Transform(new Point(0, 0)).Y;
-                    Rolagem.ScrollToVerticalOffset(y);
-                }
-                catch (InvalidOperationException)
-                {
-                    // Sem arvore visual montada: fica no topo, que tambem serve.
-                }
-            }, System.Windows.Threading.DispatcherPriority.Loaded);
-        }
+        if (irParaIlha) AbaDaKisland.IsChecked = true;
         Janelas.Acompanhar(this);
         _cfg = cfg;
         _aoMudar = aoMudar;
@@ -127,8 +112,24 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
+    /// <summary>
+    /// Troca entre as abas Painel e Kisland. Dispara tambem durante o
+    /// InitializeComponent, pela aba marcada no XAML, antes de as abas
+    /// existirem — dai a conferencia.
+    /// </summary>
+    private void Aba_Alterada(object sender, RoutedEventArgs e)
+    {
+        if (AbaPainel is null || AbaKisland is null) return;
+
+        var kisland = AbaDaKisland.IsChecked == true;
+        AbaPainel.Visibility = kisland ? Visibility.Collapsed : Visibility.Visible;
+        AbaKisland.Visibility = kisland ? Visibility.Visible : Visibility.Collapsed;
+        Rolagem?.ScrollToTop();
+    }
+
     private void OpacidadeIlha_Alterada(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
+        if (ValorOpacidadeIlha is not null) ValorOpacidadeIlha.Text = $"{e.NewValue:F0}%";
         if (_carregando) return;
 
         _cfg.IlhaOpacidade = (int)e.NewValue;
@@ -171,6 +172,11 @@ public partial class PersonalizacaoWindow : Window
         IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
         IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
+        IlhaAbertaPlayer.IsChecked = _cfg.IlhaAbertaPlayer;
+        IlhaAbertaTemperaturas.IsChecked = _cfg.IlhaAbertaTemperaturas;
+        IlhaAbertaSistema.IsChecked = _cfg.IlhaAbertaSistema;
+        IlhaAbertaVolume.IsChecked = _cfg.IlhaAbertaVolume;
+        IlhaAbertaPerfis.IsChecked = _cfg.IlhaAbertaPerfis;
         IlhaFps.IsChecked = _cfg.IlhaFps;
         IlhaFicarEmTelaCheia.IsChecked = _cfg.IlhaFicarEmTelaCheia;
 
@@ -236,6 +242,11 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaPotencia = IlhaPotencia.IsChecked == true;
         _cfg.IlhaRelogio = IlhaRelogio.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
+        _cfg.IlhaAbertaPlayer = IlhaAbertaPlayer.IsChecked == true;
+        _cfg.IlhaAbertaTemperaturas = IlhaAbertaTemperaturas.IsChecked == true;
+        _cfg.IlhaAbertaSistema = IlhaAbertaSistema.IsChecked == true;
+        _cfg.IlhaAbertaVolume = IlhaAbertaVolume.IsChecked == true;
+        _cfg.IlhaAbertaPerfis = IlhaAbertaPerfis.IsChecked == true;
         _cfg.IlhaFps = IlhaFps.IsChecked == true;
         _cfg.IlhaFicarEmTelaCheia = IlhaFicarEmTelaCheia.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
@@ -302,6 +313,7 @@ public partial class PersonalizacaoWindow : Window
 
         Opacidade.IsEnabled = Transparencia.IsChecked == true;
         OpacidadeIlha.IsEnabled = Transparencia.IsChecked == true;
+        DicaOpacidadeIlha.Visibility = Transparencia.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
 
         // So faz sentido com o contador: e ele que diz qual janela e o jogo.
         // A excecao so existe com a regra (esconder) e o contador ligados.

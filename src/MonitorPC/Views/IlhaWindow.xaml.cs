@@ -219,7 +219,11 @@ public partial class IlhaWindow : Window
         ChipPotencia.Visibility = Visivel(normal && _cfg.IlhaPotencia);
         ChipVolume.Visibility = Visivel(normal && _cfg.IlhaVolume && _volume.Disponivel);
         ChipRelogio.Visibility = Visivel(normal && _cfg.IlhaRelogio);
-        BlocoVolume.Visibility = Visivel(_volume.Disponivel);
+        // O que aparece com ela aberta, como escolhido na aba Kisland.
+        BlocoVolume.Visibility = Visivel(_volume.Disponivel && _cfg.IlhaAbertaVolume);
+        GradeTemperaturas.Visibility = Visivel(_cfg.IlhaAbertaTemperaturas);
+        GradeSistema.Visibility = Visivel(_cfg.IlhaAbertaSistema);
+        GradePerfis.Visibility = Visivel(_cfg.IlhaAbertaPerfis);
 
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
         AtualizarRelogio();
@@ -262,6 +266,35 @@ public partial class IlhaWindow : Window
     }
 
     private static Visibility Visivel(bool sim) => sim ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Margens originais dos blocos da Kisland aberta, lidas do XAML na primeira vez.</summary>
+    private Dictionary<FrameworkElement, Thickness>? _margens;
+
+    /// <summary>
+    /// Cada bloco da Kisland aberta tem espaco em cima para se separar do
+    /// anterior. Escondido o primeiro, o seguinte herdaria um espaco sem
+    /// ninguem acima — o primeiro visivel perde o espaco de cima.
+    /// </summary>
+    private void AjustarEspacos()
+    {
+        var blocos = new FrameworkElement[]
+        {
+            BlocoMidia, SemMidia, BlocoProgresso, GradeTemperaturas,
+            GradeSistema, BlocoVolume, GradePerfis, BlocoRodape
+        };
+
+        _margens ??= blocos.ToDictionary(b => b, b => b.Margin);
+
+        var primeiro = true;
+        foreach (var bloco in blocos)
+        {
+            if (bloco.Visibility != Visibility.Visible) continue;
+
+            var m = _margens[bloco];
+            bloco.Margin = primeiro ? new Thickness(m.Left, 0, m.Right, m.Bottom) : m;
+            primeiro = false;
+        }
+    }
 
     /// <summary>
     /// Sem nada para mostrar, a pilula vira um circulo com o anel. O botao de
@@ -877,9 +910,11 @@ public partial class IlhaWindow : Window
         PorCapa(CapaPequena, NotaPequena, estado?.Capa);
         PorCapa(CapaGrande, NotaGrande, estado?.Capa);
 
-        BlocoMidia.Visibility = Visivel(estado is not null);
-        BlocoProgresso.Visibility = Visivel(estado is { Duracao.TotalSeconds: > 0 });
-        SemMidia.Visibility = Visivel(estado is null);
+        var player = _cfg.IlhaAbertaPlayer;
+        BlocoMidia.Visibility = Visivel(player && estado is not null);
+        BlocoProgresso.Visibility = Visivel(player && estado is { Duracao.TotalSeconds: > 0 });
+        SemMidia.Visibility = Visivel(player && estado is null);
+        AjustarEspacos();
 
         if (estado is not null)
         {

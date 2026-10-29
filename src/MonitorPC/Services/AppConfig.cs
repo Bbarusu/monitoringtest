@@ -196,6 +196,14 @@ public sealed class AppConfig
     public int IlhaEscala { get; set; } = 85;
 
 
+    // O que a Kisland mostra aberta. O rodape fica sempre: e dele que saem o
+    // painel e a Personalizacao.
+    public bool IlhaAbertaPlayer { get; set; } = true;
+    public bool IlhaAbertaTemperaturas { get; set; } = true;
+    public bool IlhaAbertaSistema { get; set; } = true;
+    public bool IlhaAbertaVolume { get; set; } = true;
+    public bool IlhaAbertaPerfis { get; set; } = true;
+
     /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
     public bool IlhaBotaoPersonalizacao { get; set; } = true;
 

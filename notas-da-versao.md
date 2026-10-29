@@ -1,7 +1,3 @@
-Os textos da Kisland ficaram mais fáceis de ler, principalmente no tema claro. O nome da música, o app, os tempos e o rodapé ganharam um contorno suave na cor do fundo, e não somem mais quando há uma janela escura atrás da Kisland.
+A Personalização agora tem duas abas: Painel e Kisland. Tudo da Kisland fica na aba dela: opacidade, tamanho, o que aparece, como ela abre, tela cheia, avisos e o guia. O botão de Personalização da Kisland já abre direto nessa aba.
 
-Corrigido: os sensores de temperatura paravam de funcionar depois de reiniciar o PC. O driver que dá acesso a eles fica parado até alguém pedir para carregá-lo, e ninguém pedia — funcionava logo após instalar, e morria no primeiro reinício. Agora o KInfo carrega esse driver sozinho ao abrir.
-
-O relatório de diagnóstico passou a dizer se esse driver está rodando, e não só se está instalado. Registrado e parado lê tanto quanto não instalado, e o relatório não separava os dois.
-
-Atualizar não falha mais por causa de uma sobra: um instalador antigo que não podia ser apagado derrubava o download antes de ele começar.
+Novo: dá para escolher o que aparece com a Kisland aberta. Em "Aberta, ela mostra", você liga ou desliga o player de música, a temperatura da CPU e da GPU, RAM, disco e energia, o volume e os modos de energia.
