@@ -163,6 +163,16 @@ public partial class PersonalizacaoWindow : Window
         IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
         IlhaVidro.IsChecked = _cfg.IlhaVidro;
+        IlhaFps.IsChecked = _cfg.IlhaFps;
+
+        // A contagem usa o rastreamento de eventos do Windows, que exige o app
+        // elevado. Sem isso a caixa fica apagada e diz por quê, em vez de
+        // ligar algo que nunca vai mostrar nada.
+        if (!AtualizacaoService.Elevado())
+        {
+            IlhaFps.IsEnabled = false;
+            DetalheFps.Text = "Precisa do KInfo instalado com acesso completo aos sensores (rodando como administrador).";
+        }
         EscalaIlha.Value = Math.Clamp(_cfg.IlhaEscala, 70, 100);
         IlhaAoPassar.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
         IlhaAoClicar.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
@@ -217,6 +227,7 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaRelogio = IlhaRelogio.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
         _cfg.IlhaVidro = IlhaVidro.IsChecked == true;
+        _cfg.IlhaFps = IlhaFps.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = IlhaAoPassar.IsChecked == true;
         _cfg.IlhaEsconderEmTelaCheia = IlhaTelaCheia.IsChecked == true;
         _cfg.IlhaAvisoDeVolume = IlhaAvisoVolume.IsChecked == true;

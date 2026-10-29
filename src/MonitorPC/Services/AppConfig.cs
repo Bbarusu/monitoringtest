@@ -170,6 +170,13 @@ public sealed class AppConfig
     /// </summary>
     public bool GuiaKislandVisto { get; set; }
 
+    /// <summary>
+    /// Contador de FPS na Kisland quando um jogo esta rodando, em qualquer
+    /// monitor. Desligado por padrao: liga uma sessao de rastreamento do
+    /// Windows, e quem nao joga nao precisa dela.
+    /// </summary>
+    public bool IlhaFps { get; set; }
+
     /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;
 

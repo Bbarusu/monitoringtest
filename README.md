@@ -46,6 +46,27 @@ formato da Kisland (`SetWindowRgn`) a cada mudança de tamanho ou de estado — 
 com o recorte, a sombra sai. A refração das bordas do Liquid Glass, que curva a
 imagem como lente, não tem equivalente para janelas do Windows.
 
+### Contador de FPS
+
+`FpsService` conta os eventos de "quadro apresentado" que o DXGI (DirectX 10
+a 12) e o D3D9 publicam no rastreamento de eventos do Windows — o caminho do
+PresentMon —, por processo, a cada segundo. Não injeta nada no jogo. Usa a
+`Microsoft.Diagnostics.Tracing.TraceEvent`; a sessão (`KInfo-FPS`) só existe
+com o contador ligado e a Kisland ativa, e exige o app elevado. Jogos só em
+Vulkan ou OpenGL não passam por esses provedores.
+
+`DetectorDeJogo` decide quem é jogo: quem entrega pelo menos 10 quadros por
+segundo, não está na lista de programas que desenham muito sem serem jogos
+(navegadores, Discord, OBS, players de vídeo…) e tem uma janela visível que
+cobre o monitor, está maximizada ou ocupa metade dele — em qualquer monitor,
+com ou sem foco.
+
+Com o jogo em tela cheia sem borda no mesmo monitor da Kisland, ela entra no
+modo jogo: só o FPS (e um aviso de temperatura, se houver), sem abrir ao passar
+o mouse. Tela cheia em outro monitor não a esconde mais. Tela cheia exclusiva
+continua escondendo: nada aparece por cima, e o Windows não diz em qual monitor
+ela está.
+
 ### Guia
 
 `GuiaKislandWindow` são cinco passos com prévia desenhada e o controle de

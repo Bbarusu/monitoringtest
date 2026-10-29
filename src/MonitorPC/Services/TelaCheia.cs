@@ -14,46 +14,99 @@ namespace MonitorPC.Services;
 /// esses, a resposta e geometrica: a janela em primeiro plano cobre o monitor
 /// inteiro, barra de tarefas incluida.
 /// </summary>
+/// <summary>O que esta em tela cheia agora, e onde.</summary>
+/// <param name="Exclusiva">
+/// Direct3D em modo exclusivo ou apresentacao: o Windows avisa, mas nao diz em
+/// qual monitor, e nada consegue aparecer por cima.
+/// </param>
+/// <param name="Janela">A janela que cobre o monitor, quando e por geometria.</param>
+/// <param name="Monitor">O monitor que ela cobre.</param>
+public readonly record struct EstadoDeTelaCheia(bool Exclusiva, IntPtr Janela, IntPtr Monitor)
+{
+    public bool Cheia => Exclusiva || Janela != IntPtr.Zero;
+}
+
 public static class TelaCheia
 {
-    public static bool Agora(IntPtr propria)
+    /// <summary>Ha tela cheia em algum lugar. Mantido para quem so quer saber isso.</summary>
+    public static bool Agora(IntPtr propria) => Consultar(propria).Cheia;
+
+    /// <summary>
+    /// O monitor em que uma janela esta. A Kisland compara com o da tela
+    /// cheia: um jogo no outro monitor nao e motivo para ela sumir deste.
+    /// </summary>
+    public static IntPtr MonitorDe(IntPtr janela) =>
+        janela == IntPtr.Zero ? IntPtr.Zero : MonitorFromWindow(janela, MonitorMaisProximo);
+
+    public static EstadoDeTelaCheia Consultar(IntPtr propria)
     {
         try
         {
             if (SHQueryUserNotificationState(out var estado) == 0 &&
-                estado is EstadoOcupado or EstadoD3DTelaCheia or EstadoApresentacao)
-                return true;
+                estado is EstadoD3DTelaCheia or EstadoApresentacao)
+                return new EstadoDeTelaCheia(true, IntPtr.Zero, IntPtr.Zero);
 
             var frente = GetForegroundWindow();
-            if (frente == IntPtr.Zero || frente == propria) return false;
+
+            // "Ocupado" e qualquer app em tela cheia: sem janela que a geometria
+            // confirme, vale como exclusiva, que e o lado seguro.
+            var ocupado = estado == EstadoOcupado;
+
+            if (frente == IntPtr.Zero || frente == propria)
+                return new EstadoDeTelaCheia(ocupado, IntPtr.Zero, IntPtr.Zero);
 
             // A area de trabalho e a barra de tarefas tambem cobrem o monitor
             // inteiro, e nao sao tela cheia de ninguem.
             var classe = Classe(frente);
             if (classe is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd")
-                return false;
+                return default;
 
             // Janela maximizada comum, com barra de titulo, nao e tela cheia —
             // e com a barra de tarefas em ocultar automaticamente ela cobriria
             // o monitor inteiro e enganaria a conta abaixo.
             if (IsZoomed(frente) && (GetWindowLong(frente, EstiloDaJanela) & ComBarraDeTitulo) == ComBarraDeTitulo)
-                return false;
+                return default;
 
-            if (!GetWindowRect(frente, out var janela)) return false;
+            if (CobreOMonitor(frente, out var monitor))
+                return new EstadoDeTelaCheia(false, frente, monitor);
 
-            var monitor = MonitorFromWindow(frente, MonitorMaisProximo);
-            var info = new InfoDoMonitor { Tamanho = Marshal.SizeOf<InfoDoMonitor>() };
-            if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info)) return false;
-
-            var area = info.Area;
-            return janela.Esquerda <= area.Esquerda && janela.Topo <= area.Topo &&
-                   janela.Direita >= area.Direita && janela.Baixo >= area.Baixo;
+            return new EstadoDeTelaCheia(ocupado, IntPtr.Zero, IntPtr.Zero);
         }
         catch
         {
             // Na duvida a ilha fica: sumir sem motivo seria pior.
-            return false;
+            return default;
         }
+    }
+
+    /// <summary>A janela cobre o monitor inteiro em que esta, barra de tarefas incluida.</summary>
+    public static bool CobreOMonitor(IntPtr janela, out IntPtr monitor)
+    {
+        monitor = IntPtr.Zero;
+        if (!GetWindowRect(janela, out var r)) return false;
+
+        monitor = MonitorFromWindow(janela, MonitorMaisProximo);
+        var info = new InfoDoMonitor { Tamanho = Marshal.SizeOf<InfoDoMonitor>() };
+        if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info)) return false;
+
+        var area = info.Area;
+        return r.Esquerda <= area.Esquerda && r.Topo <= area.Topo &&
+               r.Direita >= area.Direita && r.Baixo >= area.Baixo;
+    }
+
+    /// <summary>Quanto do monitor a janela ocupa, de 0 a 1.</summary>
+    public static double FracaoDoMonitor(IntPtr janela)
+    {
+        if (!GetWindowRect(janela, out var r)) return 0;
+
+        var monitor = MonitorFromWindow(janela, MonitorMaisProximo);
+        var info = new InfoDoMonitor { Tamanho = Marshal.SizeOf<InfoDoMonitor>() };
+        if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info)) return 0;
+
+        var a = info.Area;
+        double areaMonitor = (double)(a.Direita - a.Esquerda) * (a.Baixo - a.Topo);
+        double areaJanela = (double)Math.Max(0, r.Direita - r.Esquerda) * Math.Max(0, r.Baixo - r.Topo);
+        return areaMonitor <= 0 ? 0 : Math.Min(1, areaJanela / areaMonitor);
     }
 
     private static string Classe(IntPtr janela)

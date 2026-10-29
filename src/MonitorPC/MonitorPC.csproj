@@ -43,6 +43,11 @@
 
   <ItemGroup>
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+
+    <!-- Leitura dos eventos de "quadro apresentado" do Windows, para o
+         contador de FPS da Kisland. E a biblioteca da propria Microsoft para
+         rastreamento de eventos; a do PresentMon faz o mesmo em C++. -->
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.*" />
   </ItemGroup>
 
   <!--

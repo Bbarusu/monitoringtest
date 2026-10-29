@@ -166,6 +166,16 @@
                     </StackPanel>
                 </Border>
 
+                <!-- FPS do jogo rodando, em qualquer monitor. Só existe com um
+                     jogo aberto e o contador ligado. -->
+                <Border x:Name="ChipFps" Style="{StaticResource ChipIlha}" Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource IconeChip}" Stroke="{DynamicResource Acento}"
+                              Data="M6,9 L18,9 A4,4 0 0,1 22,13 L22,15 A3,3 0 0,1 16.5,16.5 L15,15 L9,15 L7.5,16.5 A3,3 0 0,1 2,15 L2,13 A4,4 0 0,1 6,9 Z M7,11 L7,13 M6,12 L8,12 M16,12 L16.01,12 M18,12 L18.01,12" />
+                        <TextBlock x:Name="TextoFps" Style="{StaticResource TextoChip}" Text="-- FPS" />
+                    </StackPanel>
+                </Border>
+
                 <Border x:Name="ChipCpu" Style="{StaticResource ChipIlha}">
                     <StackPanel Orientation="Horizontal">
                         <Path Style="{StaticResource IconeChip}"

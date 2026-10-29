@@ -58,6 +58,13 @@ public partial class IlhaWindow : Window
     private string? _ultimaFaixa;
     private IntPtr _handle;
 
+    // Contador de FPS: a sessao de rastreamento, o jogo da vez, e se a
+    // Kisland esta no modo enxuto de quando o jogo divide a tela com ela.
+    private readonly FpsService _fps = new();
+    private Jogo? _jogo;
+    private bool _modoJogo;
+    private int _tentarFpsEm;
+
     private DateTime? _dentroDesde;
     private DateTime? _foraDesde;
 
@@ -107,7 +114,11 @@ public partial class IlhaWindow : Window
         // Monitor ligado, desligado ou com resolucao nova: a ilha volta ao
         // topo do monitor dela, ou do principal se o dela sumiu.
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += Telas_Mudaram;
-        Closed += (_, _) => Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= Telas_Mudaram;
+        Closed += (_, _) =>
+        {
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= Telas_Mudaram;
+            _fps.Dispose();
+        };
 
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() => AplicarSensores(snap));
         _midia.Mudou += _ => Dispatcher.BeginInvoke(() => AplicarMidia(true));
@@ -157,16 +168,19 @@ public partial class IlhaWindow : Window
         _aviso = Aviso.Nenhum;
         PararEqualizador();
         PararAnel();
+        _fps.Parar();
+        _jogo = null;
+        _modoJogo = false;
         Hide();
     }
+
+    /// <summary>A sombra do XAML, guardada para voltar quando o vidro e desligado.</summary>
+    private System.Windows.Media.Effects.Effect? _sombra;
 
     /// <summary>
     /// Aplica o que a Personalizacao decide: fundo, transparencia e o que a
     /// pilula mostra. Chamada a cada mudanca la, para o efeito ser visto na hora.
     /// </summary>
-    /// <summary>A sombra do XAML, guardada para voltar quando o vidro e desligado.</summary>
-    private System.Windows.Media.Effects.Effect? _sombra;
-
     public void AplicarConfiguracao()
     {
         _sombra ??= Casca.Effect;
@@ -204,13 +218,18 @@ public partial class IlhaWindow : Window
         Casca.Effect = _cfg.IlhaVidro ? null : _sombra;
         AplicarVidro();
 
-        ChipCpu.Visibility = Visivel(_cfg.IlhaCpu || _cfg.IlhaCpuUso);
-        ChipGpu.Visibility = Visivel(_cfg.IlhaGpu || _cfg.IlhaGpuUso);
-        ChipRam.Visibility = Visivel(_cfg.IlhaRam);
-        ChipDisco.Visibility = Visivel(_cfg.IlhaDisco);
-        ChipPotencia.Visibility = Visivel(_cfg.IlhaPotencia);
-        ChipVolume.Visibility = Visivel(_cfg.IlhaVolume && _volume.Disponivel);
-        ChipRelogio.Visibility = Visivel(_cfg.IlhaRelogio);
+        // No modo jogo, so o FPS (e um aviso de temperatura, se houver): o
+        // resto disputaria a atencao com o jogo, na mesma tela.
+        var normal = !_modoJogo;
+        if (_cfg.IlhaFps && !_fps.Rodando) _tentarFpsEm = 0;
+        ChipFps.Visibility = Visivel(_cfg.IlhaFps && _jogo is not null);
+        ChipCpu.Visibility = Visivel(normal && (_cfg.IlhaCpu || _cfg.IlhaCpuUso));
+        ChipGpu.Visibility = Visivel(normal && (_cfg.IlhaGpu || _cfg.IlhaGpuUso));
+        ChipRam.Visibility = Visivel(normal && _cfg.IlhaRam);
+        ChipDisco.Visibility = Visivel(normal && _cfg.IlhaDisco);
+        ChipPotencia.Visibility = Visivel(normal && _cfg.IlhaPotencia);
+        ChipVolume.Visibility = Visivel(normal && _cfg.IlhaVolume && _volume.Disponivel);
+        ChipRelogio.Visibility = Visivel(normal && _cfg.IlhaRelogio);
         BlocoVolume.Visibility = Visivel(_volume.Disponivel);
 
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
@@ -235,12 +254,13 @@ public partial class IlhaWindow : Window
                     ChipDisco.Visibility == Visibility.Visible ||
                     ChipPotencia.Visibility == Visibility.Visible ||
                     ChipVolume.Visibility == Visibility.Visible ||
-                    ChipRelogio.Visibility == Visibility.Visible;
+                    ChipRelogio.Visibility == Visibility.Visible ||
+                    ChipFps.Visibility == Visibility.Visible;
 
-        var comBotao = algum && _cfg.IlhaBotaoPersonalizacao;
+        var comBotao = algum && _cfg.IlhaBotaoPersonalizacao && !_modoJogo;
 
         SemItens.Visibility = Visivel(!algum);
-        BotaoPersonalizarPilula.Visibility = Visivel(algum && _cfg.IlhaBotaoPersonalizacao);
+        BotaoPersonalizarPilula.Visibility = Visivel(comBotao);
         // Com o anel sozinho, margens iguais: e o que faz a pilula virar circulo.
         Compacta.Margin = comBotao ? new Thickness(6, 0, 7, 0)
                         : algum ? new Thickness(6, 0, 8, 0)
@@ -402,7 +422,9 @@ public partial class IlhaWindow : Window
         {
             _foraDesde = null;
 
-            if (!_expandida && _cfg.IlhaAbrirAoPassarMouse && !BotaoEsquerdoApertado())
+            // No modo jogo ela nao abre sozinha: o mouse passa por ali o tempo
+            // todo durante o jogo.
+            if (!_expandida && !_modoJogo && _cfg.IlhaAbrirAoPassarMouse && !BotaoEsquerdoApertado())
             {
                 _dentroDesde ??= agora;
                 if (agora - _dentroDesde >= EsperaParaAbrir) Expandir();
@@ -496,6 +518,7 @@ public partial class IlhaWindow : Window
             if (antes != _volume.Disponivel) AplicarConfiguracao();
         }
 
+        AtualizarFps();
         ConferirTelaCheia();
 
         // Quem parou ha mais de tres minutos sai daqui: o servico so fica
@@ -513,11 +536,41 @@ public partial class IlhaWindow : Window
         if (_cfg.IlhaRelogio) TextoRelogio.Text = DateTime.Now.ToString("HH:mm");
     }
 
+    /// <summary>
+    /// Some, fica, ou entra no modo jogo, conforme o que esta em tela cheia e
+    /// onde.
+    ///
+    /// Tela cheia em outro monitor nao e motivo para sumir deste — antes era,
+    /// e um jogo no segundo monitor apagava a Kisland do primeiro. Na mesma
+    /// tela, se e o jogo do contador de FPS em janela sem borda, ela fica,
+    /// enxuta, so com o FPS. Em tela cheia exclusiva nao ha o que fazer: nada
+    /// aparece por cima, e o Windows nem diz em qual monitor ela esta.
+    /// </summary>
     private void ConferirTelaCheia()
     {
-        var cheia = _cfg.IlhaEsconderEmTelaCheia && TelaCheia.Agora(_handle);
+        var estado = TelaCheia.Consultar(_handle);
+        var aqui = estado.Exclusiva ||
+                   (estado.Janela != IntPtr.Zero && estado.Monitor == TelaCheia.MonitorDe(_handle));
 
-        if (cheia && IsVisible)
+        var ehOJogo = _cfg.IlhaFps && _jogo is { } jogo && estado.Janela != IntPtr.Zero &&
+                      ProcessoDaJanela(estado.Janela) == jogo.Pid;
+
+        var modoJogo = aqui && !estado.Exclusiva && ehOJogo;
+        var esconder = aqui && !modoJogo && _cfg.IlhaEsconderEmTelaCheia;
+
+        if (modoJogo != _modoJogo)
+        {
+            _modoJogo = modoJogo;
+            if (modoJogo)
+            {
+                _expandida = false;
+                _aviso = Aviso.Nenhum;
+            }
+
+            AplicarConfiguracao();
+        }
+
+        if (esconder && IsVisible)
         {
             _escondidaPorTelaCheia = true;
             _expandida = false;
@@ -525,13 +578,64 @@ public partial class IlhaWindow : Window
             MostrarEstado();
             Hide();
         }
-        else if (!cheia && _escondidaPorTelaCheia)
+        else if (!esconder && _escondidaPorTelaCheia)
         {
             _escondidaPorTelaCheia = false;
             Show();
             Posicionar();
             MostrarEstado();
         }
+    }
+
+    /// <summary>
+    /// Uma vez por segundo, com o contador ligado: colhe os quadros de cada
+    /// programa e ve se algum deles e um jogo. A sessao do Windows so existe
+    /// enquanto o contador esta ligado.
+    /// </summary>
+    private void AtualizarFps()
+    {
+        if (!_cfg.IlhaFps)
+        {
+            if (_fps.Rodando) _fps.Parar();
+            if (_jogo is not null)
+            {
+                _jogo = null;
+                AplicarConfiguracao();
+            }
+            return;
+        }
+
+        // Recusado (sem privilegio, por exemplo), tenta de novo a cada meio
+        // minuto em vez de a cada segundo. Mexer na Personalizacao zera a
+        // espera, para quem acabou de ligar nao ficar esperando.
+        if (!_fps.Rodando)
+        {
+            if (_segundos < _tentarFpsEm) return;
+
+            if (!_fps.Iniciar())
+            {
+                _tentarFpsEm = _segundos + 30;
+                return;
+            }
+        }
+
+        var jogo = DetectorDeJogo.Escolher(_fps.Colher());
+        var mudou = (jogo is null) != (_jogo is null);
+        _jogo = jogo;
+
+        if (jogo is not null)
+        {
+            TextoFps.Text = $"{jogo.Fps} FPS";
+            ChipFps.ToolTip = jogo.Nome;
+        }
+
+        if (mudou) AplicarConfiguracao();
+    }
+
+    private static int ProcessoDaJanela(IntPtr janela)
+    {
+        GetWindowThreadProcessId(janela, out var pid);
+        return pid;
     }
 
     /// <summary>
@@ -668,9 +772,9 @@ public partial class IlhaWindow : Window
             s.DiscoTempMaior is { } td && td >= _cfg.LimiteDisco ? "Alerta" : "Texto");
         ValorPotencia.Text = s.WattsTotais > 0 ? $"{s.WattsTotais:F0}" : "--";
 
-        Rodape.Text = s.SensoresDeBaixoNivel
-            ? "Sensores ativos"
-            : "Sensores de baixo nível indisponíveis";
+        Rodape.Text = _jogo is { } jogo ? $"{jogo.Nome} · {jogo.Fps} FPS"
+                    : s.SensoresDeBaixoNivel ? "Sensores ativos"
+                    : "Sensores de baixo nível indisponíveis";
     }
 
     /// <summary>"CPU 62°", "CPU 34%" ou "CPU 62° · 34%", conforme o que esta ligado.</summary>
@@ -725,7 +829,7 @@ public partial class IlhaWindow : Window
 
         var estado = MidiaVisivel();
 
-        var mostrar = estado is not null && _cfg.IlhaMusica;
+        var mostrar = estado is not null && _cfg.IlhaMusica && !_modoJogo;
         MidiaCompacta.Visibility = Visivel(mostrar);
 
         PausadoPequeno.Visibility = Visivel(estado is { Tocando: false });
@@ -1141,6 +1245,9 @@ public partial class IlhaWindow : Window
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetCursorPos(out Ponto ponto);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr janela, out int processo);
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int tecla);
