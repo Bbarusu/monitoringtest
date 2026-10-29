@@ -16,7 +16,7 @@ namespace MonitorPC.Views;
 /// </summary>
 public partial class GuiaKislandWindow : Window
 {
-    private const int Passos = 5;
+    private const int Passos = 6;
 
     /// <summary>A mesma paleta da Personalizacao.</summary>
     private static readonly (string Nome, string Hex)[] Paleta =
@@ -41,6 +41,15 @@ public partial class GuiaKislandWindow : Window
         _aoMudar = aoMudar;
 
         Ligar.IsChecked = _cfg.IlhaAtiva;
+        ItemFps.IsChecked = _cfg.IlhaFps;
+
+        // Sem o app elevado o contador nao roda: a chave fica apagada e diz
+        // por que, como na Personalizacao.
+        if (!AtualizacaoService.Elevado())
+        {
+            ItemFps.IsEnabled = false;
+            DetalheFps.Text = "Precisa do KInfo instalado com acesso completo aos sensores.";
+        }
         AbrirPassando.IsChecked = _cfg.IlhaAbrirAoPassarMouse;
         AbrirClicando.IsChecked = !_cfg.IlhaAbrirAoPassarMouse;
         ItemMusica.IsChecked = _cfg.IlhaMusica;
@@ -102,7 +111,8 @@ public partial class GuiaKislandWindow : Window
         Passo2.Visibility = Visivel(_passo == 1);
         Passo3.Visibility = Visivel(_passo == 2);
         Passo4.Visibility = Visivel(_passo == 3);
-        Passo5.Visibility = Visivel(_passo == 4);
+        PassoFps.Visibility = Visivel(_passo == 4);
+        Passo5.Visibility = Visivel(_passo == 5);
 
         Contagem.Text = $"Conhecendo a Kisland · {_passo + 1} de {Passos}";
         BotaoVoltar.Visibility = _passo == 0 ? Visibility.Hidden : Visibility.Visible;
@@ -171,6 +181,7 @@ public partial class GuiaKislandWindow : Window
         _cfg.IlhaVolume = ItemVolume.IsChecked == true;
         _cfg.IlhaRam = ItemRam.IsChecked == true;
         _cfg.IlhaRelogio = ItemRelogio.IsChecked == true;
+        _cfg.IlhaFps = ItemFps.IsChecked == true;
 
         Confirmar();
     }
