@@ -65,6 +65,15 @@ public partial class IlhaWindow : Window
     private bool _modoJogo;
     private int _tentarFpsEm;
 
+    /// <summary>
+    /// FPS mostrado, levemente suavizado: a media do ultimo segundo ja e
+    /// estavel, mas oscilar um ou dois quadros de um segundo para o outro faz
+    /// o numero tremer a toa. Mudanca grande (cena pesada, menu) passa direto.
+    /// </summary>
+    private double _fpsMostrado;
+
+    private DateTime _diaDoCalendario;
+
     private DateTime? _dentroDesde;
     private DateTime? _foraDesde;
 
@@ -218,12 +227,17 @@ public partial class IlhaWindow : Window
         ChipDisco.Visibility = Visivel(normal && _cfg.IlhaDisco);
         ChipPotencia.Visibility = Visivel(normal && _cfg.IlhaPotencia);
         ChipVolume.Visibility = Visivel(normal && _cfg.IlhaVolume && _volume.Disponivel);
-        ChipRelogio.Visibility = Visivel(normal && _cfg.IlhaRelogio);
+        ChipRelogio.Visibility = Visivel(normal && (_cfg.IlhaRelogio || _cfg.IlhaData));
+        TextoRelogio.Visibility = Visivel(_cfg.IlhaRelogio);
+        TextoData.Visibility = Visivel(_cfg.IlhaData);
+        IconeRelogio.Data = Geometry.Parse(_cfg.IlhaRelogio ? DesenhoRelogio : DesenhoCalendario);
         // O que aparece com ela aberta, como escolhido na aba Kisland.
         BlocoVolume.Visibility = Visivel(_volume.Disponivel && _cfg.IlhaAbertaVolume);
         GradeTemperaturas.Visibility = Visivel(_cfg.IlhaAbertaTemperaturas);
         GradeSistema.Visibility = Visivel(_cfg.IlhaAbertaSistema);
         GradePerfis.Visibility = Visivel(_cfg.IlhaAbertaPerfis);
+        BlocoCalendario.Visibility = Visivel(_cfg.IlhaAbertaCalendario);
+        MontarAtalhos();
 
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
         AtualizarRelogio();
@@ -279,8 +293,8 @@ public partial class IlhaWindow : Window
     {
         var blocos = new FrameworkElement[]
         {
-            BlocoMidia, SemMidia, BlocoProgresso, GradeTemperaturas,
-            GradeSistema, BlocoVolume, GradePerfis, BlocoRodape
+            BlocoMidia, BlocoProgresso, SemMidia, BlocoCalendario, GradeTemperaturas,
+            GradeSistema, BlocoVolume, GradePerfis, BlocoAtalhos, BlocoRodape
         };
 
         _margens ??= blocos.ToDictionary(b => b, b => b.Margin);
@@ -300,6 +314,9 @@ public partial class IlhaWindow : Window
     /// Sem nada para mostrar, a pilula vira um circulo com o anel. O botao de
     /// Personalizacao sai junto: ao lado do anel ele seria o unico conteudo, e
     /// a ilha aberta continua com ele.
+    ///
+    /// Com um chat de IA escolhido, o anel fica sempre, no comeco da pilula, e
+    /// vira o atalho para ele. No modo jogo nao: la so o FPS.
     /// </summary>
     private void AtualizarSemItens()
     {
@@ -314,14 +331,25 @@ public partial class IlhaWindow : Window
                     ChipRelogio.Visibility == Visibility.Visible ||
                     ChipFps.Visibility == Visibility.Visible;
 
+        var ia = _modoJogo ? null : AtalhoService.IaEscolhida(_cfg);
         var comBotao = algum && _cfg.IlhaBotaoPersonalizacao && !_modoJogo;
 
-        SemItens.Visibility = Visivel(!algum);
+        BotaoAnel.Visibility = Visivel(!algum || ia is not null);
+        BotaoAnel.IsHitTestVisible = ia is not null;
+        BotaoAnel.ToolTip = ia is { } escolhida ? $"Abrir {escolhida.Nome}" : null;
+        // A capa da musica nao tem margem propria, os chips tem.
+        BotaoAnel.Margin = new Thickness(0, 0, algum && MidiaCompacta.Visibility == Visibility.Visible ? 8 : 0, 0);
+
         BotaoPersonalizarPilula.Visibility = Visivel(comBotao);
         // Com o anel sozinho, margens iguais: e o que faz a pilula virar circulo.
         Compacta.Margin = comBotao ? new Thickness(6, 0, 7, 0)
                         : algum ? new Thickness(6, 0, 8, 0)
                         : new Thickness(6, 0, 6, 0);
+    }
+
+    private void Anel_Click(object sender, RoutedEventArgs e)
+    {
+        if (AtalhoService.IaEscolhida(_cfg) is { } ia) AtalhoService.Abrir(ia.Destino);
     }
 
     // ------------------------------------------------------------------
@@ -590,7 +618,220 @@ public partial class IlhaWindow : Window
 
     private void AtualizarRelogio()
     {
-        if (_cfg.IlhaRelogio) TextoRelogio.Text = DateTime.Now.ToString("HH:mm");
+        var agora = DateTime.Now;
+        if (_cfg.IlhaRelogio) TextoRelogio.Text = agora.ToString("HH:mm");
+        if (_cfg.IlhaData) TextoData.Text = $"{SemanasCurtas[(int)agora.DayOfWeek]} {agora.Day}";
+        if (_cfg.IlhaAbertaCalendario) AtualizarCalendario();
+    }
+
+    private const string DesenhoRelogio = "M12,3 A9,9 0 1,1 11.99,3 Z M12,7 L12,12 L15,14";
+    private const string DesenhoCalendario =
+        "M6,5 L18,5 A3,3 0 0,1 21,8 L21,18 A3,3 0 0,1 18,21 L6,21 A3,3 0 0,1 3,18 L3,8 A3,3 0 0,1 6,5 Z " +
+        "M3,10 L21,10 M8,3 L8,6 M16,3 L16,6";
+
+    // Nomes escritos aqui, e nao pela cultura do Windows: em pt-BR ela abrevia
+    // com ponto ("qui."), em minuscula, e muda conforme a versao do sistema.
+    private static readonly string[] Meses =
+    {
+        "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+        "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"
+    };
+    private static readonly string[] Semanas =
+    {
+        "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
+    };
+    private static readonly string[] SemanasCurtas = { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" };
+    private static readonly string[] Iniciais = { "D", "S", "T", "Q", "Q", "S", "S" };
+
+    /// <summary>
+    /// O mini calendario da Kisland aberta. Refeito so quando o dia vira: no
+    /// resto do tempo, nada muda nele.
+    /// </summary>
+    private void AtualizarCalendario()
+    {
+        var hoje = DateTime.Today;
+        if (hoje == _diaDoCalendario) return;
+        _diaDoCalendario = hoje;
+
+        MesCalendario.Text = Meses[hoje.Month - 1];
+        SemanaCalendario.Text = Semanas[(int)hoje.DayOfWeek];
+        AnoCalendario.Text = hoje.Year.ToString();
+        DiaCalendario.Text = hoje.Day.ToString();
+
+        var grade = GradeCalendario;
+        grade.Children.Clear();
+        grade.RowDefinitions.Clear();
+        grade.ColumnDefinitions.Clear();
+
+        // A semana comeca no domingo, como nos calendarios daqui.
+        var primeiro = new DateTime(hoje.Year, hoje.Month, 1);
+        var vazios = (int)primeiro.DayOfWeek;
+        var semanas = (vazios + DateTime.DaysInMonth(hoje.Year, hoje.Month) + 6) / 7;
+
+        for (var c = 0; c < 7; c++)
+            grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(26) });
+        grade.RowDefinitions.Add(new RowDefinition { Height = new GridLength(20) });
+        for (var l = 0; l < semanas; l++)
+            grade.RowDefinitions.Add(new RowDefinition { Height = new GridLength(22) });
+
+        for (var c = 0; c < 7; c++)
+        {
+            var inicial = new TextBlock
+            {
+                Text = Iniciais[c],
+                FontSize = 10,
+                FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            inicial.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+            Grid.SetColumn(inicial, c);
+            grade.Children.Add(inicial);
+        }
+
+        var inicio = primeiro.AddDays(-vazios);
+        for (var i = 0; i < semanas * 7; i++)
+        {
+            var dia = inicio.AddDays(i);
+            var linha = i / 7 + 1;
+            var coluna = i % 7;
+
+            if (dia == hoje)
+            {
+                var marca = new Ellipse { Width = 20, Height = 20 };
+                marca.SetResourceReference(Shape.FillProperty, "Acento");
+                Grid.SetRow(marca, linha);
+                Grid.SetColumn(marca, coluna);
+                grade.Children.Add(marca);
+            }
+
+            var numero = new TextBlock
+            {
+                Text = dia.Day.ToString(),
+                FontSize = 11,
+                FontWeight = dia == hoje ? FontWeights.SemiBold : FontWeights.Normal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (dia == hoje)
+                numero.Foreground = Brushes.White;
+            else
+                numero.SetResourceReference(TextBlock.ForegroundProperty,
+                    dia.Month == hoje.Month ? "Texto" : "TextoMuitoFraco");
+
+            // Dias do mes vizinho, so para fechar a semana: bem apagados.
+            if (dia.Month != hoje.Month) numero.Opacity = 0.55;
+
+            Grid.SetRow(numero, linha);
+            Grid.SetColumn(numero, coluna);
+            grade.Children.Add(numero);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Atalhos
+
+    /// <summary>
+    /// Os atalhos da Kisland aberta: o chat de IA primeiro, com o anel no
+    /// lugar do icone, e depois os apps e sites, na ordem escolhida.
+    /// </summary>
+    private void MontarAtalhos()
+    {
+        GradeAtalhos.Children.Clear();
+
+        if (AtalhoService.IaEscolhida(_cfg) is { } ia)
+            GradeAtalhos.Children.Add(BotaoDeAtalho(ia.Nome, ia.Destino, ehIa: true));
+
+        foreach (var atalho in _cfg.IlhaAtalhos.Take(AtalhoService.Maximo))
+            GradeAtalhos.Children.Add(BotaoDeAtalho(atalho.Nome, atalho.Destino, ehIa: false));
+
+        // Pelo menos cinco colunas: com poucos atalhos eles ficam juntos a
+        // esquerda, no tamanho de sempre, em vez de esticados pela largura.
+        GradeAtalhos.Columns = Math.Max(GradeAtalhos.Children.Count, 5);
+        BlocoAtalhos.Visibility = Visivel(_cfg.IlhaAbertaAtalhos && GradeAtalhos.Children.Count > 0);
+    }
+
+    private Button BotaoDeAtalho(string nome, string destino, bool ehIa)
+    {
+        var circulo = new Border
+        {
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(20),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
+
+        if (ehIa)
+        {
+            var anel = new Grid { Width = 24, Height = 24 };
+            var fora = new Ellipse { Width = 24, Height = 24, StrokeThickness = 1, Opacity = 0.3 };
+            var dentro = new Ellipse { Width = 15, Height = 15, StrokeThickness = 2.6 };
+            fora.SetResourceReference(Shape.StrokeProperty, "Acento");
+            dentro.SetResourceReference(Shape.StrokeProperty, "Acento");
+            anel.Children.Add(fora);
+            anel.Children.Add(dentro);
+            circulo.Child = anel;
+        }
+        else if (AtalhoService.Icone(destino) is { } icone)
+        {
+            var imagem = new Image { Source = icone, Width = 22, Height = 22 };
+            RenderOptions.SetBitmapScalingMode(imagem, BitmapScalingMode.HighQuality);
+            circulo.Child = imagem;
+        }
+        else
+        {
+            var letra = new TextBlock
+            {
+                Text = Inicial(nome),
+                FontSize = 15,
+                FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            letra.SetResourceReference(TextBlock.ForegroundProperty, "Acento");
+            circulo.Child = letra;
+        }
+
+        var rotulo = new TextBlock
+        {
+            Text = nome,
+            FontSize = 10.5,
+            Margin = new Thickness(0, 5, 0, 0),
+            MaxWidth = 64,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        rotulo.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+
+        var conteudo = new StackPanel();
+        conteudo.Children.Add(circulo);
+        conteudo.Children.Add(rotulo);
+
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoAtalho"),
+            Content = conteudo,
+            Tag = destino,
+            ToolTip = ehIa ? $"Abrir {nome}" : nome
+        };
+        botao.Click += Atalho_Click;
+        return botao;
+    }
+
+    private static string Inicial(string nome)
+    {
+        var letra = nome.FirstOrDefault(char.IsLetterOrDigit);
+        return letra == default ? "?" : char.ToUpperInvariant(letra).ToString();
+    }
+
+    private void Atalho_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string destino }) return;
+
+        Recolher();
+        AtalhoService.Abrir(destino);
     }
 
     /// <summary>
@@ -695,6 +936,20 @@ public partial class IlhaWindow : Window
 
         var jogo = DetectorDeJogo.Escolher(_fps.Colher());
         var mudou = (jogo is null) != (_jogo is null);
+
+        if (jogo is not null)
+        {
+            var mesmo = _jogo?.Pid == jogo.Pid && _fpsMostrado > 0;
+            _fpsMostrado = mesmo && Math.Abs(jogo.Fps - _fpsMostrado) < _fpsMostrado * 0.15
+                ? _fpsMostrado * 0.5 + jogo.Fps * 0.5
+                : jogo.Fps;
+            jogo = jogo with { Fps = (int)Math.Round(_fpsMostrado) };
+        }
+        else
+        {
+            _fpsMostrado = 0;
+        }
+
         _jogo = jogo;
 
         if (jogo is not null)
@@ -774,7 +1029,7 @@ public partial class IlhaWindow : Window
         if (pilulaNaTela && MidiaVisivel() is { Tocando: true } && _cfg.IlhaMusica) AndarEqualizador();
         else PararEqualizador();
 
-        if (pilulaNaTela && SemItens.Visibility == Visibility.Visible) AndarAnel();
+        if (pilulaNaTela && BotaoAnel.Visibility == Visibility.Visible) AndarAnel();
         else PararAnel();
     }
 
@@ -1058,30 +1313,44 @@ public partial class IlhaWindow : Window
     // ------------------------------------------------------------------
     // Volume
 
-    // Alto-falante de cantos arredondados, com ondas que acompanham o nivel.
-    // O desenho anterior era de retas e quinas, e destoava do resto da ilha.
+    // Alto-falante pequeno e bem arredondado, com ondas curtas e leves. O
+    // desenho anterior tinha o corpo grande e ondas largas: em 12 px, com
+    // traco grosso, pesava mais que os outros icones da pilula.
     private const string Corpo =
-        "M3,10.5 C3,9.7 3.7,9 4.5,9 L7,9 L10.8,5.6 C11.5,5 12.5,5.5 12.5,6.4 " +
-        "L12.5,17.6 C12.5,18.5 11.5,19 10.8,18.4 L7,15 L4.5,15 C3.7,15 3,14.3 3,13.5 Z";
-    private const string OndaPerto = " M16,9.5 C17.3,10.8 17.3,13.2 16,14.5";
-    private const string OndaLonge = " M18.8,7 C21.5,9.7 21.5,14.3 18.8,17";
-    private const string Corte = " M16.5,10 L20.5,14 M20.5,10 L16.5,14";
+        "M5,9.9 C5,9.4 5.4,9 5.9,9 L8,9 L11,6.5 C11.6,6 12.5,6.4 12.5,7.2 " +
+        "L12.5,16.8 C12.5,17.6 11.6,18 11,17.5 L8,15 L5.9,15 C5.4,15 5,14.6 5,14.1 Z";
+    private const string OndaPerto = " M15.6,10.2 C16.4,11.2 16.4,12.8 15.6,13.8";
+    private const string OndaLonge = " M17.9,8.3 C19.7,10.4 19.7,13.6 17.9,15.7";
+    private const string Corte = " M16.2,10.6 L19,13.4 M19,10.6 L16.2,13.4";
 
-    private static Geometry IconeDoVolume(int nivel, bool mudo)
+    private static string DesenhoDoVolume(int nivel, bool mudo) =>
+        mudo || nivel == 0 ? Corpo + Corte
+        : nivel < 50 ? Corpo + OndaPerto
+        : Corpo + OndaPerto + OndaLonge;
+
+    /// <summary>
+    /// Desenha na escala da grade de 24, sem esticar. Esticado (Uniform), o
+    /// icone mudava de tamanho com o nivel: sem a onda de fora o desenho e
+    /// mais estreito, e o alto-falante crescia para ocupar o espaco.
+    /// </summary>
+    private static void DesenharVolume(System.Windows.Shapes.Path alvo, string desenho)
     {
-        var desenho = mudo || nivel == 0 ? Corpo + Corte
-                    : nivel < 50 ? Corpo + OndaPerto
-                    : Corpo + OndaPerto + OndaLonge;
+        var tamanho = double.IsNaN(alvo.Width) ? 16 : alvo.Width;
 
-        return Geometry.Parse(desenho);
+        var geometria = Geometry.Parse(desenho).CloneCurrentValue();
+        geometria.Transform = new ScaleTransform(tamanho / 24.0, tamanho / 24.0);
+        geometria.Freeze();
+
+        alvo.Stretch = Stretch.None;
+        alvo.Data = geometria;
     }
 
     private void AplicarVolume(int nivel, bool mudo, bool veioDeAviso)
     {
-        var icone = IconeDoVolume(nivel, mudo);
-        IconeVolumeChip.Data = icone;
-        IconeAvisoVolume.Data = icone;
-        IconeMudo.Data = icone;
+        var desenho = DesenhoDoVolume(nivel, mudo);
+        DesenharVolume(IconeVolumeChip, desenho);
+        DesenharVolume(IconeAvisoVolume, desenho);
+        DesenharVolume(IconeMudo, desenho);
 
         var texto = mudo ? "Mudo" : $"{nivel}%";
         TextoVolume.Text = texto;

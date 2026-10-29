@@ -36,11 +36,36 @@ public sealed class FpsService : IDisposable
     private const int DxgiPresentMultiplano = 55;
     private const int D3D9Present = 1;
 
+    /// <summary>
+    /// DXGI_PRESENT_TEST: o jogo so pergunta se a janela esta visivel, nada
+    /// vai para a tela. Varios jogos fazem isso a cada quadro, e contar a
+    /// pergunta como quadro dobrava o numero.
+    /// </summary>
+    private const uint SoTeste = 0x1;
+
+    /// <summary>Janela da media: o ultimo segundo de quadros de cada cadeia.</summary>
+    private const double JanelaMs = 1000;
+
+    /// <summary>Sem quadro novo ha tanto tempo, a cadeia parou (jogo fechado ou pausado).</summary>
+    private static readonly TimeSpan Validade = TimeSpan.FromSeconds(2.5);
+
     private const string NomeDaSessao = "KInfo-FPS";
 
+    /// <summary>
+    /// Os quadros de uma cadeia de troca (swap chain): o "lugar" onde o jogo
+    /// desenha. Um processo pode ter mais de uma — o jogo e um launcher, uma
+    /// sobreposicao, um segundo buffer — e somar todas dava um FPS que nao
+    /// existia. Vale a mais rapida.
+    /// </summary>
+    private sealed class Cadeia
+    {
+        /// <summary>Hora de cada quadro, pelo relogio do proprio evento, em ms.</summary>
+        public readonly Queue<double> Quadros = new();
+        public DateTime ChegouEm;
+    }
+
     private readonly object _trava = new();
-    private readonly Stopwatch _relogio = new();
-    private Dictionary<int, int> _contagem = new();
+    private readonly Dictionary<(int Pid, ulong Troca), Cadeia> _cadeias = new();
     private TraceEventSession? _sessao;
 
     /// <summary>Por que o contador nao esta rodando, quando nao esta.</summary>
@@ -70,7 +95,6 @@ public sealed class FpsService : IDisposable
             sessao.Source.AllEvents += Evento;
 
             _sessao = sessao;
-            _relogio.Restart();
             Motivo = null;
 
             // Process() so volta quando a sessao para: thread propria, de
@@ -96,35 +120,86 @@ public sealed class FpsService : IDisposable
     private void Evento(TraceEvent e)
     {
         var id = (int)e.ID;
-        var quadro = (e.ProviderGuid == Dxgi && id is DxgiPresent or DxgiPresentMultiplano)
-                     || (e.ProviderGuid == D3D9 && id == D3D9Present);
-        if (!quadro) return;
+        var dxgi = e.ProviderGuid == Dxgi && id is DxgiPresent or DxgiPresentMultiplano;
+        var d3d9 = e.ProviderGuid == D3D9 && id == D3D9Present;
+        if (!dxgi && !d3d9) return;
+
+        // Os dois eventos comecam pelo endereco da cadeia de troca; o Present
+        // do DXGI traz, logo depois, as opcoes do Present.
+        ulong cadeia = 0;
+        try
+        {
+            var dados = e.EventData();
+            var ponteiro = e.PointerSize;
+
+            if (ponteiro is 4 or 8 && dados.Length >= ponteiro)
+                cadeia = ponteiro == 8 ? BitConverter.ToUInt64(dados, 0) : BitConverter.ToUInt32(dados, 0);
+
+            if (dxgi && id == DxgiPresent && dados.Length >= ponteiro + 4 &&
+                (BitConverter.ToUInt32(dados, ponteiro) & SoTeste) != 0)
+                return;
+        }
+        catch
+        {
+            // Formato inesperado: conta o quadro, sem separar por cadeia.
+        }
+
+        // A hora vem do evento, e nao de quando ele chegou aqui. O Windows
+        // entrega os eventos em lotes, a cada fracao de segundo; contar pela
+        // chegada fazia um segundo receber dois lotes e o seguinte nenhum — o
+        // numero pulava de 40 para 140 com o jogo estavel em 90.
+        var quando = e.TimeStampRelativeMSec;
 
         lock (_trava)
         {
-            _contagem.TryGetValue(e.ProcessID, out var n);
-            _contagem[e.ProcessID] = n + 1;
+            var chave = (e.ProcessID, cadeia);
+            if (!_cadeias.TryGetValue(chave, out var c))
+                _cadeias[chave] = c = new Cadeia();
+
+            c.Quadros.Enqueue(quando);
+            c.ChegouEm = DateTime.UtcNow;
+
+            while (c.Quadros.Count > 0 && quando - c.Quadros.Peek() > JanelaMs)
+                c.Quadros.Dequeue();
         }
     }
 
     /// <summary>
-    /// Quadros por segundo de cada processo desde a ultima colheita. Chamado
+    /// Quadros por segundo de cada processo: a media do ultimo segundo de
+    /// quadros, pelos intervalos entre eles — como o PresentMon mede. Chamado
     /// pela Kisland uma vez por segundo.
     /// </summary>
     public Dictionary<int, double> Colher()
     {
-        Dictionary<int, int> contagem;
-        double segundos;
+        var resultado = new Dictionary<int, double>();
+        var agora = DateTime.UtcNow;
 
         lock (_trava)
         {
-            contagem = _contagem;
-            _contagem = new Dictionary<int, int>();
-            segundos = Math.Max(0.25, _relogio.Elapsed.TotalSeconds);
-            _relogio.Restart();
+            foreach (var (chave, c) in _cadeias.ToList())
+            {
+                if (agora - c.ChegouEm > Validade)
+                {
+                    _cadeias.Remove(chave);
+                    continue;
+                }
+
+                // Precisa de dois quadros para haver um intervalo.
+                if (c.Quadros.Count < 2) continue;
+
+                var primeiro = c.Quadros.Peek();
+                var ultimo = c.Quadros.Last();
+                var duracao = ultimo - primeiro;
+                if (duracao <= 0) continue;
+
+                var fps = (c.Quadros.Count - 1) * 1000.0 / duracao;
+
+                if (!resultado.TryGetValue(chave.Pid, out var outro) || fps > outro)
+                    resultado[chave.Pid] = fps;
+            }
         }
 
-        return contagem.ToDictionary(p => p.Key, p => p.Value / segundos);
+        return resultado;
     }
 
     public void Parar()
@@ -134,7 +209,7 @@ public sealed class FpsService : IDisposable
 
         _sessao = null;
 
-        lock (_trava) _contagem = new Dictionary<int, int>();
+        lock (_trava) _cadeias.Clear();
     }
 
     public void Dispose() => Parar();

@@ -1,0 +1,172 @@
+using System.Diagnostics;
+using System.IO;
+using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using D = System.Drawing;
+
+namespace MonitorPC.Services;
+
+/// <summary>Um atalho da Kisland: um app (caminho do .exe ou .lnk) ou um site.</summary>
+public sealed class AtalhoDaIlha
+{
+    public string Nome { get; set; } = "";
+    public string Destino { get; set; } = "";
+}
+
+/// <summary>
+/// Os atalhos da Kisland: o chat de IA do anel e os apps e sites que a pessoa
+/// escolheu.
+///
+/// O KInfo costuma rodar como administrador, por causa dos sensores. Abrir um
+/// site ou um app direto dele faria o navegador e o app rodarem como
+/// administrador tambem — o Chrome reclama, arrastar arquivos para eles deixa
+/// de funcionar, e e mais acesso do que um chat precisa. Por isso, elevado, o
+/// pedido passa pelo Explorer, que abre tudo como o usuario comum.
+/// </summary>
+public static class AtalhoService
+{
+    /// <summary>Quantos atalhos cabem na Kisland aberta sem apertar.</summary>
+    public const int Maximo = 6;
+
+    public const string IaOutra = "outro";
+
+    public sealed record Ia(string Id, string Nome, string Endereco);
+
+    public static readonly Ia[] Ias =
+    {
+        new("chatgpt", "ChatGPT", "https://chatgpt.com/"),
+        new("claude", "Claude", "https://claude.ai/new"),
+        new("gemini", "Gemini", "https://gemini.google.com/app"),
+        new("copilot", "Copilot", "https://copilot.microsoft.com/"),
+        new("perplexity", "Perplexity", "https://www.perplexity.ai/"),
+        new("deepseek", "DeepSeek", "https://chat.deepseek.com/")
+    };
+
+    /// <summary>O chat escolhido para o anel, ou nulo se nenhum (ou "outro" sem endereco).</summary>
+    public static (string Nome, string Destino)? IaEscolhida(AppConfig cfg)
+    {
+        if (string.IsNullOrEmpty(cfg.IlhaIa)) return null;
+
+        if (cfg.IlhaIa == IaOutra)
+        {
+            var destino = cfg.IlhaIaEndereco?.Trim();
+            if (string.IsNullOrEmpty(destino)) return null;
+
+            // "meuchat.com" vira site; um caminho de app ou um endereco com
+            // protocolo proprio ("claude:") fica como esta.
+            if (!File.Exists(destino) && !destino.Contains(':') && NormalizarSite(destino) is { } site)
+                destino = site;
+
+            var nome = Uri.TryCreate(destino, UriKind.Absolute, out var uri) && !uri.IsFile && !string.IsNullOrEmpty(uri.Host)
+                ? Host(uri)
+                : Path.GetFileNameWithoutExtension(destino);
+            return (string.IsNullOrEmpty(nome) ? "chat" : nome, destino);
+        }
+
+        var ia = Ias.FirstOrDefault(i => i.Id == cfg.IlhaIa);
+        return ia is null ? null : (ia.Nome, ia.Endereco);
+    }
+
+    public static bool Abrir(string destino)
+    {
+        if (string.IsNullOrWhiteSpace(destino)) return false;
+
+        try
+        {
+            if (AtualizacaoService.Elevado())
+            {
+                var info = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
+                info.ArgumentList.Add(destino);
+                Process.Start(info)?.Dispose();
+            }
+            else
+            {
+                Process.Start(new ProcessStartInfo(destino) { UseShellExecute = true })?.Dispose();
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Atalho: abrir", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// "youtube.com" vira "https://youtube.com". Devolve nulo para o que nao
+    /// parece endereco nenhum.
+    /// </summary>
+    public static string? NormalizarSite(string? texto)
+    {
+        var t = texto?.Trim();
+        if (string.IsNullOrEmpty(t) || t.Contains(' ')) return null;
+
+        if (!t.Contains("://")) t = "https://" + t;
+
+        return Uri.TryCreate(t, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
+               uri.Host.Contains('.')
+            ? uri.ToString()
+            : null;
+    }
+
+    /// <summary>"youtube.com" de "https://www.youtube.com/...".</summary>
+    public static string Host(Uri uri) =>
+        uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? uri.Host[4..] : uri.Host;
+
+    /// <summary>Nome para um app escolhido: a descricao do executavel, ou o nome do arquivo.</summary>
+    public static string NomeDoApp(string caminho)
+    {
+        try
+        {
+            if (caminho.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                var descricao = FileVersionInfo.GetVersionInfo(caminho).FileDescription?.Trim();
+                if (!string.IsNullOrEmpty(descricao) && descricao.Length <= 24) return descricao;
+            }
+        }
+        catch
+        {
+            // Sem descricao legivel: fica o nome do arquivo.
+        }
+
+        return Path.GetFileNameWithoutExtension(caminho);
+    }
+
+    private static readonly Dictionary<string, ImageSource?> Icones = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// O icone do app, como o Windows mostra. Site nao tem: quem desenha e a
+    /// Kisland, com a inicial do nome.
+    /// </summary>
+    public static ImageSource? Icone(string destino)
+    {
+        if (Icones.TryGetValue(destino, out var guardado)) return guardado;
+
+        ImageSource? imagem = null;
+        try
+        {
+            if (File.Exists(destino))
+            {
+                using var icone = D.Icon.ExtractAssociatedIcon(destino);
+                if (icone is not null)
+                {
+                    var bmp = Imaging.CreateBitmapSourceFromHIcon(icone.Handle, Int32Rect.Empty,
+                                                                  BitmapSizeOptions.FromEmptyOptions());
+                    bmp.Freeze();
+                    imagem = bmp;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Atalho: ícone", ex);
+        }
+
+        Icones[destino] = imagem;
+        return imagem;
+    }
+}

@@ -152,6 +152,13 @@ cartões de temperatura que ficam laranja acima do limite, volume com mudo, os t
 atalhos para o painel e a Personalização. Avisos rápidos: volume por 2 s ao mudar, faixa nova por 3 s.
 Some em tela cheia. Ligada e configurada na Personalização; desligada por padrão.
 
+Data no chip do relógio, na cor de destaque, como na tela de espera do iPhone. Calendário do mês
+na Kisland aberta: mês e ano em texto fraco, dia da semana na cor de destaque, o dia em número leve
+grande, e a grade do mês com hoje num círculo da cor de destaque. O anel pulsante abre um chat de IA
+quando há um escolhido. Os atalhos de apps e sites ficam em círculos com o ícone do app ou a
+inicial do site na cor de destaque. Ícone de volume pequeno, de cantos redondos e traço 1.6,
+desenhado sempre no mesmo tamanho, com ou sem as ondas.
+
 ### Guia da Kisland
 Convite único no painel (cartão "Novidade", botões "Depois" e "Bora ver") e guia de cinco passos, em
 linguagem próxima: "Oi, essa é a Kisland", "Passou o mouse, ela abre", "Você escolhe o que aparece",

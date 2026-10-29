@@ -299,6 +299,13 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
+                            <TextBlock Text="Data (dia da semana e do mês)" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaData" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
                             <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
                                 <TextBlock Text="FPS em jogos" FontSize="13" FontWeight="Medium"
                                            Foreground="{DynamicResource Texto}" />
@@ -335,6 +342,13 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
+                            <TextBlock Text="Calendário do mês" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaAbertaCalendario" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
                             <TextBlock Text="Temperatura da CPU e da GPU" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             <CheckBox x:Name="IlhaAbertaTemperaturas" Style="{StaticResource CaixaDeSelecao}"
@@ -362,6 +376,110 @@
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Atalhos" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaAbertaAtalhos" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!--
+                    Atalhos. O chat de IA mora no anel pulsante da Kisland
+                    fechada; os apps e sites aparecem com ela aberta, junto do
+                    chat. A lista é montada no código.
+                -->
+                <TextBlock Text="Atalhos" FontSize="11" Margin="0,12,0,8"
+                           Foreground="{DynamicResource TextoFraco}" />
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,132,0">
+                                <TextBlock Text="Chat de IA no anel" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="O anel pulsante fica na Kisland e abre o chat com um clique."
+                                           FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <ComboBox x:Name="IlhaIa" Style="{StaticResource Seletor}" MinWidth="124"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      SelectionChanged="Ia_Escolhida" />
+                        </Grid>
+
+                        <StackPanel x:Name="LinhaIaEndereco" Visibility="Collapsed" Margin="0,10,0,0">
+                            <Border CornerRadius="10" Background="{DynamicResource Chip}"
+                        BorderBrush="{DynamicResource Trilho}" BorderThickness="1" Padding="10,0">
+                    <Grid>
+                        <TextBox x:Name="IlhaIaEndereco" Height="34" BorderThickness="0" Background="Transparent"
+                                 VerticalContentAlignment="Center" FontSize="12"
+                                 Foreground="{DynamicResource Texto}" CaretBrush="{DynamicResource Texto}"
+                                 TextChanged="Texto_Alterado" />
+                        <TextBlock x:Name="DicaIaEndereco" Text="Endereço do chat, como meuchat.com" FontSize="12"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   Foreground="{DynamicResource TextoMuitoFraco}" />
+                    </Grid>
+                </Border>
+                            <TextBlock FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoMuitoFraco}"
+                                       Text="Também vale o caminho de um app instalado." />
+                        </StackPanel>
+
+                        <Border Height="1" Margin="0,12,0,10" Background="{DynamicResource Borda}" />
+
+                        <TextBlock Text="Apps e sites" FontSize="13" FontWeight="Medium"
+                                   Foreground="{DynamicResource Texto}" />
+                        <TextBlock x:Name="DicaAtalhos" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextoFraco}"
+                                   Text="Aparecem com a Kisland aberta, até 6." />
+
+                        <StackPanel x:Name="ListaAtalhos" Margin="0,6,0,0" />
+
+                        <!-- Site novo: nome e endereço, e só então entra na lista. -->
+                        <StackPanel x:Name="NovoSite" Visibility="Collapsed" Margin="0,8,0,0">
+                            <Border CornerRadius="10" Background="{DynamicResource Chip}"
+                        BorderBrush="{DynamicResource Trilho}" BorderThickness="1" Padding="10,0">
+                    <Grid>
+                        <TextBox x:Name="EnderecoDoSite" Height="34" BorderThickness="0" Background="Transparent"
+                                 VerticalContentAlignment="Center" FontSize="12"
+                                 Foreground="{DynamicResource Texto}" CaretBrush="{DynamicResource Texto}"
+                                 TextChanged="Texto_Alterado" />
+                        <TextBlock x:Name="DicaEnderecoDoSite" Text="Endereço, como youtube.com" FontSize="12"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   Foreground="{DynamicResource TextoMuitoFraco}" />
+                    </Grid>
+                </Border>
+                            <Border CornerRadius="10" Background="{DynamicResource Chip}" Margin="0,6,0,0"
+                        BorderBrush="{DynamicResource Trilho}" BorderThickness="1" Padding="10,0">
+                    <Grid>
+                        <TextBox x:Name="NomeDoSite" Height="34" BorderThickness="0" Background="Transparent"
+                                 VerticalContentAlignment="Center" FontSize="12"
+                                 Foreground="{DynamicResource Texto}" CaretBrush="{DynamicResource Texto}"
+                                 TextChanged="Texto_Alterado" />
+                        <TextBlock x:Name="DicaNomeDoSite" Text="Nome (opcional)" FontSize="12"
+                                   VerticalAlignment="Center" IsHitTestVisible="False"
+                                   Foreground="{DynamicResource TextoMuitoFraco}" />
+                    </Grid>
+                </Border>
+                            <TextBlock x:Name="ErroDoSite" FontSize="11" Margin="0,4,0,0" Visibility="Collapsed"
+                                       Foreground="{DynamicResource AvisoIcone}" Text="Esse endereço não parece um site." />
+                            <UniformGrid Columns="2" Margin="0,8,0,0">
+                                <Button Style="{StaticResource BotaoLargo}" Height="36" Margin="0,0,4,0"
+                                        Content="Cancelar" Click="CancelarSite_Click" />
+                                <Button Style="{StaticResource BotaoLargo}" Height="36" Margin="4,0,0,0"
+                                        Content="Adicionar" Click="ConfirmarSite_Click" />
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <UniformGrid x:Name="BotoesAtalho" Columns="2" Margin="0,10,0,0">
+                            <Button Style="{StaticResource BotaoLargo}" Height="36" Margin="0,0,4,0"
+                                    Content="Adicionar app" Click="AdicionarApp_Click" />
+                            <Button Style="{StaticResource BotaoLargo}" Height="36" Margin="4,0,0,0"
+                                    Content="Adicionar site" Click="AdicionarSite_Click" />
+                        </UniformGrid>
                     </StackPanel>
                 </Border>
 

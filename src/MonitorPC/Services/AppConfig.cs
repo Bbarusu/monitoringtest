@@ -169,6 +169,22 @@ public sealed class AppConfig
     public bool IlhaPotencia { get; set; }
     public bool IlhaRelogio { get; set; }
 
+    /// <summary>Dia da semana e do mes na pilula ("Qui 29"), junto do relogio ou sozinho.</summary>
+    public bool IlhaData { get; set; }
+
+    /// <summary>
+    /// Chat de IA aberto pelo anel pulsante: o id de um dos chats conhecidos
+    /// (AtalhoService.Ias), "outro" para um endereco proprio, ou vazio para
+    /// nenhum. Com um escolhido, o anel fica sempre na pilula.
+    /// </summary>
+    public string? IlhaIa { get; set; }
+
+    /// <summary>Endereco (ou app) do chat quando IlhaIa e "outro".</summary>
+    public string? IlhaIaEndereco { get; set; }
+
+    /// <summary>Apps e sites da Kisland aberta, na ordem em que aparecem.</summary>
+    public List<AtalhoDaIlha> IlhaAtalhos { get; set; } = new();
+
     /// <summary>
     /// O convite para conhecer a Kisland ja apareceu. Aparece uma vez so, na
     /// primeira abertura de uma versao que tem o guia — para quem instalou
@@ -203,6 +219,8 @@ public sealed class AppConfig
     public bool IlhaAbertaSistema { get; set; } = true;
     public bool IlhaAbertaVolume { get; set; } = true;
     public bool IlhaAbertaPerfis { get; set; } = true;
+    public bool IlhaAbertaCalendario { get; set; } = true;
+    public bool IlhaAbertaAtalhos { get; set; } = true;
 
     /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
     public bool IlhaBotaoPersonalizacao { get; set; } = true;

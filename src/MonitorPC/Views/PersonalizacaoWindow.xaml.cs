@@ -36,6 +36,7 @@ public partial class PersonalizacaoWindow : Window
         _aoMudar = aoMudar;
 
         MontarPaleta();
+        MontarIas();
 
         Carregar();
 
@@ -171,6 +172,12 @@ public partial class PersonalizacaoWindow : Window
         IlhaDisco.IsChecked = _cfg.IlhaDisco;
         IlhaPotencia.IsChecked = _cfg.IlhaPotencia;
         IlhaRelogio.IsChecked = _cfg.IlhaRelogio;
+        IlhaData.IsChecked = _cfg.IlhaData;
+        IlhaAbertaCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
+        IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
+        IlhaIa.SelectedIndex = Math.Max(0, _idsDeIa.IndexOf(_cfg.IlhaIa ?? ""));
+        IlhaIaEndereco.Text = _cfg.IlhaIaEndereco ?? "";
+        MontarListaDeAtalhos();
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
         IlhaAbertaPlayer.IsChecked = _cfg.IlhaAbertaPlayer;
         IlhaAbertaTemperaturas.IsChecked = _cfg.IlhaAbertaTemperaturas;
@@ -241,6 +248,9 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaDisco = IlhaDisco.IsChecked == true;
         _cfg.IlhaPotencia = IlhaPotencia.IsChecked == true;
         _cfg.IlhaRelogio = IlhaRelogio.IsChecked == true;
+        _cfg.IlhaData = IlhaData.IsChecked == true;
+        _cfg.IlhaAbertaCalendario = IlhaAbertaCalendario.IsChecked == true;
+        _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
         _cfg.IlhaAbertaPlayer = IlhaAbertaPlayer.IsChecked == true;
         _cfg.IlhaAbertaTemperaturas = IlhaAbertaTemperaturas.IsChecked == true;
@@ -256,6 +266,251 @@ public partial class PersonalizacaoWindow : Window
 
         AtualizarEstados();
         Confirmar();
+    }
+
+    // ------------------------------------------------------------------
+    // Atalhos da Kisland
+
+    /// <summary>Id de cada linha do seletor de chat, na mesma ordem dos itens.</summary>
+    private readonly List<string> _idsDeIa = new();
+
+    private void MontarIas()
+    {
+        IlhaIa.Items.Add("Nenhum");
+        _idsDeIa.Add("");
+
+        foreach (var ia in AtalhoService.Ias)
+        {
+            IlhaIa.Items.Add(ia.Nome);
+            _idsDeIa.Add(ia.Id);
+        }
+
+        IlhaIa.Items.Add("Outro");
+        _idsDeIa.Add(AtalhoService.IaOutra);
+    }
+
+    private void Ia_Escolhida(object sender, SelectionChangedEventArgs e)
+    {
+        var indice = IlhaIa.SelectedIndex;
+        var id = indice >= 0 && indice < _idsDeIa.Count ? _idsDeIa[indice] : "";
+
+        if (LinhaIaEndereco is not null)
+            LinhaIaEndereco.Visibility = id == AtalhoService.IaOutra ? Visibility.Visible : Visibility.Collapsed;
+
+        if (_carregando) return;
+
+        _cfg.IlhaIa = id.Length == 0 ? null : id;
+        Confirmar();
+    }
+
+    /// <summary>
+    /// As dicas dentro das caixas de texto somem quando ha texto. O endereco
+    /// do chat proprio vale a cada letra, como o resto da Personalizacao.
+    /// </summary>
+    private void Texto_Alterado(object sender, TextChangedEventArgs e)
+    {
+        if (DicaIaEndereco is not null) DicaIaEndereco.Visibility = Dica(IlhaIaEndereco);
+        if (DicaEnderecoDoSite is not null) DicaEnderecoDoSite.Visibility = Dica(EnderecoDoSite);
+        if (DicaNomeDoSite is not null) DicaNomeDoSite.Visibility = Dica(NomeDoSite);
+        if (ErroDoSite is not null) ErroDoSite.Visibility = Visibility.Collapsed;
+
+        if (_carregando || !ReferenceEquals(sender, IlhaIaEndereco)) return;
+
+        _cfg.IlhaIaEndereco = IlhaIaEndereco.Text.Trim();
+        Confirmar();
+    }
+
+    private static Visibility Dica(TextBox? caixa) =>
+        caixa is null || caixa.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Uma linha por atalho: icone, nome, destino e o botao de tirar.</summary>
+    private void MontarListaDeAtalhos()
+    {
+        ListaAtalhos.Children.Clear();
+
+        for (var i = 0; i < _cfg.IlhaAtalhos.Count; i++)
+        {
+            var atalho = _cfg.IlhaAtalhos[i];
+
+            var linha = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            linha.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            linha.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            linha.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var circulo = new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(15) };
+            circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
+
+            if (AtalhoService.Icone(atalho.Destino) is { } icone)
+            {
+                var imagem = new Image { Source = icone, Width = 18, Height = 18 };
+                RenderOptions.SetBitmapScalingMode(imagem, BitmapScalingMode.HighQuality);
+                circulo.Child = imagem;
+            }
+            else
+            {
+                var letra = new TextBlock
+                {
+                    Text = Inicial(atalho.Nome),
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                letra.SetResourceReference(TextBlock.ForegroundProperty, "Acento");
+                circulo.Child = letra;
+            }
+
+            var textos = new StackPanel { Margin = new Thickness(10, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
+            var nome = new TextBlock
+            {
+                Text = atalho.Nome,
+                FontSize = 13,
+                FontWeight = FontWeights.Medium,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+            var destino = new TextBlock
+            {
+                Text = Resumo(atalho.Destino),
+                FontSize = 11,
+                Margin = new Thickness(0, 1, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = atalho.Destino
+            };
+            destino.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+            textos.Children.Add(nome);
+            textos.Children.Add(destino);
+            Grid.SetColumn(textos, 1);
+
+            var x = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse("M6,6 L18,18 M18,6 L6,18"),
+                StrokeThickness = 1.8,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+                Width = 10,
+                Height = 10,
+                Stretch = Stretch.Uniform
+            };
+            x.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "Icone");
+            var tirar = new Button
+            {
+                Style = (Style)FindResource("BotaoIcone"),
+                Width = 28,
+                Height = 28,
+                Content = x,
+                Tag = i,
+                ToolTip = "Tirar da Kisland",
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            tirar.Click += TirarAtalho_Click;
+            Grid.SetColumn(tirar, 2);
+
+            linha.Children.Add(circulo);
+            linha.Children.Add(textos);
+            linha.Children.Add(tirar);
+            ListaAtalhos.Children.Add(linha);
+        }
+
+        var cheio = _cfg.IlhaAtalhos.Count >= AtalhoService.Maximo;
+        BotoesAtalho.IsEnabled = !cheio;
+        BotoesAtalho.Opacity = cheio ? 0.5 : 1;
+        DicaAtalhos.Text = cheio
+            ? $"Chegou ao limite de {AtalhoService.Maximo}. Tire um para colocar outro."
+            : $"Aparecem com a Kisland aberta, até {AtalhoService.Maximo}.";
+    }
+
+    private static string Inicial(string nome)
+    {
+        var letra = nome.FirstOrDefault(char.IsLetterOrDigit);
+        return letra == default ? "?" : char.ToUpperInvariant(letra).ToString();
+    }
+
+    /// <summary>"youtube.com" para um site, "Spotify.exe" para um app.</summary>
+    private static string Resumo(string destino) =>
+        Uri.TryCreate(destino, UriKind.Absolute, out var uri) && !uri.IsFile
+            ? AtalhoService.Host(uri)
+            : System.IO.Path.GetFileName(destino);
+
+    private void Adicionar(AtalhoDaIlha atalho)
+    {
+        if (_cfg.IlhaAtalhos.Count >= AtalhoService.Maximo) return;
+
+        _cfg.IlhaAtalhos.Add(atalho);
+        MontarListaDeAtalhos();
+        Confirmar();
+    }
+
+    private void TirarAtalho_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: int i } || i < 0 || i >= _cfg.IlhaAtalhos.Count) return;
+
+        _cfg.IlhaAtalhos.RemoveAt(i);
+        MontarListaDeAtalhos();
+        Confirmar();
+    }
+
+    /// <summary>
+    /// Escolher um app. Comeca no menu Iniciar, onde estao os atalhos de tudo
+    /// o que foi instalado; escolhido um atalho, vale o app para onde ele
+    /// aponta, com o icone e o nome dele.
+    /// </summary>
+    private void AdicionarApp_Click(object sender, RoutedEventArgs e)
+    {
+        var dialogo = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Escolha um app para a Kisland",
+            Filter = "Apps e atalhos (*.exe;*.lnk)|*.exe;*.lnk",
+            InitialDirectory = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs")
+        };
+
+        if (dialogo.ShowDialog(this) != true) return;
+
+        Adicionar(new AtalhoDaIlha
+        {
+            Nome = AtalhoService.NomeDoApp(dialogo.FileName),
+            Destino = dialogo.FileName
+        });
+    }
+
+    private void AdicionarSite_Click(object sender, RoutedEventArgs e)
+    {
+        NovoSite.Visibility = Visibility.Visible;
+        BotoesAtalho.Visibility = Visibility.Collapsed;
+        EnderecoDoSite.Focus();
+    }
+
+    private void ConfirmarSite_Click(object sender, RoutedEventArgs e)
+    {
+        if (AtalhoService.NormalizarSite(EnderecoDoSite.Text) is not { } endereco)
+        {
+            ErroDoSite.Visibility = Visibility.Visible;
+            return;
+        }
+
+        var nome = NomeDoSite.Text.Trim();
+        if (nome.Length == 0)
+        {
+            // "youtube.com" vira "Youtube": a primeira parte do endereco.
+            var host = AtalhoService.Host(new Uri(endereco));
+            var parte = host.Split('.')[0];
+            nome = parte.Length == 0 ? host : char.ToUpperInvariant(parte[0]) + parte[1..];
+        }
+
+        FecharNovoSite();
+        Adicionar(new AtalhoDaIlha { Nome = nome, Destino = endereco });
+    }
+
+    private void CancelarSite_Click(object sender, RoutedEventArgs e) => FecharNovoSite();
+
+    private void FecharNovoSite()
+    {
+        EnderecoDoSite.Text = "";
+        NomeDoSite.Text = "";
+        ErroDoSite.Visibility = Visibility.Collapsed;
+        NovoSite.Visibility = Visibility.Collapsed;
+        BotoesAtalho.Visibility = Visibility.Visible;
     }
 
     private void Restaurar_Click(object sender, RoutedEventArgs e)

@@ -46,10 +46,31 @@ sombra). A chave `IlhaVidro` de configurações antigas é ignorada.
 
 `FpsService` conta os eventos de "quadro apresentado" que o DXGI (DirectX 10
 a 12) e o D3D9 publicam no rastreamento de eventos do Windows — o caminho do
-PresentMon —, por processo, a cada segundo. Não injeta nada no jogo. Usa a
+PresentMon. Não injeta nada no jogo. Usa a
 `Microsoft.Diagnostics.Tracing.TraceEvent`; a sessão (`KInfo-FPS`) só existe
 com o contador ligado e a Kisland ativa, e exige o app elevado. Jogos só em
 Vulkan ou OpenGL não passam por esses provedores.
+
+A conta segue a do PresentMon: a hora de cada quadro vem do próprio evento, e
+o FPS é a média dos intervalos do último segundo. Contar quantos eventos
+chegavam a cada segundo de relógio oscilava muito, porque o Windows entrega os
+eventos em lotes. Os quadros são separados por cadeia de troca (swap chain), e
+vale a mais rápida do processo: somar todas inflava o número quando o jogo
+tinha mais de uma. Presents só de teste (`DXGI_PRESENT_TEST`), que não mostram
+nada, ficam fora. A Kisland ainda suaviza de leve variações pequenas.
+
+### Calendário e atalhos
+
+Fechada, a Kisland pode mostrar a data junto do relógio ("Qui 29 15:49"). Aberta,
+mostra um calendário do mês, no jeito do widget da tela de espera do iPhone,
+refeito só na virada do dia. Os nomes de mês e dia estão no código: a cultura
+pt-BR do Windows abrevia com ponto e em minúscula.
+
+O anel pulsante pode virar atalho para um chat de IA (ChatGPT, Claude, Gemini,
+Copilot, Perplexity, DeepSeek ou um endereço próprio). Com um escolhido, ele
+fica sempre no começo da pílula. A Kisland aberta tem ainda até seis apps ou
+sites (`IlhaAtalhos`). Como o KInfo costuma rodar elevado, `AtalhoService` abre
+tudo pelo Explorer, para o navegador e os apps não herdarem o administrador.
 
 `DetectorDeJogo` decide quem é jogo: quem entrega pelo menos 10 quadros por
 segundo, não está na lista de programas que desenham muito sem serem jogos

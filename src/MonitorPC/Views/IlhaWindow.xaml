@@ -81,6 +81,40 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- O anel vira botao quando ha um chat de IA escolhido. Sem fundo nem
+             borda: o desenho e o proprio anel. -->
+        <Style x:Key="BotaoDoAnel" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Atalho da Kisland aberta: icone redondo e o nome embaixo. -->
+        <Style x:Key="BotaoAtalho" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="10" Padding="2,6" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource Chip}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="MiniCartao" TargetType="Border">
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="12,10" />
@@ -102,6 +136,23 @@
 
             <!-- ========================= PÍLULA ========================= -->
             <StackPanel x:Name="Compacta" Orientation="Horizontal" Height="44" Margin="6,0,8,0">
+
+                <!--
+                    O anel. Aparece sozinho quando não há nada para mostrar, e a
+                    pílula vira um círculo com ele dentro. Com um chat de IA
+                    escolhido na Personalização, fica sempre aqui, no começo, e
+                    um clique nele abre o chat. Sem chat, não é clicável: o
+                    clique passa para a Kisland, que abre.
+                -->
+                <Button x:Name="BotaoAnel" Style="{StaticResource BotaoDoAnel}" VerticalAlignment="Center"
+                        Visibility="Collapsed" IsHitTestVisible="False" Click="Anel_Click">
+                    <Grid x:Name="SemItens" Width="32" Height="32">
+                        <Ellipse Width="30" Height="30" Stroke="{DynamicResource Acento}"
+                                 StrokeThickness="1" Opacity="0.28" />
+                        <Ellipse x:Name="Anel" Width="21" Height="21" Stroke="{DynamicResource Acento}"
+                                 StrokeThickness="3.5" RenderTransformOrigin="0.5,0.5" />
+                    </Grid>
+                </Button>
 
                 <StackPanel x:Name="MidiaCompacta" Orientation="Horizontal" VerticalAlignment="Center"
                             Margin="0,0,4,0" Visibility="Collapsed">
@@ -187,15 +238,19 @@
 
                 <Border x:Name="ChipVolume" Style="{StaticResource ChipIlha}">
                     <StackPanel Orientation="Horizontal">
-                        <Path x:Name="IconeVolumeChip" Style="{StaticResource IconeChip}" />
+                        <Path x:Name="IconeVolumeChip" Style="{StaticResource IconeChip}" StrokeThickness="1.6" />
                         <TextBlock x:Name="TextoVolume" Style="{StaticResource TextoChip}" Text="--" />
                     </StackPanel>
                 </Border>
 
+                <!-- Data e hora no mesmo chip, como na tela de espera do iPhone:
+                     a data na cor de destaque, a hora logo depois. -->
                 <Border x:Name="ChipRelogio" Style="{StaticResource ChipIlha}">
                     <StackPanel Orientation="Horizontal">
-                        <Path Style="{StaticResource IconeChip}"
+                        <Path x:Name="IconeRelogio" Style="{StaticResource IconeChip}"
                               Data="M12,3 A9,9 0 1,1 11.99,3 Z M12,7 L12,12 L15,14" />
+                        <TextBlock x:Name="TextoData" Style="{StaticResource TextoChip}"
+                                   Foreground="{DynamicResource Acento}" Text="--" />
                         <TextBlock x:Name="TextoRelogio" Style="{StaticResource TextoChip}" Text="--:--" />
                     </StackPanel>
                 </Border>
@@ -208,25 +263,13 @@
                           Width="13" Height="13" Stretch="Uniform" />
                 </Button>
 
-                <!--
-                    Nada para mostrar: um anel, em vez de texto. A pílula vira
-                    um círculo com ele dentro — presença discreta, que ainda
-                    abre ao passar o mouse.
-                -->
-                <Grid x:Name="SemItens" Width="32" Height="32" VerticalAlignment="Center"
-                      Visibility="Collapsed">
-                    <Ellipse Width="30" Height="30" Stroke="{DynamicResource Acento}"
-                             StrokeThickness="1" Opacity="0.28" />
-                    <Ellipse x:Name="Anel" Width="21" Height="21" Stroke="{DynamicResource Acento}"
-                             StrokeThickness="3.5" RenderTransformOrigin="0.5,0.5" />
-                </Grid>
             </StackPanel>
 
             <!-- ===================== AVISO: VOLUME ====================== -->
             <StackPanel x:Name="AvisoVolume" Orientation="Horizontal" Height="44" Margin="6,0,16,0"
                         Visibility="Collapsed">
                 <Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource Chip}">
-                    <Path x:Name="IconeAvisoVolume" Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                    <Path x:Name="IconeAvisoVolume" Stroke="{DynamicResource Icone}" StrokeThickness="1.6"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                           Width="15" Height="15" Stretch="Uniform" />
                 </Border>
@@ -339,6 +382,38 @@
                     </StackPanel>
                 </Border>
 
+                <!--
+                    Calendário do mês, no jeito do widget da tela de espera do
+                    iPhone: à esquerda o mês, o dia da semana e o dia grande; à
+                    direita o mês inteiro, com hoje marcado na cor de destaque.
+                    Os dias são montados no código, e refeitos na virada do dia.
+                -->
+                <Border x:Name="BlocoCalendario" Margin="0,16,0,0" CornerRadius="12" Padding="16,14"
+                        Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Margin="0,0,16,0">
+                            <StackPanel>
+                                <TextBlock x:Name="MesCalendario" FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                                <TextBlock x:Name="SemanaCalendario" FontSize="15" FontWeight="SemiBold" Margin="0,2,0,0"
+                                           Foreground="{DynamicResource Acento}" />
+                                <TextBlock x:Name="AnoCalendario" FontSize="11" Margin="0,2,0,0"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <TextBlock x:Name="DiaCalendario" FontSize="52" FontWeight="Light"
+                                       FontFamily="{StaticResource FonteNumero}" Foreground="{DynamicResource Texto}"
+                                       VerticalAlignment="Bottom" Margin="0,0,0,-6" />
+                        </Grid>
+
+                        <Grid x:Name="GradeCalendario" Grid.Column="1" />
+                    </Grid>
+                </Border>
+
                 <!-- Temperaturas -->
                 <UniformGrid x:Name="GradeTemperaturas" Columns="2" Margin="0,16,0,0">
                     <Border Margin="0,0,6,0" CornerRadius="12" Padding="12"
@@ -413,7 +488,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <Button Style="{StaticResource BotaoRedondoPequeno}" ToolTip="Silenciar ou voltar o som"
                                         Click="Mudo_Click">
-                                    <Path x:Name="IconeMudo" Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                                    <Path x:Name="IconeMudo" Stroke="{DynamicResource Icone}" StrokeThickness="1.6"
                                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
                                           Width="16" Height="16" Stretch="Uniform" />
                                 </Button>
@@ -439,6 +514,12 @@
                     <RadioButton x:Name="PerfilDesempenho" Style="{StaticResource Perfil}" GroupName="PerfilDaIlha"
                                  Content="Desempenho" Margin="6,0,0,0" Click="Perfil_Click" />
                 </UniformGrid>
+
+                <!-- Atalhos: o chat de IA e os apps e sites escolhidos na
+                     Personalização. Montados no código. -->
+                <Border x:Name="BlocoAtalhos" Style="{StaticResource MiniCartao}" Margin="0,12,0,0" Padding="6,4">
+                    <UniformGrid x:Name="GradeAtalhos" Rows="1" />
+                </Border>
 
                 <!-- Rodapé -->
                 <Grid x:Name="BlocoRodape" Margin="0,14,0,0">
