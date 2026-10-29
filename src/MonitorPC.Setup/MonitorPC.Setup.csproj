@@ -39,4 +39,14 @@
                       Condition="Exists('Payload\app.zip')" />
   </ItemGroup>
 
+  <!--
+    As notas da versao viajam dentro do instalador, para o painel de
+    atualizacao mostrar o que mudou sem depender de rede. Sao as mesmas que o
+    gerar-manifesto.ps1 poe no atualizacao.json.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\notas-da-versao.md" LogicalName="notas.md"
+                      Condition="Exists('..\..\notas-da-versao.md')" />
+  </ItemGroup>
+
 </Project>

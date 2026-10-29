@@ -126,6 +126,30 @@ tipografia — e faz quatro coisas:
 - Registra a desinstalação no Painel de Controle. O próprio instalador é o
   desinstalador, copiado para a pasta de instalação
 
+### Atualização
+
+Quando o app baixa uma versão nova, ele abre o instalador com
+`--atualizar --tema=… --acento=#RRGGBB`. Com uma instalação anterior no lugar,
+o instalador vira o painel de atualização: nas cores e no tema do app, sem a
+tela de opções, já começando, com as notas da versão (embutidas pelo projeto) e
+reabrindo o app no fim. Rodado à mão, ele continua mostrando as opções — é o
+jeito de mudar alguma.
+
+As opções de cada instalação ficam gravadas na chave de desinstalação do
+registro. Instalações anteriores a isso não gravaram nada, e aí o instalador
+deduz pelo que a máquina mostra: a tarefa, o gatilho de logon, o atalho, a
+exceção do Defender. O PawnIO é a exceção — ausente pode ser recusa —, então ele
+não é instalado por dedução; o fim da atualização avisa se ele faltar.
+
+A confirmação do Windows não se pula por configuração: o instalador escreve em
+Arquivos de Programas. Mas o app instalado com acesso completo aos sensores já
+roda elevado, e um processo elevado abre outro elevado sem perguntar. Para essa
+instalação, que é a comum, atualizar não mostra aviso nenhum.
+
+A cor vai pela linha de comando, e não pela leitura do `config.json`, porque o
+instalador elevado com a senha de outra conta de administrador enxergaria a
+pasta de dados da outra conta.
+
 ### O driver, e por que a tarefa agendada
 
 Ler temperatura de CPU e placa-mãe exige duas coisas, e por muito tempo este

@@ -61,9 +61,10 @@ public partial class IlhaWindow : Window
     private DateTime? _dentroDesde;
     private DateTime? _foraDesde;
 
-    // Limpeza do player depois de um tempo pausado.
-    private DateTime? _pausadoDesde;
+    // Limpeza do player depois de um tempo sem som.
+    private DateTime _somDaMidiaEm = DateTime.UtcNow;
     private string? _faixaDispensada;
+    private bool _tocandoAoDispensar;
 
     /// <summary>
     /// Ligada na Personalizacao. Diferente de IsVisible: escondida por tela
@@ -203,9 +204,14 @@ public partial class IlhaWindow : Window
                     ChipVolume.Visibility == Visibility.Visible ||
                     ChipRelogio.Visibility == Visibility.Visible;
 
+        var comBotao = algum && _cfg.IlhaBotaoPersonalizacao;
+
         SemItens.Visibility = Visivel(!algum);
-        BotaoPersonalizarPilula.Visibility = Visivel(algum);
-        Compacta.Margin = algum ? new Thickness(6, 0, 7, 0) : new Thickness(6, 0, 6, 0);
+        BotaoPersonalizarPilula.Visibility = Visivel(algum && _cfg.IlhaBotaoPersonalizacao);
+        // Com o anel sozinho, margens iguais: e o que faz a pilula virar circulo.
+        Compacta.Margin = comBotao ? new Thickness(6, 0, 7, 0)
+                        : algum ? new Thickness(6, 0, 8, 0)
+                        : new Thickness(6, 0, 6, 0);
     }
 
     // ------------------------------------------------------------------
@@ -458,6 +464,7 @@ public partial class IlhaWindow : Window
         }
 
         ConferirTelaCheia();
+        OuvirSaida();
         ConferirSilencio();
         AtualizarRelogio();
 
@@ -491,17 +498,41 @@ public partial class IlhaWindow : Window
     }
 
     /// <summary>
-    /// Pausado por tres minutos, o player sai da ilha: musica parada ha tanto
-    /// tempo deixou de ser "tocando agora". Volta sozinho quando algo toca, ou
-    /// quando o player anuncia outra faixa.
+    /// Marca quando a midia foi ouvida pela ultima vez.
+    ///
+    /// Antes valia so o que o player declarava, e isso segurava a ilha: varios
+    /// players — abas de navegador, mensagens de audio, video que terminou —
+    /// continuam dizendo "tocando" muito depois de calar. Agora a prova e o
+    /// som saindo de verdade pela saida de audio, lido no medidor de pico do
+    /// Windows, junto com o player dizer que toca. Faltando um dos dois, conta
+    /// como silencio.
+    ///
+    /// Sem medidor (nenhum aparelho de som), sobra a palavra do player.
+    /// </summary>
+    private void OuvirSaida()
+    {
+        if (_midia.Atual is not { Tocando: true }) return;
+
+        var pico = _volume.Pico();
+        if (pico is null || pico > LimiarDeSom) _somDaMidiaEm = DateTime.UtcNow;
+    }
+
+    /// <summary>Abaixo disto e silencio: cerca de -60 dB, o chiado de fundo de uma faixa parada.</summary>
+    private const float LimiarDeSom = 0.001f;
+
+    /// <summary>
+    /// Tres minutos sem som, o player sai da ilha: musica calada ha tanto tempo
+    /// deixou de ser "tocando agora". Volta quando o player muda de estado
+    /// (pausa vira play, ou o contrario) ou anuncia outra faixa.
     /// </summary>
     private void ConferirSilencio()
     {
-        if (_pausadoDesde is not { } desde || _faixaDispensada is not null) return;
-        if (DateTime.UtcNow - desde < SilencioQueLimpa) return;
+        if (_faixaDispensada is not null) return;
         if (_midia.Atual is not { } estado) return;
+        if (DateTime.UtcNow - _somDaMidiaEm < SilencioQueLimpa) return;
 
         _faixaDispensada = Chave(estado);
+        _tocandoAoDispensar = estado.Tocando;
         AplicarMidia(false);
     }
 
@@ -622,7 +653,8 @@ public partial class IlhaWindow : Window
         var estado = _midia.Atual;
         if (estado is null) return null;
 
-        return _faixaDispensada is not null && !estado.Tocando && Chave(estado) == _faixaDispensada
+        return _faixaDispensada is not null && Chave(estado) == _faixaDispensada &&
+               estado.Tocando == _tocandoAoDispensar
             ? null
             : estado;
     }
@@ -631,26 +663,23 @@ public partial class IlhaWindow : Window
     {
         var bruto = _midia.Atual;
 
-        // Conta do silencio: comeca ao pausar, zera ao tocar. Tocar de novo, ou
-        // outra faixa, traz o player de volta.
+        // Faixa nova, ou o player mudou de estado depois de dispensado: volta
+        // a aparecer, com mais tres minutos de prazo. Aviso repetido do mesmo
+        // estado nao conta — e eles chegam a toda hora.
         if (bruto is null)
         {
-            _pausadoDesde = null;
             _faixaDispensada = null;
+            _somDaMidiaEm = DateTime.UtcNow;
         }
-        else if (bruto.Tocando)
+        else if (_faixaDispensada is not null &&
+                 (_faixaDispensada != Chave(bruto) || bruto.Tocando != _tocandoAoDispensar))
         {
-            _pausadoDesde = null;
             _faixaDispensada = null;
+            _somDaMidiaEm = DateTime.UtcNow;
         }
-        else
+        else if (_faixaDispensada is null && _ultimaFaixa is not null && _ultimaFaixa != Chave(bruto))
         {
-            _pausadoDesde ??= DateTime.UtcNow;
-            if (_faixaDispensada is not null && _faixaDispensada != Chave(bruto))
-            {
-                _faixaDispensada = null;
-                _pausadoDesde = DateTime.UtcNow;
-            }
+            _somDaMidiaEm = DateTime.UtcNow;
         }
 
         var estado = MidiaVisivel();

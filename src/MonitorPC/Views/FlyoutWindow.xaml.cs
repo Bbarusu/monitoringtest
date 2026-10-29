@@ -1303,8 +1303,13 @@ public partial class FlyoutWindow : Window
             // vai aparecer. Quem vê "editor desconhecido" sem ter sido avisado
             // conclui, com razão, que pegou algo errado — e quem foi avisado
             // dois minutos antes, enquanto lia as novidades, já esqueceu.
-            Estado("Arquivo conferido. Abrindo o instalador — o Windows vai " +
-                   "mostrar um aviso de editor desconhecido, que é esperado.");
+            // Com o app elevado o aviso não aparece: o instalador herda a
+            // elevação. Anunciar um aviso que não vem confunde tanto quanto
+            // não anunciar o que vem.
+            Estado(AtualizacaoService.Elevado()
+                ? "Arquivo conferido. Abrindo a atualização…"
+                : "Arquivo conferido. Abrindo o instalador — o Windows vai " +
+                  "mostrar um aviso de editor desconhecido, que é esperado.");
 
             if (!AtualizacaoService.Executar(arquivo))
                 Estado("O instalador foi baixado e conferido, mas não abriu. " +

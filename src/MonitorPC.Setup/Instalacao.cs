@@ -77,7 +77,7 @@ public static class Instalacao
     /// causa dele deixaria o usuário sem nada.
     /// </summary>
     public static async Task<List<string>> Instalar(
-        string pasta, OpcoesDeInstalacao opcoes, IProgress<string> aviso)
+        string pasta, OpcoesDeInstalacao opcoes, IProgress<string> aviso, bool atualizacao = false)
     {
         var ressalvas = new List<string>();
 
@@ -132,12 +132,13 @@ public static class Instalacao
             CriarAtalhos(pasta, opcoes);
 
             aviso.Report("Registrando no Windows…");
-            RegistrarDesinstalacao(pasta);
+            RegistrarDesinstalacao(pasta, opcoes);
 
             // Pede ao app que a primeira abertura mostre o painel. Sem isto,
             // clicar em "Abrir o Monitor" só põe um ícone na bandeja e parece
-            // que nada aconteceu.
-            PedirParaAbrirOPainel();
+            // que nada aconteceu. Na atualização não: o app volta como estava,
+            // na bandeja, e a tela do instalador já disse que deu certo.
+            if (!atualizacao) PedirParaAbrirOPainel();
         });
 
         return ressalvas;
@@ -487,7 +488,7 @@ public static class Instalacao
     private static bool ExcluirDoDefender(string pasta) =>
         PowerShell($"Add-MpPreference -ExclusionPath '{Aspas(pasta)}'") == 0;
 
-    private static void RegistrarDesinstalacao(string pasta)
+    private static void RegistrarDesinstalacao(string pasta, OpcoesDeInstalacao opcoes)
     {
         using var chave = Registry.LocalMachine.CreateSubKey(ChaveDeDesinstalacao);
         if (chave is null) return;
@@ -504,7 +505,80 @@ public static class Instalacao
             $"\"{Desinstalador(pasta)}\" {App.ArgumentoDeDesinstalacao}");
         chave.SetValue("NoModify", 1, RegistryValueKind.DWord);
         chave.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+
+        // As escolhas desta instalação, para a próxima atualização repeti-las
+        // sem perguntar de novo. Ficam na mesma chave, que a desinstalação já
+        // apaga.
+        Gravar(chave, "OpcaoSensores", opcoes.AcessoCompletoAosSensores);
+        Gravar(chave, "OpcaoPawnIo", opcoes.InstalarPawnIo);
+        Gravar(chave, "OpcaoAtalho", opcoes.AtalhoNaAreaDeTrabalho);
+        Gravar(chave, "OpcaoLogon", opcoes.IniciarComWindows);
+        Gravar(chave, "OpcaoDefender", opcoes.ExcluirDoDefender);
+
+        static void Gravar(RegistryKey chave, string nome, bool valor) =>
+            chave.SetValue(nome, valor ? 1 : 0, RegistryValueKind.DWord);
     }
+
+    /// <summary>Versão que está instalada agora, como o instalador anterior a gravou.</summary>
+    public static string? VersaoInstalada()
+    {
+        try
+        {
+            using var chave = Registry.LocalMachine.OpenSubKey(ChaveDeDesinstalacao);
+            return chave?.GetValue("DisplayVersion") as string;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// As escolhas da instalação que existe, para a atualização repetir.
+    /// Nulo quando não há instalação.
+    ///
+    /// Instalações feitas antes desta versão não gravaram nada. Para essas, o
+    /// que a máquina mostra responde: a tarefa existe ou não, o atalho está na
+    /// área de trabalho ou não, a exceção do Defender está lá ou não. Só o
+    /// PawnIO não dá para deduzir — ausente pode ser recusa —, então ele não é
+    /// instalado por dedução: o fim da atualização avisa se faltar.
+    /// </summary>
+    public static OpcoesDeInstalacao? OpcoesAnteriores()
+    {
+        var pasta = PastaInstalada();
+        if (string.IsNullOrEmpty(pasta)) return null;
+
+        try
+        {
+            using var chave = Registry.LocalMachine.OpenSubKey(ChaveDeDesinstalacao);
+
+            bool? Lido(string nome) => chave?.GetValue(nome) is int v ? v != 0 : null;
+
+            var tarefa = Lido("OpcaoSensores")
+                         ?? Executar("schtasks.exe", $"/Query /TN "{NomeDaTarefa}"").Codigo == 0;
+
+            var logon = Lido("OpcaoLogon") ?? (tarefa
+                ? Executar("schtasks.exe", $"/Query /TN "{NomeDaTarefa}" /XML").Saida.Contains("LogonTrigger")
+                : File.Exists(AtalhoDeInicializacao()));
+
+            var atalho = Lido("OpcaoAtalho") ?? File.Exists(AtalhoDaAreaDeTrabalho());
+
+            var defender = Lido("OpcaoDefender") ?? PowerShell(
+                $"if ((Get-MpPreference).ExclusionPath -contains '{Aspas(pasta)}') {{ exit 0 }} else {{ exit 1 }}") == 0;
+
+            var pawnIo = Lido("OpcaoPawnIo") ?? false;
+
+            return new OpcoesDeInstalacao(tarefa, pawnIo, atalho, logon, defender);
+        }
+        catch (Exception ex)
+        {
+            Anotar($"ler as opções anteriores: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>Para o fim da atualização dizer quando o driver dos sensores sumiu.</summary>
+    public static bool DriverPresente() => PawnIoInstalado();
 
     public static string? PastaInstalada()
     {

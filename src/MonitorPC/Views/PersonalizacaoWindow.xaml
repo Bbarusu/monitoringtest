@@ -228,6 +228,13 @@
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Botão de Personalização" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaBotaoPersonalizacao" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

@@ -17,6 +17,7 @@ namespace MonitorPC.Services;
 public sealed class VolumeService : IDisposable
 {
     private IAudioEndpointVolume? _volume;
+    private IAudioMeterInformation? _medidor;
     private RetornoDeVolume? _retorno;
     private string? _aparelho;
     private Guid _contexto = Guid.NewGuid();
@@ -53,6 +54,20 @@ public sealed class VolumeService : IDisposable
             _volume = (IAudioEndpointVolume)objeto;
             _aparelho = id;
 
+            // O medidor de pico e opcional: sem ele a ilha so perde a prova de
+            // que ha som, e volta a confiar no que o player declara.
+            try
+            {
+                var iidMedidor = typeof(IAudioMeterInformation).GUID;
+                aparelho.Activate(ref iidMedidor, 23, IntPtr.Zero, out var medidor);
+                _medidor = (IAudioMeterInformation)medidor;
+            }
+            catch (Exception ex)
+            {
+                Log.Erro("Volume: medidor", ex);
+                _medidor = null;
+            }
+
             _retorno = new RetornoDeVolume(this);
             _volume.RegisterControlChangeNotify(_retorno);
 
@@ -76,6 +91,24 @@ public sealed class VolumeService : IDisposable
 
         Nivel = (int)Math.Round(escalar * 100);
         Mudo = mudo;
+    }
+
+    /// <summary>
+    /// Pico do que esta saindo pelo aparelho agora, de 0 a 1. Nulo sem medidor.
+    /// Uma leitura e uma chamada de memoria compartilhada, sem custo de som.
+    /// </summary>
+    public float? Pico()
+    {
+        try
+        {
+            if (_medidor is null) return null;
+            _medidor.GetPeakValue(out var pico);
+            return pico;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public void Definir(int nivel)
@@ -130,6 +163,7 @@ public sealed class VolumeService : IDisposable
         }
 
         _volume = null;
+        _medidor = null;
         _retorno = null;
         _aparelho = null;
     }
@@ -221,4 +255,11 @@ internal interface IAudioEndpointVolume
 internal interface IAudioEndpointVolumeCallback
 {
     [PreserveSig] int OnNotify(IntPtr dados);
+}
+
+[ComImport, Guid("C02216F6-8C67-4B5B-9D00-D008E73E0064"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IAudioMeterInformation
+{
+    void GetPeakValue(out float pico);
 }

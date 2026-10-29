@@ -70,6 +70,24 @@
                 </Button>
             </Grid>
 
+            <!--
+                O que mudou nesta versão. Só aparece na atualização: é quando
+                a pessoa já conhece o app e quer saber o que tem de novo, e é
+                o tempo da barra andar.
+            -->
+            <Border x:Name="BlocoNotas" Margin="0,22,0,0" CornerRadius="12" Padding="14"
+                    Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}"
+                    BorderThickness="1" Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="O que mudou" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
+                    <ScrollViewer MaxHeight="200" Margin="0,6,0,0" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <TextBlock x:Name="NotasDaVersao" FontSize="12" TextWrapping="Wrap" LineHeight="18"
+                                   Foreground="{DynamicResource Texto}" />
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
             <!-- ===================== PASSO: OPÇÕES ===================== -->
             <StackPanel x:Name="PassoOpcoes" Margin="0,22,0,0">
 
@@ -191,7 +209,7 @@
               </StackPanel>
 
                 <!-- O que o instalador faz com o driver -->
-                <Border Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource AvisoFundo}"
+                <Border x:Name="CartaoDoDriver" Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource AvisoFundo}"
                         BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1" Padding="14">
                     <Grid>
                         <Grid.ColumnDefinitions>

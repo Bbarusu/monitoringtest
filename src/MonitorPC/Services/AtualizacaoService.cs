@@ -244,11 +244,16 @@ public sealed class AtualizacaoService
     }
 
     /// <summary>
-    /// Executa o instalador conferido.
+    /// Executa o instalador conferido, em modo de atualizacao.
     ///
     /// <c>UseShellExecute</c> de proposito: o instalador pede elevacao pelo
     /// manifesto dele, e so por essa via o Windows mostra a confirmacao em vez
-    /// de recusar a execucao.
+    /// de recusar a execucao. Com o app ja elevado, nao ha confirmacao: o
+    /// filho herda a elevacao.
+    ///
+    /// Os argumentos dizem ao instalador que e uma atualizacao — ele repete as
+    /// opcoes da instalacao anterior em vez de pergunta-las — e com que cor e
+    /// tema se vestir, os mesmos do app agora.
     /// </summary>
     public static bool Executar(string instalador)
     {
@@ -257,6 +262,7 @@ public sealed class AtualizacaoService
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
                 FileName = instalador,
+                Arguments = ArgumentosDoInstalador(),
                 UseShellExecute = true
             });
 
@@ -265,6 +271,42 @@ public sealed class AtualizacaoService
         catch (Exception ex)
         {
             Log.Erro("Executar atualização", ex);
+            return false;
+        }
+    }
+
+    private static string ArgumentosDoInstalador()
+    {
+        var argumentos = $"--atualizar --tema={(ThemeService.Claro ? "claro" : "escuro")}";
+
+        try
+        {
+            if (System.Windows.Application.Current?.Resources["Acento"] is System.Windows.Media.SolidColorBrush acento)
+                argumentos += $" --acento=#{acento.Color.R:X2}{acento.Color.G:X2}{acento.Color.B:X2}";
+        }
+        catch
+        {
+            // Sem a cor, o instalador fica no azul de sempre.
+        }
+
+        return argumentos;
+    }
+
+    /// <summary>
+    /// O app esta rodando elevado: o instalador abre sem a confirmacao do
+    /// Windows. A tela de atualizacao usa isto para nao anunciar um aviso que
+    /// nao vai aparecer.
+    /// </summary>
+    public static bool Elevado()
+    {
+        try
+        {
+            using var identidade = System.Security.Principal.WindowsIdentity.GetCurrent();
+            return new System.Security.Principal.WindowsPrincipal(identidade)
+                .IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+        }
+        catch
+        {
             return false;
         }
     }

@@ -163,6 +163,9 @@ public sealed class AppConfig
     public bool IlhaPotencia { get; set; }
     public bool IlhaRelogio { get; set; }
 
+    /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
+    public bool IlhaBotaoPersonalizacao { get; set; } = true;
+
     /// <summary>
     /// Monitor da ilha, pelo nome do dispositivo do Windows ("\\.\DISPLAY2").
     /// Vazio e o principal. Monitor desligado faz a ilha ir para o principal
