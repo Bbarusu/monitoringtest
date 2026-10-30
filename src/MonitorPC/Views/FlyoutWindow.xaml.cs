@@ -49,6 +49,7 @@ public partial class FlyoutWindow : Window
     public FlyoutWindow(AppConfig cfg, SensorService sensores, AlertService alertas)
     {
         InitializeComponent();
+        VersaoDoApp.Text = $"v{MonitorPC.Comum.Versao.Texto}";
         _cfg = cfg;
         _sensores = sensores;
         _alertas = alertas;

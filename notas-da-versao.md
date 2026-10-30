@@ -9,3 +9,5 @@ Novo: o anel de IA abre o app do chat quando ele está instalado no PC (ChatGPT,
 Na Kisland aberta, os cartões de CPU, GPU, RAM, disco e energia se reorganizam conforme o que está ligado: até três ficam lado a lado numa linha só, em vez de um embaixo do outro.
 
 Corrigido: o contador de FPS achava que o Parsec era um jogo. Programas de acesso remoto e transmissão (Parsec, AnyDesk, TeamViewer, Área de Trabalho Remota, Moonlight e outros) não contam mais como jogo.
+
+O painel mostra a versão do KInfo no canto de baixo, à direita, logo abaixo do botão de Ajustes.
