@@ -445,6 +445,7 @@
                             <Ellipse Width="90" Height="90" Fill="{DynamicResource Acento}" Opacity="0.25"
                                      HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,18,60,0" />
                             <Border Style="{StaticResource PilulaGuia}" Padding="6,0,6,0">
+                                <StackPanel Orientation="Horizontal">
                                 <Border Style="{StaticResource ChipGuia}" Margin="0">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource IconeChipGuia}" Stroke="{DynamicResource Acento}"
@@ -452,6 +453,9 @@
                                         <TextBlock Style="{StaticResource TextoChipGuia}" Text="144 FPS" />
                                     </StackPanel>
                                 </Border>
+                                <Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 71°" /></StackPanel></Border>
+                                <Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M5,6 L19,6 A2,2 0 0,1 21,8 L21,16 A2,2 0 0,1 19,18 L5,18 A2,2 0 0,1 3,16 L3,8 A2,2 0 0,1 5,6 Z M7,10 L11,10" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 66°" /></StackPanel></Border>
+                                </StackPanel>
                             </Border>
                         </Grid>
                     </Border>
