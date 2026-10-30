@@ -72,6 +72,26 @@ fica sempre no começo da pílula. A Kisland aberta tem ainda até seis apps ou
 sites (`IlhaAtalhos`). Como o KInfo costuma rodar elevado, `AtalhoService` abre
 tudo pelo Explorer, para o navegador e os apps não herdarem o administrador.
 
+### Telas OLED
+
+O tema `Preto` é o escuro com as superfícies pretas (`ThemeService.Preta`:
+fundo, borda, cartão, chip e trilho); texto, ícones e avisos ficam os do
+escuro. Ele desliga a transparência (`AppConfig.TransparenciaAtiva`), que
+mostraria o desktop no lugar do preto. No fim do enum, para não mudar o
+número dos outros temas na configuração salva.
+
+A Kisland preta pendura `ThemeService.PaletaPreta()` nos recursos da própria
+janela, por cima dos do app: tudo nela usa `DynamicResource`, então ela fica
+preta em qualquer tema, sem borda nem sombra.
+
+A proteção contra marca (`IlhaProtegerTela`, ligada por padrão) faz três
+coisas: a cada 3 minutos a Kisland anda 1 ou 2 px num ciclo de oito posições;
+sem o mouse a 60 px dela por `IlhaEscurecerMinutos`, a casca vai a 35% de
+opacidade e volta ao chegar perto, ao abrir ou num aviso; e com 10 minutos sem
+entrada no PC (`GetLastInputInfo`) ela se esconde e volta no primeiro
+movimento. O Windows não informa se a tela é OLED, então nada disso depende de
+detectar a tela.
+
 ### Roda do mouse, saídas de som e bandeja
 
 A roda e o clique do meio chegam por mensagem do Windows (`WM_MOUSEWHEEL`,

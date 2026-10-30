@@ -159,6 +159,11 @@ quando há um escolhido. Os atalhos de apps e sites ficam em círculos com o íc
 inicial do site na cor de destaque. Ícone de volume pequeno, de cantos redondos e traço 1.6,
 desenhado sempre no mesmo tamanho, com ou sem as ondas.
 
+Tema Preto: fundo #000000, bordas #16181C, cartões #0A0A0B, chips #111214, trilhos #1C1E22; o resto
+igual ao escuro, sem transparência. Kisland preta com a mesma paleta, sem borda nem sombra. Proteção
+contra marca: deslocamento de 1–2 px a cada 3 min, opacidade 35% sem o mouse por perto, e esconder com
+o PC parado.
+
 Saídas de som em botões de canto 13 sob o volume, a atual nas cores do perfil escolhido (fundo
 InfoFundo, borda na cor de destaque); ícone de fone, monitor ou caixa pelo nome do aparelho. Bandeja
 de arquivos num minicartão: título com a contagem, copiar e esvaziar em botões redondos, e os
