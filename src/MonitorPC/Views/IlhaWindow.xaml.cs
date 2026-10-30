@@ -1662,7 +1662,7 @@ public partial class IlhaWindow : Window
     /// </summary>
     private void MontarBandeja()
     {
-        _bandeja.RemoveAll(c => !File.Exists(c) && !Directory.Exists(c));
+        _bandeja.RemoveAll(c => !System.IO.File.Exists(c) && !System.IO.Directory.Exists(c));
 
         GradeBandeja.Children.Clear();
         foreach (var caminho in _bandeja)
@@ -1692,7 +1692,7 @@ public partial class IlhaWindow : Window
 
     private UIElement ItemDaBandeja(string caminho)
     {
-        var pasta = Directory.Exists(caminho);
+        var pasta = System.IO.Directory.Exists(caminho);
 
         var circulo = new Border
         {
@@ -1703,7 +1703,8 @@ public partial class IlhaWindow : Window
         };
         circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
 
-        if (!pasta && AtalhoService.Icone(caminho) is { } icone)
+        var icone = pasta ? null : AtalhoService.Icone(caminho);
+        if (icone is not null)
         {
             var imagem = new Image { Source = icone, Width = 24, Height = 24 };
             RenderOptions.SetBitmapScalingMode(imagem, BitmapScalingMode.HighQuality);
