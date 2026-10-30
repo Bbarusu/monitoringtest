@@ -305,6 +305,16 @@ public sealed class AppConfig
     /// </summary>
     public string? IlhaMonitor { get; set; }
 
+    /// <summary>
+    /// Quanto tempo o mouse precisa ficar em cima para ela abrir, em
+    /// milissegundos. 5 s por padrao: da tempo de clicar no anel de IA ou num
+    /// chip sem a Kisland abrir por cima.
+    /// </summary>
+    public int IlhaEsperaParaAbrirMs { get; set; } = 5000;
+
+    /// <summary>Com um chat de IA escolhido, abrir o app dele quando estiver instalado no PC.</summary>
+    public bool IlhaIaPreferirApp { get; set; } = true;
+
     /// <summary>Abre ao passar o mouse; falso, so ao clicar.</summary>
     public bool IlhaAbrirAoPassarMouse { get; set; } = true;
 

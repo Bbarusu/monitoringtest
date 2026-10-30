@@ -69,6 +69,96 @@ public static class AtalhoService
         return ia is null ? null : (ia.Nome, ia.Endereco);
     }
 
+    /// <summary>
+    /// Marca, no lugar do destino, do atalho do chat de IA na Kisland aberta:
+    /// quem decide se abre o app ou o site e <see cref="AbrirIa"/>, na hora.
+    /// </summary>
+    public const string MarcaDaIa = "kinfo:ia";
+
+    /// <summary>
+    /// Abre o chat de IA escolhido: o app, se ele estiver instalado no PC (e a
+    /// pessoa preferir assim), ou o site. Um endereco proprio ("Outro") abre
+    /// como esta.
+    /// </summary>
+    public static void AbrirIa(AppConfig cfg)
+    {
+        if (IaEscolhida(cfg) is not { } ia) return;
+
+        if (cfg.IlhaIaPreferirApp && cfg.IlhaIa != IaOutra && AppInstalado(ia.Nome) is { } app &&
+            Abrir(@"shell:AppsFolder\" + app))
+            return;
+
+        Abrir(ia.Destino);
+    }
+
+    /// <summary>Nomes com que cada chat aparece no menu Iniciar.</summary>
+    private static string[] NomesDoApp(string ia) => ia switch
+    {
+        "Copilot" => new[] { "Copilot", "Microsoft Copilot" },
+        "ChatGPT" => new[] { "ChatGPT", "ChatGPT Desktop" },
+        _ => new[] { ia }
+    };
+
+    /// <summary>
+    /// O id do app do chat no menu Iniciar, ou nulo se nao estiver instalado.
+    ///
+    /// A busca e pela lista de apps do proprio Windows (shell:AppsFolder, a
+    /// mesma do menu Iniciar), e nao por pastas de instalacao: cada chat se
+    /// instala de um jeito (Microsoft Store, instalador proprio, app da web
+    /// instalado pelo Edge ou pelo Chrome), e todos aparecem ali com o nome
+    /// e um id que o Explorer sabe abrir.
+    /// </summary>
+    public static string? AppInstalado(string ia)
+    {
+        var apps = AppsDoMenuIniciar();
+        foreach (var nome in NomesDoApp(ia))
+            if (apps.TryGetValue(nome, out var id))
+                return id;
+
+        return null;
+    }
+
+    private static Dictionary<string, string>? _apps;
+    private static DateTime _appsLidosEm;
+
+    /// <summary>
+    /// Nome e id de cada app do menu Iniciar. Ler leva uma fracao de segundo;
+    /// a lista fica guardada por 10 minutos, o bastante para um app instalado
+    /// agora aparecer logo.
+    /// </summary>
+    private static Dictionary<string, string> AppsDoMenuIniciar()
+    {
+        if (_apps is not null && DateTime.UtcNow - _appsLidosEm < TimeSpan.FromMinutes(10)) return _apps;
+
+        var apps = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            if (Type.GetTypeFromProgID("Shell.Application") is { } tipo)
+            {
+                dynamic shell = Activator.CreateInstance(tipo)!;
+                dynamic? pasta = shell.NameSpace("shell:AppsFolder");
+                if (pasta is not null)
+                {
+                    foreach (var item in pasta.Items())
+                    {
+                        string? nome = item.Name;
+                        string? id = item.Path;
+                        if (!string.IsNullOrWhiteSpace(nome) && !string.IsNullOrWhiteSpace(id))
+                            apps.TryAdd(nome.Trim(), id);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Atalho: apps do menu Iniciar", ex);
+        }
+
+        _apps = apps;
+        _appsLidosEm = DateTime.UtcNow;
+        return apps;
+    }
+
     public static bool Abrir(string destino)
     {
         if (string.IsNullOrWhiteSpace(destino)) return false;

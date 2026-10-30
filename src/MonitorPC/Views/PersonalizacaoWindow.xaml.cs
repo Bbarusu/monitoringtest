@@ -38,6 +38,8 @@ public partial class PersonalizacaoWindow : Window
         MontarPaleta();
         MontarIas();
         MontarTemposDeEscurecer();
+        foreach (var ms in TemposDeEspera)
+            IlhaEspera.Items.Add(ms < 1000 ? $"{ms / 1000.0:0.#} s".Replace('.', ',') : $"{ms / 1000} s");
 
         Carregar();
 
@@ -180,6 +182,9 @@ public partial class PersonalizacaoWindow : Window
         IlhaAbertaCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
         IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
         IlhaSaidasDeSom.IsChecked = _cfg.IlhaSaidasDeSom;
+        IlhaIaApp.IsChecked = _cfg.IlhaIaPreferirApp;
+        var espera = Array.IndexOf(TemposDeEspera, _cfg.IlhaEsperaParaAbrirMs);
+        IlhaEspera.SelectedIndex = espera >= 0 ? espera : Array.IndexOf(TemposDeEspera, 5000);
         IlhaPreta.IsChecked = _cfg.IlhaPreta;
         IlhaProteger.IsChecked = _cfg.IlhaProtegerTela;
         IlhaMexer.IsChecked = _cfg.IlhaMexerPixels;
@@ -276,6 +281,9 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaAbertaCalendario = IlhaAbertaCalendario.IsChecked == true;
         _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
         _cfg.IlhaSaidasDeSom = IlhaSaidasDeSom.IsChecked == true;
+        _cfg.IlhaIaPreferirApp = IlhaIaApp.IsChecked == true;
+        if (IlhaEspera.SelectedIndex >= 0)
+            _cfg.IlhaEsperaParaAbrirMs = TemposDeEspera[IlhaEspera.SelectedIndex];
         _cfg.IlhaPreta = IlhaPreta.IsChecked == true;
         _cfg.IlhaProtegerTela = IlhaProteger.IsChecked == true;
         _cfg.IlhaMexerPixels = IlhaMexer.IsChecked == true;
@@ -315,6 +323,9 @@ public partial class PersonalizacaoWindow : Window
     // ------------------------------------------------------------------
     // Tela OLED
 
+    /// <summary>Opcoes de "Esperar antes de abrir", em milissegundos.</summary>
+    private static readonly int[] TemposDeEspera = { 500, 1000, 2000, 3000, 5000 };
+
     /// <summary>Minutos de cada opcao de "Escurecer sem uso"; zero e nunca.</summary>
     private static readonly int[] TemposDeEscurecer = { 2, 5, 10, 0 };
 
@@ -352,6 +363,18 @@ public partial class PersonalizacaoWindow : Window
 
         if (LinhaIaEndereco is not null)
             LinhaIaEndereco.Visibility = id == AtalhoService.IaOutra ? Visibility.Visible : Visibility.Collapsed;
+
+        // Com um chat conhecido, a opcao do app aparece e diz se ele esta
+        // instalado aqui; com nenhum ou com um endereco proprio, nao se aplica.
+        if (LinhaIaApp is not null)
+        {
+            var conhecido = id.Length > 0 && id != AtalhoService.IaOutra;
+            LinhaIaApp.Visibility = conhecido ? Visibility.Visible : Visibility.Collapsed;
+            if (conhecido && AtalhoService.Ias.FirstOrDefault(i => i.Id == id) is { } ia)
+                DicaIaApp.Text = AtalhoService.AppInstalado(ia.Nome) is not null
+                    ? $"O app do {ia.Nome} está instalado neste PC."
+                    : $"O app do {ia.Nome} não foi encontrado neste PC: abre o site.";
+        }
 
         if (_carregando) return;
 
@@ -649,6 +672,11 @@ public partial class PersonalizacaoWindow : Window
             ? "Quando o jogo está em tela cheia no mesmo monitor que a Kisland. O FPS aparece sempre."
             : "Ligue \"FPS em jogos\" acima para a Kisland saber quando você está jogando.";
         LinhaFpsTelaCheia.Opacity = excecaoValida ? 1 : 0.5;
+
+        // A espera so vale abrindo ao passar o mouse.
+        var aoPassar = IlhaAoPassar.IsChecked == true;
+        CartaoEspera.IsEnabled = aoPassar;
+        CartaoEspera.Opacity = aoPassar ? 1 : 0.5;
 
         // Os tres cuidados contra marca so valem com a protecao ligada.
         var protegendo = IlhaProteger.IsChecked == true;

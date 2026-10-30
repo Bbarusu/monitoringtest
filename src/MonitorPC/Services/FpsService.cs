@@ -237,7 +237,15 @@ public static class DetectorDeJogo
         "StartMenuExperienceHost", "ShellExperienceHost", "TextInputHost", "ApplicationFrameHost",
         "vlc", "mpc-hc64", "mpc-be64", "PotPlayerMini64", "Microsoft.Media.Player", "Video.UI",
         "Photos", "PhotosApp", "SnippingTool", "ScreenClippingHost", "Widgets", "msedgewebview2",
-        "NVIDIA Share", "RadeonSoftware", "AMDRSServ", "XboxPcAppFT", "GameBar", "Lively"
+        "NVIDIA Share", "RadeonSoftware", "AMDRSServ", "XboxPcAppFT", "GameBar", "Lively",
+
+        // Acesso remoto e transmissao: mostram a tela de outro PC (ou a deste)
+        // num ritmo de jogo, em janela cheia, e nao sao o jogo.
+        "parsecd", "Parsec", "AnyDesk", "TeamViewer", "mstsc", "msrdc", "RustDesk",
+        "Moonlight", "sunshine", "Steam", "steamstreamingclient",
+
+        // Apps de chat e trabalho feitos com navegador embutido.
+        "Claude", "ChatGPT", "slack", "Notion", "Figma"
     };
 
     private static readonly Dictionary<int, string> Nomes = new();

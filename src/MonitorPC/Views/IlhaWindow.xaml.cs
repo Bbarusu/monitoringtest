@@ -23,8 +23,12 @@ namespace MonitorPC.Views;
 /// </summary>
 public partial class IlhaWindow : Window
 {
-    /// <summary>Tempo com o cursor em cima antes de abrir: passar de raspao nao abre.</summary>
-    private static readonly TimeSpan EsperaParaAbrir = TimeSpan.FromMilliseconds(180);
+    /// <summary>
+    /// Tempo com o cursor em cima antes de abrir, escolhido na Personalizacao.
+    /// Passar de raspao nao abre; e o tempo da para clicar no anel ou num chip
+    /// antes de a Kisland se abrir por cima deles.
+    /// </summary>
+    private TimeSpan EsperaParaAbrir => TimeSpan.FromMilliseconds(Math.Clamp(_cfg.IlhaEsperaParaAbrirMs, 150, 10000));
 
     /// <summary>Tempo com o cursor fora antes de fechar: escapar um pixel nao fecha.</summary>
     private static readonly TimeSpan EsperaParaFechar = TimeSpan.FromMilliseconds(450);
@@ -250,8 +254,7 @@ public partial class IlhaWindow : Window
         CartaoRam.Visibility = Visivel(_cfg.AbertaRam);
         CartaoDisco.Visibility = Visivel(_cfg.AbertaDisco);
         CartaoEnergia.Visibility = Visivel(_cfg.AbertaEnergia);
-        AjustarFileira(GradeTemperaturas);
-        AjustarFileira(GradeSistema);
+        OrganizarCartoes();
         GradePerfis.Visibility = Visivel(_cfg.IlhaAbertaPerfis);
         BlocoCalendario.Visibility = Visivel(_cfg.IlhaAbertaCalendario);
         MontarAtalhos();
@@ -444,6 +447,37 @@ public partial class IlhaWindow : Window
     private static extern bool GetLastInputInfo(ref UltimaEntrada info);
 
     /// <summary>
+    /// Distribui os cartoes ligados (CPU, GPU, RAM, disco e energia) nas duas
+    /// fileiras conforme quantos sobraram, em vez de cada um ficar preso na
+    /// sua: com CPU e RAM so, antes ficava um embaixo do outro, cada um com a
+    /// linha inteira. Agora:
+    /// - ate 3 ligados: uma fileira so, lado a lado;
+    /// - 4: dois e dois;
+    /// - 5: os dois de temperatura em cima e os tres de sistema embaixo.
+    /// A ordem e sempre a mesma (CPU, GPU, RAM, disco, energia).
+    /// </summary>
+    private void OrganizarCartoes()
+    {
+        var todos = new FrameworkElement[] { CartaoCpu, CartaoGpu, CartaoRam, CartaoDisco, CartaoEnergia };
+
+        foreach (var cartao in todos)
+            (cartao.Parent as Panel)?.Children.Remove(cartao);
+
+        var ligados = todos.Where(c => c.Visibility == Visibility.Visible).ToList();
+        var naPrimeira = ligados.Count <= 3 ? ligados.Count : 2;
+
+        for (var i = 0; i < ligados.Count; i++)
+            (i < naPrimeira ? GradeTemperaturas : GradeSistema).Children.Add(ligados[i]);
+
+        // Os desligados ficam guardados no fim, escondidos.
+        foreach (var cartao in todos.Except(ligados))
+            GradeSistema.Children.Add(cartao);
+
+        AjustarFileira(GradeTemperaturas);
+        AjustarFileira(GradeSistema);
+    }
+
+    /// <summary>
     /// Uma fileira de cartoes com so os escolhidos, dividindo a largura entre
     /// eles: sobrou um, ele ocupa a linha toda; nenhum, a fileira some. O
     /// espaco de 12 entre cartoes fica so entre vizinhos, nunca nas pontas.
@@ -528,10 +562,7 @@ public partial class IlhaWindow : Window
                         : new Thickness(6, 0, 6, 0);
     }
 
-    private void Anel_Click(object sender, RoutedEventArgs e)
-    {
-        if (AtalhoService.IaEscolhida(_cfg) is { } ia) AtalhoService.Abrir(ia.Destino);
-    }
+    private void Anel_Click(object sender, RoutedEventArgs e) => AtalhoService.AbrirIa(_cfg);
 
     // ------------------------------------------------------------------
     // Posicao, monitor e foco
@@ -947,7 +978,7 @@ public partial class IlhaWindow : Window
         GradeAtalhos.Children.Clear();
 
         if (AtalhoService.IaEscolhida(_cfg) is { } ia)
-            GradeAtalhos.Children.Add(BotaoDeAtalho(ia.Nome, ia.Destino, ehIa: true));
+            GradeAtalhos.Children.Add(BotaoDeAtalho(ia.Nome, AtalhoService.MarcaDaIa, ehIa: true));
 
         foreach (var atalho in _cfg.IlhaAtalhos.Take(AtalhoService.Maximo))
             GradeAtalhos.Children.Add(BotaoDeAtalho(atalho.Nome, atalho.Destino, ehIa: false));
@@ -1037,7 +1068,8 @@ public partial class IlhaWindow : Window
         if (sender is not Button { Tag: string destino }) return;
 
         Recolher();
-        AtalhoService.Abrir(destino);
+        if (destino == AtalhoService.MarcaDaIa) AtalhoService.AbrirIa(_cfg);
+        else AtalhoService.Abrir(destino);
     }
 
     /// <summary>

@@ -614,6 +614,20 @@
                                       SelectionChanged="Ia_Escolhida" />
                         </Grid>
 
+                        <!-- App instalado: some com "Nenhum" e com "Outro". -->
+                        <Grid x:Name="LinhaIaApp" Margin="0,10,0,0" Visibility="Collapsed">
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
+                                <TextBlock Text="Abrir o app, se estiver instalado" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock x:Name="DicaIaApp" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextoFraco}"
+                                           Text="Sem o app no PC, abre o site." />
+                            </StackPanel>
+                            <CheckBox x:Name="IlhaIaApp" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+
                         <StackPanel x:Name="LinhaIaEndereco" Visibility="Collapsed" Margin="0,10,0,0">
                             <Border CornerRadius="10" Background="{DynamicResource Chip}"
                         BorderBrush="{DynamicResource Trilho}" BorderThickness="1" Padding="10,0">
@@ -698,6 +712,24 @@
                         <RadioButton x:Name="IlhaAoClicar" Style="{StaticResource Aba}" GroupName="AberturaDaIlha"
                                      Content="Ao clicar" Checked="Ilha_Alterada" />
                     </UniformGrid>
+                </Border>
+
+                <!-- Quanto o mouse precisa ficar em cima. Só vale abrindo ao
+                     passar o mouse. -->
+                <Border x:Name="CartaoEspera" CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,100,0">
+                            <TextBlock Text="Esperar antes de abrir" FontSize="13" FontWeight="Medium"
+                                       Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="Com o mouse parado em cima. Dá tempo de clicar no anel ou num item sem ela abrir por cima."
+                                       FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
+                        <ComboBox x:Name="IlhaEspera" Style="{StaticResource Seletor}" MinWidth="88"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  SelectionChanged="Ilha_Alterada" />
+                    </Grid>
                 </Border>
 
                 <!--
