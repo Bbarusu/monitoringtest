@@ -1354,16 +1354,24 @@ public partial class IlhaWindow : Window
         : Corpo + OndaPerto + OndaLonge;
 
     /// <summary>
-    /// Desenha na escala da grade de 24, sem esticar. Esticado (Uniform), o
-    /// icone mudava de tamanho com o nivel: sem a onda de fora o desenho e
-    /// mais estreito, e o alto-falante crescia para ocupar o espaco.
+    /// Desenha sempre na mesma moldura, sem esticar pelo desenho. Esticado
+    /// (Uniform), o icone mudava de tamanho com o nivel: sem a onda de fora o
+    /// desenho e mais estreito, e o alto-falante crescia para ocupar o espaco.
+    ///
+    /// A moldura e a do icone completo (x de 5 a 20, na grade de 24), e nao a
+    /// grade inteira: com a grade inteira sobrava borda vazia e o icone saia
+    /// bem menor que os outros da Kisland.
     /// </summary>
     private static void DesenharVolume(System.Windows.Shapes.Path alvo, string desenho)
     {
         var tamanho = double.IsNaN(alvo.Width) ? 16 : alvo.Width;
+        var escala = tamanho / 15.0;
 
         var geometria = Geometry.Parse(desenho).CloneCurrentValue();
-        geometria.Transform = new ScaleTransform(tamanho / 24.0, tamanho / 24.0);
+        var transformacao = new TransformGroup();
+        transformacao.Children.Add(new TranslateTransform(-5, -4.5));
+        transformacao.Children.Add(new ScaleTransform(escala, escala));
+        geometria.Transform = transformacao;
         geometria.Freeze();
 
         alvo.Stretch = Stretch.None;
@@ -1508,11 +1516,11 @@ public partial class IlhaWindow : Window
             };
             var nome = new TextBlock
             {
-                Text = saida.Nome,
+                Text = saida.NomeCurto,
                 FontSize = 11.5,
                 FontWeight = FontWeights.Medium,
                 Margin = new Thickness(6, 0, 0, 0),
-                MaxWidth = 180,
+                MaxWidth = 150,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 VerticalAlignment = VerticalAlignment.Center
             };

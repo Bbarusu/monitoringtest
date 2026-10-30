@@ -3,7 +3,9 @@ using System.Runtime.InteropServices;
 namespace MonitorPC.Services;
 
 /// <summary>Um aparelho de saida de som ativo: fone, caixa, monitor.</summary>
-public sealed record SaidaDeSom(string Id, string Nome, bool Padrao);
+/// <param name="Nome">O nome completo, como no painel de som: "Alto-falantes (Realtek(R) Audio)".</param>
+/// <param name="NomeCurto">So o aparelho: "Alto-falantes", "LG ULTRAWIDE".</param>
+public sealed record SaidaDeSom(string Id, string Nome, string NomeCurto, bool Padrao);
 
 /// <summary>
 /// Volume geral do Windows, pelo Core Audio — a mesma interface que o controle
@@ -158,11 +160,24 @@ public sealed class VolumeService : IDisposable
                 return lista;
 
             colecao.GetCount(out var quantos);
+            var lidas = new List<(string Id, string Nome, string Curto)>();
             for (uint i = 0; i < quantos; i++)
             {
                 colecao.Item(i, out var aparelho);
                 aparelho.GetId(out var id);
-                lista.Add(new SaidaDeSom(id, NomeDe(aparelho) ?? "Saída de som", id == padrao));
+
+                var nome = Ler(aparelho, NomeAmigavel) ?? "Saída de som";
+                var curto = Curto(Ler(aparelho, Descricao) ?? nome);
+                lidas.Add((id, nome, curto));
+            }
+
+            // Dois aparelhos com o mesmo nome curto (dois "Alto-falantes", de
+            // placas diferentes): esses ficam com o nome completo, para dar
+            // para saber qual e qual.
+            foreach (var (id, nome, curto) in lidas)
+            {
+                var repetido = lidas.Count(l => string.Equals(l.Curto, curto, StringComparison.OrdinalIgnoreCase)) > 1;
+                lista.Add(new SaidaDeSom(id, nome, repetido ? nome : curto, id == padrao));
             }
         }
         catch (Exception ex)
@@ -173,14 +188,24 @@ public sealed class VolumeService : IDisposable
         return lista;
     }
 
-    /// <summary>"Alto-falantes (Realtek Audio)": o nome que o painel de som do Windows mostra.</summary>
-    private static string? NomeDe(IMMDevice aparelho)
+    /// <summary>
+    /// "1 - LG ULTRAWIDE" vira "LG ULTRAWIDE": o Windows numera as saidas de
+    /// monitor quando ha mais de uma, e o numero so atrapalha.
+    /// </summary>
+    private static string Curto(string nome)
+    {
+        var t = System.Text.RegularExpressions.Regex.Replace(nome.Trim(), @"^\d+\s*-\s*", "");
+        return t.Length == 0 ? nome : t;
+    }
+
+    /// <summary>Um texto das propriedades do aparelho, como o painel de som mostra.</summary>
+    private static string? Ler(IMMDevice aparelho, ChaveDePropriedade qual)
     {
         try
         {
             aparelho.OpenPropertyStore(0 /* leitura */, out var propriedades);
 
-            var chave = NomeAmigavel;
+            var chave = qual;
             if (propriedades.GetValue(ref chave, out var valor) != 0) return null;
 
             try
@@ -230,8 +255,12 @@ public sealed class VolumeService : IDisposable
 
     private const ushort TextoUnicode = 31; // VT_LPWSTR
 
+    // PKEY_Device_FriendlyName ("Alto-falantes (Realtek(R) Audio)") e
+    // PKEY_Device_DeviceDesc ("Alto-falantes"): o nome completo e o curto.
     private static readonly ChaveDePropriedade NomeAmigavel =
         new() { Formato = new Guid("A45C254E-DF1C-4EFD-8020-67D146A850E0"), Id = 14 };
+    private static readonly ChaveDePropriedade Descricao =
+        new() { Formato = new Guid("A45C254E-DF1C-4EFD-8020-67D146A850E0"), Id = 2 };
 
     [DllImport("ole32.dll")]
     private static extern int PropVariantClear(ref PropVariant valor);

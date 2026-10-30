@@ -115,6 +115,75 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Barra de volume no desenho da Kisland: trilho fino de 6 px, a
+             parte cheia na cor de destaque e uma bolinha branca, como no
+             canvas. O Slider padrao do Windows destoava do resto. -->
+        <Style x:Key="TrechoCheio" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Grid Background="Transparent">
+                            <Border Height="6" CornerRadius="3" VerticalAlignment="Center"
+                                    Background="{DynamicResource Acento}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TrechoVazio" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="BolinhaIlha" TargetType="Thumb">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Ellipse Width="14" Height="14" Fill="White">
+                            <Ellipse.Effect>
+                                <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Opacity="0.35" Color="Black" />
+                            </Ellipse.Effect>
+                        </Ellipse>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SliderIlha" TargetType="Slider">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="18" Background="Transparent">
+                            <Border Height="6" CornerRadius="3" VerticalAlignment="Center"
+                                    Background="{DynamicResource Trilho}" />
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource TrechoCheio}"
+                                                  Command="{x:Static Slider.DecreaseLarge}" />
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Style="{StaticResource TrechoVazio}"
+                                                  Command="{x:Static Slider.IncreaseLarge}" />
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource BolinhaIlha}" />
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="MiniCartao" TargetType="Border">
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="12,10" />
@@ -509,9 +578,9 @@
                                        FontFamily="{StaticResource FonteNumero}" Foreground="{DynamicResource Texto}"
                                        HorizontalAlignment="Right" VerticalAlignment="Center" />
                         </Grid>
-                        <Slider x:Name="SliderVolume" Minimum="0" Maximum="100" Margin="0,10,0,0"
+                        <Slider x:Name="SliderVolume" Style="{StaticResource SliderIlha}" Minimum="0" Maximum="100" Margin="0,10,0,0"
                                 IsMoveToPointEnabled="True" IsSnapToTickEnabled="True" TickFrequency="1"
-                                Foreground="{DynamicResource Acento}" ValueChanged="SliderVolume_Alterado" />
+                                ValueChanged="SliderVolume_Alterado" />
 
                         <!-- Saídas de som ativas, com a atual marcada. Só com mais
                              de uma: com uma só não há o que trocar. -->
