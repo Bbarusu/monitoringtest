@@ -20,6 +20,10 @@ O guia da Kisland ganhou três passos novos, sobre o calendário, os atalhos e o
 
 Novo: você escolhe o que a Kisland mostra no modo jogo, quando o jogo está em tela cheia no mesmo monitor que ela. Antes ficava só o FPS; agora, em "No modo jogo, ela mostra", dá para juntar temperatura e uso da CPU e da GPU, RAM, potência, relógio e música. Por padrão vêm o FPS e as temperaturas da CPU e da GPU.
 
+Corrigido: em telas pequenas, como a de notebooks, o instalador, a configuração inicial, o guia da Kisland e outras telas passavam do fim da tela e cortavam os botões. Agora toda tela que não cabe ganha barra de rolagem; no instalador e na configuração inicial, os botões ficam sempre à vista e só o meio rola.
+
+As barras de ajuste (limites de temperatura, opacidade, tamanho da Kisland) ganharam o mesmo desenho da barra de volume da Kisland.
+
 Os textos da Kisland ficaram mais fáceis de ler, principalmente no tema claro. O nome da música, o app, os tempos e o rodapé ganharam um contorno suave na cor do fundo, e não somem mais quando há uma janela escura atrás da Kisland.
 
 Corrigido: os sensores de temperatura paravam de funcionar depois de reiniciar o PC. O driver que dá acesso a eles fica parado até alguém pedir para carregá-lo, e ninguém pedia — funcionava logo após instalar, e morria no primeiro reinício. Agora o KInfo carrega esse driver sozinho ao abrir.

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 
@@ -27,8 +28,74 @@ public static class Janelas
     /// </summary>
     public static void Acompanhar(Window janela)
     {
+        PermitirRolagem(janela);
         janela.Loaded += (_, _) => Ancorar(janela, janela.Owner);
         janela.SizeChanged += (_, _) => Ancorar(janela, janela.Owner);
+    }
+
+    /// <summary>
+    /// Para janelas que nao seguem o painel (abrem no centro da tela, como o
+    /// guia da Kisland): o mesmo teto de altura e a mesma rolagem, sem ancorar.
+    /// </summary>
+    public static void CaberNaTela(Window janela)
+    {
+        PermitirRolagem(janela);
+
+        void Ajustar()
+        {
+            if (!EmCurso.Add(janela)) return;
+            try
+            {
+                LimitarAltura(janela);
+                Conter(janela);
+            }
+            finally
+            {
+                EmCurso.Remove(janela);
+            }
+        }
+
+        janela.Loaded += (_, _) => Ajustar();
+        janela.SizeChanged += (_, _) => Ajustar();
+        janela.DpiChanged += (_, _) => Ajustar();
+    }
+
+    /// <summary>
+    /// Poe todo o conteudo da janela dentro de uma rolagem, quando ela ainda
+    /// nao tem uma por fora.
+    ///
+    /// <see cref="LimitarAltura"/> sozinho nao basta: a maioria das janelas e
+    /// uma coluna de cartoes, com rolagem so numa lista de altura fixa no meio.
+    /// Com o teto, a coluna nao encolhe — o fim dela (quase sempre os botoes)
+    /// e cortado. Com a rolagem por fora, o que nao cabe passa a rolar. Numa
+    /// tela em que tudo cabe, a barra nem aparece e nada muda.
+    ///
+    /// A rolagem avanca sobre a margem interna do painel, onde a barra fica:
+    /// o conteudo tem a mesma largura com ou sem barra.
+    ///
+    /// Janela que cuida da propria rolagem (botoes fixos embaixo, so o meio
+    /// rolando) marca o painel com Tag="RolagemPropria" e fica de fora.
+    /// </summary>
+    public static void PermitirRolagem(Window janela)
+    {
+        if (janela.Content is not Border painel) return;
+        if (painel.Tag is "RolagemPropria") return;
+        if (painel.Child is not FrameworkElement conteudo || conteudo is ScrollViewer) return;
+
+        var folga = Math.Min(12, painel.Padding.Right);
+
+        painel.Child = null;
+        var m = conteudo.Margin;
+        conteudo.Margin = new Thickness(m.Left, m.Top, m.Right + folga, m.Bottom);
+
+        painel.Child = new ScrollViewer
+        {
+            Content = conteudo,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Margin = new Thickness(0, 0, -folga, 0),
+            Focusable = false
+        };
     }
 
     /// <summary>

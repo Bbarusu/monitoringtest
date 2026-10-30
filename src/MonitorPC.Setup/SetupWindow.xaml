@@ -16,10 +16,21 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
         </Border.Effect>
 
-        <StackPanel>
+        <!--
+            Cabeçalho e botões fixos; o meio rola. A janela nunca passa da
+            altura útil do monitor (o código põe o teto), e num notebook de
+            tela baixa é o meio que encolhe e ganha barra de rolagem. Em tela
+            que cabe tudo, a barra nem aparece.
+        -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
             <!-- Cabecalho -->
-            <Grid>
+            <Grid Grid.Row="0">
                 <StackPanel Orientation="Horizontal">
                     <!--
                         O mesmo chip do ícone do app. Os dois quadrados vão de
@@ -69,6 +80,12 @@
                     </Button.Template>
                 </Button>
             </Grid>
+
+            <!-- A margem negativa põe a barra de rolagem no espaço da borda do
+                 painel: o conteúdo tem a mesma largura com ou sem barra. -->
+            <ScrollViewer x:Name="Rolagem" Grid.Row="1" Margin="0,0,-16,0"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,16,0">
 
             <!--
                 O que mudou nesta versão. Só aparece na atualização: é quando
@@ -227,12 +244,6 @@
                     </Grid>
                 </Border>
 
-                <UniformGrid Columns="2" Margin="0,20,0,0">
-                    <Button x:Name="BotaoCancelar" Style="{StaticResource BotaoSecundario}"
-                            Margin="0,0,5,0" Content="Cancelar" Click="FecharJanela_Click" />
-                    <Button x:Name="BotaoInstalar" Style="{StaticResource BotaoPrincipal}"
-                            Margin="5,0,0,0" Content="Instalar" Click="Instalar_Click" />
-                </UniformGrid>
             </StackPanel>
 
             <!-- ==================== PASSO: ANDAMENTO ==================== -->
@@ -263,14 +274,29 @@
                     </StackPanel>
                 </Border>
 
-                <UniformGrid x:Name="BotoesDoFim" Columns="2" Margin="0,20,0,0">
+            </StackPanel>
+
+            </StackPanel>
+            </ScrollViewer>
+
+            <!-- Botões, fora da rolagem: sempre à vista. Cada par aparece junto
+                 com o passo a que pertence. -->
+            <Grid Grid.Row="2">
+                <UniformGrid Columns="2" Margin="0,20,0,0"
+                             Visibility="{Binding Visibility, ElementName=PassoOpcoes}">
+                    <Button x:Name="BotaoCancelar" Style="{StaticResource BotaoSecundario}"
+                            Margin="0,0,5,0" Content="Cancelar" Click="FecharJanela_Click" />
+                    <Button x:Name="BotaoInstalar" Style="{StaticResource BotaoPrincipal}"
+                            Margin="5,0,0,0" Content="Instalar" Click="Instalar_Click" />
+                </UniformGrid>
+                <UniformGrid x:Name="BotoesDoFim" Columns="2" Margin="0,20,0,0"
+                             Visibility="{Binding Visibility, ElementName=PassoFim}">
                     <Button x:Name="BotaoSair" Style="{StaticResource BotaoSecundario}"
                             Margin="0,0,5,0" Content="Fechar" Click="FecharJanela_Click" />
                     <Button x:Name="BotaoAbrirApp" Style="{StaticResource BotaoPrincipal}"
                             Margin="5,0,0,0" Content="Abrir o Monitor" Click="AbrirApp_Click" />
                 </UniformGrid>
-            </StackPanel>
-
-        </StackPanel>
+            </Grid>
+        </Grid>
     </Border>
 </Window>

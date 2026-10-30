@@ -9,15 +9,29 @@
 
     <Border x:Name="Painel" Margin="20" CornerRadius="16"
             Background="{DynamicResource Fundo}"
-            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20">
+            BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="20"
+            Tag="RolagemPropria">
         <Border.Effect>
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
-        <StackPanel>
+        <!--
+            Cabeçalho e botão fixos, o meio rola. A janela nunca passa da
+            altura útil da tela (Janelas.LimitarAltura); numa tela baixa é o
+            meio que encolhe, e o botão de concluir continua à vista. Por isso
+            o painel tem Tag="RolagemPropria": a rolagem geral das janelas
+            rolaria o botão junto.
+        -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
             <!-- Cabecalho -->
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
                 <Button x:Name="BotaoVoltar" Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
                     <Path Data="M15,6 L9,12 L15,18" Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
@@ -38,8 +52,8 @@
                 O miolo rola: com a lista de ventoinhas aberta, a tela passa de
                 900 px e nao cabe num notebook.
             -->
-            <ScrollViewer MaxHeight="560" VerticalScrollBarVisibility="Auto" Margin="0,0,0,4">
-              <StackPanel>
+            <ScrollViewer Grid.Row="1" MaxHeight="560" VerticalScrollBarVisibility="Auto" Margin="0,0,-12,4">
+              <StackPanel Margin="0,0,12,0">
 
             <!-- Limites -->
             <TextBlock Text="Limites de temperatura" FontSize="11" Margin="0,20,0,8"
@@ -204,16 +218,16 @@
               </StackPanel>
             </ScrollViewer>
 
-            <Button x:Name="BotaoConcluir" Style="{StaticResource BotaoLargo}" Height="48"
+            <Button x:Name="BotaoConcluir" Grid.Row="2" Style="{StaticResource BotaoLargo}" Height="48"
                     Margin="0,20,0,0" Click="Concluir_Click">
                 <TextBlock x:Name="TextoConcluir" Text="Concluir configuração" FontSize="14"
                            FontWeight="SemiBold" />
             </Button>
 
-            <TextBlock x:Name="Rodape" FontSize="11" Margin="0,8,0,0" TextAlignment="Center"
+            <TextBlock x:Name="Rodape" Grid.Row="3" FontSize="11" Margin="0,8,0,0" TextAlignment="Center"
                        Foreground="{DynamicResource TextoMuitoFraco}"
                        Text="Você pode mudar os limites depois, pelo ícone de ajustes." />
 
-        </StackPanel>
+        </Grid>
     </Border>
 </Window>

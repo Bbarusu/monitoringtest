@@ -27,6 +27,12 @@ public partial class SetupWindow : Window
     {
         InitializeComponent();
 
+        // A janela cresce com o conteudo; aqui ela ganha o teto da tela.
+        SourceInitialized += (_, _) => CaberNaTela();
+        Loaded += (_, _) => CaberNaTela();
+        SizeChanged += (_, _) => CaberNaTela();
+        DpiChanged += (_, _) => CaberNaTela();
+
         // Uma instalacao anterior manda: reinstalar por cima da mesma pasta
         // evita dois Monitores concorrendo pelo mesmo driver.
         if (Instalacao.PastaInstalada() is { Length: > 0 } anterior) _pasta = anterior;
@@ -365,6 +371,84 @@ public partial class SetupWindow : Window
     }
 
     private void FecharJanela_Click(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>
+    /// Nao deixa a janela passar da altura util do monitor em que ela esta.
+    ///
+    /// Com SizeToContent ela pede a altura inteira do conteudo, o que numa
+    /// tela grande e certo e num notebook corta os botoes la embaixo. Com o
+    /// teto, quem encolhe e o meio, que ganha barra de rolagem; o cabecalho e
+    /// os botoes continuam a vista. Numa tela em que tudo cabe, nada muda.
+    /// Tambem puxa a janela para cima se ela estiver passando do fim da tela.
+    /// </summary>
+    private void CaberNaTela()
+    {
+        var area = AreaDoMonitor();
+
+        // Uma leitura estranha da area util nao pode deixar a janela inutil.
+        if (area.Height < 240) return;
+
+        if (Math.Abs(MaxHeight - area.Height) > 0.5) MaxHeight = area.Height;
+
+        if (ActualHeight > 0 && !double.IsNaN(Top))
+            Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - ActualHeight));
+    }
+
+    /// <summary>Area util do monitor da janela, em unidades do WPF.</summary>
+    private Rect AreaDoMonitor()
+    {
+        try
+        {
+            var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero) return SystemParameters.WorkArea;
+
+            var monitor = MonitorFromWindow(handle, MonitorMaisProximo);
+            var info = new InfoDoMonitor { Tamanho = System.Runtime.InteropServices.Marshal.SizeOf<InfoDoMonitor>() };
+            if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info)) return SystemParameters.WorkArea;
+
+            // A API fala em pixels; o WPF, em unidades que seguem a escala.
+            var escala = System.Windows.Media.VisualTreeHelper.GetDpi(this);
+            var x = escala.DpiScaleX <= 0 ? 1 : escala.DpiScaleX;
+            var y = escala.DpiScaleY <= 0 ? 1 : escala.DpiScaleY;
+
+            return new Rect(
+                info.AreaUtil.Esquerda / x,
+                info.AreaUtil.Topo / y,
+                (info.AreaUtil.Direita - info.AreaUtil.Esquerda) / x,
+                (info.AreaUtil.Baixo - info.AreaUtil.Topo) / y);
+        }
+        catch
+        {
+            return SystemParameters.WorkArea;
+        }
+    }
+
+    private const int MonitorMaisProximo = 2;
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct Retangulo
+    {
+        public int Esquerda;
+        public int Topo;
+        public int Direita;
+        public int Baixo;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct InfoDoMonitor
+    {
+        public int Tamanho;
+        public Retangulo Area;
+        public Retangulo AreaUtil;
+        public uint Sinalizadores;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr janela, int padrao);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref InfoDoMonitor info);
 
     /// <summary>A janela nao tem barra de título, então o painel inteiro arrasta.</summary>
     private void Painel_Arrastar(object sender, MouseButtonEventArgs e)

@@ -37,6 +37,9 @@ public partial class GuiaKislandWindow : Window
     public GuiaKislandWindow(AppConfig cfg, Action aoMudar)
     {
         InitializeComponent();
+        // Abre no centro, mas com o mesmo cuidado das outras: numa tela baixa
+        // (notebook com escala de 125%), o guia passava do fim da tela.
+        Janelas.CaberNaTela(this);
         _cfg = cfg;
         _aoMudar = aoMudar;
 
