@@ -72,6 +72,17 @@ fica sempre no começo da pílula. A Kisland aberta tem ainda até seis apps ou
 sites (`IlhaAtalhos`). Como o KInfo costuma rodar elevado, `AtalhoService` abre
 tudo pelo Explorer, para o navegador e os apps não herdarem o administrador.
 
+Com `IlhaIaPreferirApp`, o anel abre o app do chat quando ele está instalado: a
+busca é pelo nome na lista de apps do menu Iniciar (`shell:AppsFolder`, lida
+pelo `Shell.Application` e guardada por 10 minutos), o que pega app da Microsoft
+Store, instalador próprio e app da web instalado pelo navegador; abre com
+`explorer shell:AppsFolder\<id>`. Sem o app, abre o site.
+
+Abrir ao passar o mouse espera `IlhaEsperaParaAbrirMs` (5 s por padrão) com o
+cursor em cima, para dar tempo de clicar no anel ou num item. Na Kisland
+aberta, os cartões de CPU, GPU, RAM, disco e energia ligados se redistribuem
+nas duas fileiras: até três numa só, quatro em dois e dois, cinco em dois e três.
+
 ### Telas OLED
 
 O tema `Preto` é o escuro com as superfícies pretas (`ThemeService.Preta`:
