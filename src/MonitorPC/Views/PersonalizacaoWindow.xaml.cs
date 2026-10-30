@@ -37,6 +37,7 @@ public partial class PersonalizacaoWindow : Window
 
         MontarPaleta();
         MontarIas();
+        MontarTemposDeEscurecer();
 
         Carregar();
 
@@ -82,8 +83,10 @@ public partial class PersonalizacaoWindow : Window
 
         _cfg.Tema = TemaClaro.IsChecked == true ? Tema.Claro
                   : TemaSistema.IsChecked == true ? Tema.Sistema
+                  : TemaPreto.IsChecked == true ? Tema.Preto
                   : Tema.Escuro;
 
+        AtualizarEstados();
         Confirmar();
     }
 
@@ -153,6 +156,7 @@ public partial class PersonalizacaoWindow : Window
     private void Carregar()
     {
         TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaPreto.IsChecked = _cfg.Tema == Tema.Preto;
         TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
         TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
 
@@ -176,6 +180,12 @@ public partial class PersonalizacaoWindow : Window
         IlhaAbertaCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
         IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
         IlhaSaidasDeSom.IsChecked = _cfg.IlhaSaidasDeSom;
+        IlhaPreta.IsChecked = _cfg.IlhaPreta;
+        IlhaProteger.IsChecked = _cfg.IlhaProtegerTela;
+        IlhaMexer.IsChecked = _cfg.IlhaMexerPixels;
+        IlhaEsconderParado.IsChecked = _cfg.IlhaEsconderParado;
+        var tempo = Array.IndexOf(TemposDeEscurecer, _cfg.IlhaEscurecerMinutos);
+        IlhaEscurecer.SelectedIndex = tempo >= 0 ? tempo : 1;
         IlhaJogoCpu.IsChecked = _cfg.IlhaJogoCpu;
         IlhaJogoCpuUso.IsChecked = _cfg.IlhaJogoCpuUso;
         IlhaJogoGpu.IsChecked = _cfg.IlhaJogoGpu;
@@ -266,6 +276,12 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaAbertaCalendario = IlhaAbertaCalendario.IsChecked == true;
         _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
         _cfg.IlhaSaidasDeSom = IlhaSaidasDeSom.IsChecked == true;
+        _cfg.IlhaPreta = IlhaPreta.IsChecked == true;
+        _cfg.IlhaProtegerTela = IlhaProteger.IsChecked == true;
+        _cfg.IlhaMexerPixels = IlhaMexer.IsChecked == true;
+        _cfg.IlhaEsconderParado = IlhaEsconderParado.IsChecked == true;
+        if (IlhaEscurecer.SelectedIndex >= 0)
+            _cfg.IlhaEscurecerMinutos = TemposDeEscurecer[IlhaEscurecer.SelectedIndex];
         _cfg.IlhaJogoCpu = IlhaJogoCpu.IsChecked == true;
         _cfg.IlhaJogoCpuUso = IlhaJogoCpuUso.IsChecked == true;
         _cfg.IlhaJogoGpu = IlhaJogoGpu.IsChecked == true;
@@ -294,6 +310,18 @@ public partial class PersonalizacaoWindow : Window
 
         AtualizarEstados();
         Confirmar();
+    }
+
+    // ------------------------------------------------------------------
+    // Tela OLED
+
+    /// <summary>Minutos de cada opcao de "Escurecer sem uso"; zero e nunca.</summary>
+    private static readonly int[] TemposDeEscurecer = { 2, 5, 10, 0 };
+
+    private void MontarTemposDeEscurecer()
+    {
+        foreach (var minutos in TemposDeEscurecer)
+            IlhaEscurecer.Items.Add(minutos == 0 ? "Nunca" : $"{minutos} min");
     }
 
     // ------------------------------------------------------------------
@@ -554,6 +582,7 @@ public partial class PersonalizacaoWindow : Window
 
         _carregando = true;
         TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaPreto.IsChecked = _cfg.Tema == Tema.Preto;
         TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
         TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
 
@@ -562,6 +591,7 @@ public partial class PersonalizacaoWindow : Window
         Opacidade.Value = _cfg.Opacidade;
         OpacidadeIlha.Value = Math.Clamp(_cfg.IlhaOpacidade ?? _cfg.Opacidade, AppConfig.OpacidadeMinima, 100);
         TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
+        TemaPreto.IsChecked = _cfg.Tema == Tema.Preto;
         TemaClaro.IsChecked = _cfg.Tema == Tema.Claro;
         TemaSistema.IsChecked = _cfg.Tema == Tema.Sistema;
         foreach (var filho in Cores.Children.OfType<RadioButton>())
@@ -594,8 +624,16 @@ public partial class PersonalizacaoWindow : Window
             ? "Desligue o acompanhamento para escolher uma cor."
             : "A cor vale para anéis, abas e botões do painel.";
 
-        Opacidade.IsEnabled = Transparencia.IsChecked == true;
-        OpacidadeIlha.IsEnabled = Transparencia.IsChecked == true;
+        // O tema Preto desliga a transparencia: com ela o fundo mostra o
+        // desktop e deixa de ser preto. A escolha fica guardada para depois.
+        var preto = TemaPreto.IsChecked == true;
+        Transparencia.IsEnabled = !preto;
+        DicaTransparencia.Text = preto
+            ? "Desligada no tema Preto: com ela, o fundo deixaria de ser preto."
+            : "Deixa o fundo aparecer atrás do painel";
+
+        Opacidade.IsEnabled = Transparencia.IsChecked == true && !preto;
+        OpacidadeIlha.IsEnabled = Transparencia.IsChecked == true && !preto;
         DicaOpacidadeIlha.Visibility = Transparencia.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
 
         // So faz sentido com o contador: e ele que diz qual janela e o jogo.
@@ -612,6 +650,11 @@ public partial class PersonalizacaoWindow : Window
             : "Ligue \"FPS em jogos\" acima para a Kisland saber quando você está jogando.";
         LinhaFpsTelaCheia.Opacity = excecaoValida ? 1 : 0.5;
 
+        // Os tres cuidados contra marca so valem com a protecao ligada.
+        var protegendo = IlhaProteger.IsChecked == true;
+        LinhasProtecao.IsEnabled = protegendo;
+        LinhasProtecao.Opacity = protegendo ? 1 : 0.5;
+
         // Com a ilha desligada as opcoes dela ficam a mostra, mas apagadas:
         // assim da para ver o que ela faz antes de ligar.
         var ilha = IlhaAtiva.IsChecked == true;
@@ -624,7 +667,7 @@ public partial class PersonalizacaoWindow : Window
     {
         var fundo = ThemeService.CorDeFundo;
 
-        if (!_cfg.Transparencia)
+        if (!_cfg.TransparenciaAtiva)
         {
             Painel.Background = new SolidColorBrush(fundo);
             return;

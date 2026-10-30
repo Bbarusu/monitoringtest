@@ -247,7 +247,7 @@ public partial class FlyoutWindow : Window
     {
         Painel.Opacity = 1.0;
 
-        if (!_cfg.Transparencia)
+        if (!_cfg.TransparenciaAtiva)
         {
             Painel.Background = new SolidColorBrush(ThemeService.CorDeFundo);
             return;

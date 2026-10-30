@@ -192,6 +192,7 @@ public partial class IlhaWindow : Window
         _fps.Parar();
         _jogo = null;
         _modoJogo = false;
+        _escondidaPorInatividade = false;
         Hide();
     }
 
@@ -201,10 +202,12 @@ public partial class IlhaWindow : Window
     /// </summary>
     public void AplicarConfiguracao()
     {
+        AplicarPreta();
+
         // Mesma regra do painel: a transparencia vai no alpha do fundo, e nao na
         // opacidade da janela, que desbotaria texto e icones junto.
-        var fundo = ThemeService.CorDeFundo;
-        if (_cfg.Transparencia)
+        var fundo = _cfg.IlhaPreta ? Colors.Black : ThemeService.CorDeFundo;
+        if (TransparenciaDaIlha)
         {
             // A Kisland tem opacidade propria; sem ela definida, segue a do painel.
             var opacidade = _cfg.IlhaOpacidade ?? _cfg.Opacidade;
@@ -284,11 +287,11 @@ public partial class IlhaWindow : Window
     {
         System.Windows.Media.Effects.Effect? contorno = null;
 
-        if (_cfg.Transparencia)
+        if (TransparenciaDaIlha)
         {
             var efeito = new System.Windows.Media.Effects.DropShadowEffect
             {
-                Color = ThemeService.CorDeFundo,
+                Color = _cfg.IlhaPreta ? Colors.Black : ThemeService.CorDeFundo,
                 BlurRadius = 6,
                 ShadowDepth = 0,
                 Opacity = 1,
@@ -307,6 +310,138 @@ public partial class IlhaWindow : Window
     }
 
     private static Visibility Visivel(bool sim) => sim ? Visibility.Visible : Visibility.Collapsed;
+
+    // ------------------------------------------------------------------
+    // Tela OLED
+
+    /// <summary>Transparencia de fato: nem o tema Preto nem a Kisland preta a usam.</summary>
+    private bool TransparenciaDaIlha => _cfg.TransparenciaAtiva && !_cfg.IlhaPreta;
+
+    /// <summary>Sombra original da casca, guardada para voltar ao sair da Kisland preta.</summary>
+    private System.Windows.Media.Effects.Effect? _sombra;
+
+    /// <summary>
+    /// Kisland preta: a paleta escura com superficies pretas pendurada nos
+    /// recursos desta janela, por cima da do app. Tudo aqui usa
+    /// DynamicResource, entao trocar os recursos repinta a Kisland inteira —
+    /// e o resto do app continua no tema dele, claro ou escuro. Sem borda e
+    /// sem sombra: no AMOLED, preto sobre preto, as duas so marcariam o
+    /// contorno que a ideia e apagar.
+    /// </summary>
+    private void AplicarPreta()
+    {
+        _sombra ??= Casca.Effect;
+
+        if (_cfg.IlhaPreta)
+        {
+            foreach (var (chave, pincel) in ThemeService.PaletaPreta())
+                Resources[chave] = pincel;
+
+            Casca.BorderBrush = Brushes.Transparent;
+            Casca.Effect = null;
+        }
+        else
+        {
+            foreach (var chave in ThemeService.PaletaPreta().Keys)
+                Resources.Remove(chave);
+
+            Casca.SetResourceReference(Border.BorderBrushProperty, "Borda");
+            Casca.Effect = _sombra;
+        }
+    }
+
+    /// <summary>Passo do deslocamento contra marca; anda a cada 3 minutos.</summary>
+    private int _passoDoPixel;
+
+    // Deslocamentos em pixel, pequenos o bastante para ninguem notar e
+    // variados o bastante para nenhum pixel ficar aceso sempre no mesmo ponto.
+    private static readonly int[] DeslocamentoX = { 0, 2, -1, 1, -2, 0, 1, -1 };
+    private static readonly int[] DeslocamentoY = { 0, 1, 2, 0, 1, 2, 1, 0 };
+
+    private bool Mexendo => _cfg.IlhaProtegerTela && _cfg.IlhaMexerPixels;
+
+    /// <summary>Quando o mouse esteve perto da Kisland, ou ela mostrou algo, pela ultima vez.</summary>
+    private DateTime _vistaEm = DateTime.UtcNow;
+
+    private bool _apagada;
+    private bool _escondidaPorInatividade;
+
+    /// <summary>Opacidade da Kisland escurecida: ainda legivel, bem menos acesa.</summary>
+    private const double OpacidadeApagada = 0.35;
+
+    /// <summary>
+    /// Escurece sem o mouse por perto ha tantos minutos; volta inteira quando
+    /// ele chega perto, quando ela abre ou mostra um aviso.
+    /// </summary>
+    private void ConferirBrilho()
+    {
+        var minutos = _cfg.IlhaEscurecerMinutos;
+        var apagar = _cfg.IlhaProtegerTela && minutos > 0 && !_expandida && _aviso == Aviso.Nenhum &&
+                     DateTime.UtcNow - _vistaEm >= TimeSpan.FromMinutes(minutos);
+
+        if (apagar == _apagada) return;
+        _apagada = apagar;
+
+        var anim = new DoubleAnimation(apagar ? OpacidadeApagada : 1,
+            TimeSpan.FromMilliseconds(apagar ? 900 : 180));
+        Casca.BeginAnimation(OpacityProperty, anim);
+    }
+
+    /// <summary>Acorda: volta o brilho na hora, sem esperar o proximo segundo.</summary>
+    private void Acordar()
+    {
+        _vistaEm = DateTime.UtcNow;
+        if (_apagada) ConferirBrilho();
+    }
+
+    /// <summary>
+    /// Some depois de 10 minutos sem teclado nem mouse no PC inteiro, e volta
+    /// no primeiro movimento. O PC parado com a tela acesa e o caso em que a
+    /// Kisland mais marca a tela: horas do mesmo texto no mesmo lugar.
+    /// </summary>
+    private void ConferirInatividade()
+    {
+        var parado = _cfg.IlhaProtegerTela && _cfg.IlhaEsconderParado && TempoParado() >= TimeSpan.FromMinutes(10);
+
+        if (parado && !_escondidaPorInatividade)
+        {
+            _escondidaPorInatividade = true;
+            _expandida = false;
+            _aviso = Aviso.Nenhum;
+            MostrarEstado();
+            Hide();
+        }
+        else if (!parado && _escondidaPorInatividade)
+        {
+            _escondidaPorInatividade = false;
+            if (_ativa && !_escondidaPorTelaCheia)
+            {
+                Show();
+                Posicionar();
+                MostrarEstado();
+            }
+        }
+    }
+
+    private static TimeSpan TempoParado()
+    {
+        var info = new UltimaEntrada { Tamanho = (uint)Marshal.SizeOf<UltimaEntrada>() };
+        if (!GetLastInputInfo(ref info)) return TimeSpan.Zero;
+
+        var ms = unchecked((uint)Environment.TickCount - info.Quando);
+        return TimeSpan.FromMilliseconds(ms);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct UltimaEntrada
+    {
+        public uint Tamanho;
+        public uint Quando;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetLastInputInfo(ref UltimaEntrada info);
 
     /// <summary>
     /// Uma fileira de cartoes com so os escolhidos, dividindo a largura entre
@@ -421,8 +556,16 @@ public partial class IlhaWindow : Window
 
             var largura = (int)Math.Round(ActualWidth * escala);
             var x = area.Left + (area.Width - largura) / 2;
+            var y = area.Top;
 
-            SetWindowPos(_handle, IntPtr.Zero, x, area.Top, 0, 0,
+            if (Mexendo)
+            {
+                var i = _passoDoPixel % DeslocamentoX.Length;
+                x += DeslocamentoX[i];
+                y += DeslocamentoY[i];
+            }
+
+            SetWindowPos(_handle, IntPtr.Zero, x, y, 0, 0,
                          SemTamanho | SemOrdem | SemAtivarJanela);
         }
         catch (Exception ex)
@@ -543,6 +686,10 @@ public partial class IlhaWindow : Window
         var agora = DateTime.UtcNow;
         var dentro = CursorEmCima();
 
+        // Mouse chegando perto (a 60 px) ja acende a Kisland escurecida: ela
+        // fica legivel antes de o cursor chegar em cima.
+        if (dentro || CursorEmCima(60)) Acordar();
+
         if (_exigirSaida)
         {
             if (dentro) return;
@@ -580,14 +727,15 @@ public partial class IlhaWindow : Window
         if (agora - _foraDesde >= EsperaParaFechar) Recolher();
     }
 
-    private bool CursorEmCima()
+    /// <param name="folga">Quanto alem da borda ainda conta, em unidades do WPF.</param>
+    private bool CursorEmCima(double folga = 0)
     {
         if (!GetCursorPos(out var cursor) || Casca.ActualWidth <= 0) return false;
 
         try
         {
-            var inicio = Casca.PointToScreen(new Point(0, 0));
-            var fim = Casca.PointToScreen(new Point(Casca.ActualWidth, Casca.ActualHeight));
+            var inicio = Casca.PointToScreen(new Point(-folga, -folga));
+            var fim = Casca.PointToScreen(new Point(Casca.ActualWidth + folga, Casca.ActualHeight + folga));
 
             return cursor.X >= inicio.X && cursor.X <= fim.X &&
                    cursor.Y >= inicio.Y && cursor.Y <= fim.Y;
@@ -606,6 +754,7 @@ public partial class IlhaWindow : Window
         if (_expandida || !_ativa) return;
 
         _expandida = true;
+        Acordar();
         _dentroDesde = null;
         _foraDesde = null;
         _aviso = Aviso.Nenhum;
@@ -653,6 +802,15 @@ public partial class IlhaWindow : Window
 
         AtualizarFps();
         ConferirTelaCheia();
+        ConferirInatividade();
+        ConferirBrilho();
+
+        // Contra marca na tela: a cada 3 minutos, um passo de 1 ou 2 px.
+        if (Mexendo && _segundos % 180 == 0)
+        {
+            _passoDoPixel++;
+            Posicionar();
+        }
 
         // Quem parou ha mais de tres minutos sai daqui: o servico so fica
         // sabendo que o tempo passou se alguem perguntar.
@@ -944,9 +1102,15 @@ public partial class IlhaWindow : Window
         else if (!esconder && _escondidaPorTelaCheia)
         {
             _escondidaPorTelaCheia = false;
-            Show();
-            Posicionar();
-            MostrarEstado();
+
+            // Escondida tambem pelo PC parado: quem a traz de volta e o
+            // primeiro movimento, em ConferirInatividade.
+            if (!_escondidaPorInatividade)
+            {
+                Show();
+                Posicionar();
+                MostrarEstado();
+            }
         }
     }
 
@@ -1072,7 +1236,8 @@ public partial class IlhaWindow : Window
         Casca.CornerRadius = new CornerRadius(_expandida ? 16 : aviso == Aviso.Faixa ? 28 : 22);
 
         // Animacoes paradas quando ninguem as ve.
-        var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && Compacta.Visibility == Visibility.Visible;
+        var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && !_escondidaPorInatividade &&
+                           Compacta.Visibility == Visibility.Visible;
 
         if (pilulaNaTela && MidiaVisivel() is { Tocando: true } && MostraMusica) AndarEqualizador();
         else PararEqualizador();
@@ -1083,9 +1248,10 @@ public partial class IlhaWindow : Window
 
     private void MostrarAviso(Aviso aviso, TimeSpan duracao)
     {
-        if (!_ativa || _expandida || _escondidaPorTelaCheia) return;
+        if (!_ativa || _expandida || _escondidaPorTelaCheia || _escondidaPorInatividade) return;
 
         _aviso = aviso;
+        Acordar();
         _fimDoAviso.Stop();
         _fimDoAviso.Interval = duracao;
         _fimDoAviso.Start();

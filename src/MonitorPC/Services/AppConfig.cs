@@ -140,6 +140,13 @@ public sealed class AppConfig
     public bool AcompanharCorDoSistema { get; set; } = true;
     public string CorDestaque { get; set; } = "#3B82F6";
     public bool Transparencia { get; set; } = true;
+
+    /// <summary>
+    /// Transparencia de fato: o tema Preto desliga, porque com ela o fundo
+    /// mostra o desktop e deixa de ser preto. A escolha fica guardada e volta
+    /// ao sair do tema Preto.
+    /// </summary>
+    [JsonIgnore] public bool TransparenciaAtiva => Transparencia && Tema != Tema.Preto;
     public int Opacidade { get; set; } = 85;
 
     /// <summary>
@@ -219,6 +226,32 @@ public sealed class AppConfig
     public bool IlhaJogoPotencia { get; set; }
     public bool IlhaJogoRelogio { get; set; }
     public bool IlhaJogoMusica { get; set; }
+
+    // --- Telas OLED ---
+
+    /// <summary>
+    /// Kisland preta: fundo preto puro, sem borda nem sombra, nas cores do
+    /// tema escuro qualquer que seja o tema do app. Num AMOLED com fundo
+    /// escuro ela se funde com o topo da tela, como a ilha do iPhone com a
+    /// camera.
+    /// </summary>
+    public bool IlhaPreta { get; set; }
+
+    /// <summary>
+    /// Proteger a tela contra marca: a Kisland fica sempre no mesmo lugar,
+    /// com texto parado, e em OLED isso marca a tela com o tempo. Ligada por
+    /// padrao: em tela comum ninguem percebe nenhum dos tres cuidados.
+    /// </summary>
+    public bool IlhaProtegerTela { get; set; } = true;
+
+    /// <summary>Andar 1 ou 2 px a cada 3 minutos.</summary>
+    public bool IlhaMexerPixels { get; set; } = true;
+
+    /// <summary>Minutos sem o mouse por perto ate ela ficar mais apagada. Zero, nunca.</summary>
+    public int IlhaEscurecerMinutos { get; set; } = 5;
+
+    /// <summary>Some depois de 10 minutos sem ninguem mexer no PC, e volta ao mexer.</summary>
+    public bool IlhaEsconderParado { get; set; } = true;
 
     /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;

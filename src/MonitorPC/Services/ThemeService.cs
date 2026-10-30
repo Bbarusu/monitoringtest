@@ -7,7 +7,14 @@ public enum Tema
 {
     Escuro,
     Claro,
-    Sistema
+    Sistema,
+
+    /// <summary>
+    /// O escuro com preto de verdade no fundo, para telas AMOLED: pixel preto
+    /// e pixel apagado, que gasta zero e da o contraste maximo. No fim da
+    /// lista para nao mudar o numero dos outros na configuracao salva.
+    /// </summary>
+    Preto
 }
 
 /// <summary>
@@ -50,6 +57,40 @@ public static class ThemeService
         ("InfoTexto",       "#8FBAFF", "#1D4ED8")
     };
 
+    /// <summary>
+    /// O que o tema Preto troca no escuro: so as superficies. Texto, icones e
+    /// avisos ficam os do escuro. Tambem e a paleta da Kisland preta.
+    /// </summary>
+    private static readonly Dictionary<string, string> Preta = new()
+    {
+        ["Fundo"] = "#000000",
+        ["Borda"] = "#16181C",
+        ["Cartao"] = "#0A0A0B",
+        ["Chip"] = "#111214",
+        ["Trilho"] = "#1C1E22"
+    };
+
+    /// <summary>
+    /// A paleta escura com as superficies pretas, pronta para pendurar nos
+    /// recursos de uma janela so (a Kisland preta), sem mexer no resto do app.
+    /// </summary>
+    public static Dictionary<string, Brush> PaletaPreta()
+    {
+        var pinceis = new Dictionary<string, Brush>();
+        foreach (var (chave, escuro, _) in Paleta)
+        {
+            var pincel = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+                Preta.TryGetValue(chave, out var preta) ? preta : escuro)!);
+            pincel.Freeze();
+            pinceis[chave] = pincel;
+        }
+
+        return pinceis;
+    }
+
+    /// <summary>Tema Preto em vigor: sem transparencia, que acabaria com o preto.</summary>
+    public static bool PretoTotal { get; private set; }
+
     /// <summary>Cor de fundo em vigor, para quem precisa dela com alpha.</summary>
     public static Color CorDeFundo { get; private set; } = (Color)ColorConverter.ConvertFromString("#15171C")!;
 
@@ -67,15 +108,19 @@ public static class ThemeService
         Claro = tema switch
         {
             Tema.Claro => true,
-            Tema.Escuro => false,
+            Tema.Escuro or Tema.Preto => false,
             _ => SistemaEstaClaro()
         };
+        PretoTotal = tema == Tema.Preto;
 
         var recursos = Application.Current.Resources;
 
         foreach (var (chave, escuro, claro) in Paleta)
         {
-            var cor = (Color)ColorConverter.ConvertFromString(Claro ? claro : escuro)!;
+            var hex = Claro ? claro
+                    : PretoTotal && Preta.TryGetValue(chave, out var preta) ? preta
+                    : escuro;
+            var cor = (Color)ColorConverter.ConvertFromString(hex)!;
             recursos[chave] = new SolidColorBrush(cor);
 
             if (chave == "Fundo") CorDeFundo = cor;

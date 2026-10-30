@@ -68,8 +68,11 @@
 
             <Border CornerRadius="14" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="4">
-                <UniformGrid Columns="3">
+                <UniformGrid Columns="4">
                     <RadioButton x:Name="TemaEscuro" Style="{StaticResource Aba}" Content="Escuro"
+                                 Checked="Tema_Alterado" />
+                    <RadioButton x:Name="TemaPreto" Style="{StaticResource Aba}" Content="Preto"
+                                 ToolTip="Preto de verdade no fundo: feito para telas AMOLED"
                                  Checked="Tema_Alterado" />
                     <RadioButton x:Name="TemaClaro" Style="{StaticResource Aba}" Content="Claro"
                                  Checked="Tema_Alterado" />
@@ -113,8 +116,8 @@
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Efeito de transparência" FontSize="13" FontWeight="Medium"
                                    Foreground="{DynamicResource Texto}" />
-                        <TextBlock Text="Deixa o fundo aparecer atrás do painel" FontSize="11" Margin="0,2,0,0"
-                                   Foreground="{DynamicResource TextoFraco}" />
+                        <TextBlock x:Name="DicaTransparencia" Text="Deixa o fundo aparecer atrás do painel" FontSize="11" Margin="0,2,40,0"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                     <CheckBox x:Name="Transparencia" Style="{StaticResource Interruptor}"
                               HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -222,6 +225,89 @@
                     </StackPanel>
                 </Border>
 
+                <!--
+                    Telas OLED: a Kisland preta e a proteção contra marca. A
+                    proteção vem ligada para todo mundo — em tela comum nenhum
+                    dos três cuidados aparece, e em OLED são eles que evitam a
+                    pílula ficar gravada no topo da tela.
+                -->
+                <TextBlock Text="Tela OLED" FontSize="11" Margin="0,12,0,8"
+                           Foreground="{DynamicResource TextoFraco}" />
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                    <Grid>
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
+                            <TextBlock Text="Kisland preta" FontSize="13" FontWeight="Medium"
+                                       Foreground="{DynamicResource Texto}" />
+                            <TextBlock Text="Fundo preto, sem borda nem sombra. Num AMOLED com fundo escuro, ela se funde com o topo da tela."
+                                       FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextoFraco}" />
+                        </StackPanel>
+                        <CheckBox x:Name="IlhaPreta" Style="{StaticResource Interruptor}"
+                                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                    </Grid>
+                </Border>
+
+                <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
+                        BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
+                                <TextBlock Text="Proteger contra marca na tela" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="A Kisland fica sempre no mesmo lugar. Em telas OLED, isso pode marcar a tela com o tempo."
+                                           FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <CheckBox x:Name="IlhaProteger" Style="{StaticResource Interruptor}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+
+                        <Border Height="1" Margin="0,10,0,6" Background="{DynamicResource Borda}" />
+
+                        <StackPanel x:Name="LinhasProtecao" Margin="12,0,0,0">
+                            <Grid Margin="0,4">
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
+                                    <TextBlock Text="Mexer alguns pixels" FontSize="13" FontWeight="Medium"
+                                               Foreground="{DynamicResource Texto}" />
+                                    <TextBlock Text="A cada 3 min ela anda 1 ou 2 px, sem dar para perceber."
+                                               FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextoFraco}" />
+                                </StackPanel>
+                                <CheckBox x:Name="IlhaMexer" Style="{StaticResource CaixaDeSelecao}"
+                                          HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,100,0">
+                                    <TextBlock Text="Escurecer sem uso" FontSize="13" FontWeight="Medium"
+                                               Foreground="{DynamicResource Texto}" />
+                                    <TextBlock Text="Fica mais apagada até o mouse chegar perto."
+                                               FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextoFraco}" />
+                                </StackPanel>
+                                <ComboBox x:Name="IlhaEscurecer" Style="{StaticResource Seletor}" MinWidth="88"
+                                          HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          SelectionChanged="Ilha_Alterada" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
+                                    <TextBlock Text="Esconder com o PC parado" FontSize="13" FontWeight="Medium"
+                                               Foreground="{DynamicResource Texto}" />
+                                    <TextBlock Text="Some depois de 10 min sem ninguém mexer no PC, e volta ao mexer."
+                                               FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextoFraco}" />
+                                </StackPanel>
+                                <CheckBox x:Name="IlhaEsconderParado" Style="{StaticResource CaixaDeSelecao}"
+                                          HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">

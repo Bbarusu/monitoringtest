@@ -1,33 +1,11 @@
-A Personalização agora tem duas abas: Painel e Kisland. Tudo da Kisland fica na aba dela: opacidade, tamanho, o que aparece, como ela abre, tela cheia, avisos e o guia. O botão de Personalização da Kisland já abre direto nessa aba.
+Novo: tema Preto, para telas AMOLED. Na Personalização, aba Painel, ao lado de Escuro, Claro e Sistema. O fundo fica preto de verdade, e no AMOLED isso é pixel apagado: mais contraste e menos bateria. A transparência fica desligada nesse tema, porque com ela o fundo deixaria de ser preto.
 
-Novo: dá para escolher o que aparece com a Kisland aberta. Em "Aberta, ela mostra", você liga ou desliga cada parte: o player de música, a temperatura da CPU, a temperatura da GPU, a RAM, o disco, a energia, o volume e os modos de energia. Os cartões que sobram dividem a largura entre si.
+Novo: Kisland preta. Fundo preto, sem borda nem sombra: numa tela AMOLED com fundo escuro, ela se funde com o topo da tela, como a ilha do iPhone com a câmera. Fica na aba Kisland, em "Tela OLED", e funciona com qualquer tema do app.
 
-Novo: calendário. A Kisland aberta mostra o mês inteiro com o dia de hoje marcado, e fechada ela pode mostrar a data junto do relógio.
+Novo: proteção contra marca na tela. A Kisland fica sempre no mesmo lugar, e em telas OLED isso pode marcar a tela com o tempo. Agora ela anda 1 ou 2 pixels a cada 3 minutos, fica mais apagada depois de 5 minutos sem o mouse por perto (volta ao chegar perto) e some depois de 10 minutos com o PC parado. Vem ligada; em tela comum ninguém percebe. Dá para ajustar ou desligar em "Tela OLED".
 
-Novo: atalhos. O anel que pulsa na Kisland agora pode abrir um chat de IA (ChatGPT, Claude, Gemini, Copilot, Perplexity, DeepSeek ou outro endereço) com um clique. Na Kisland aberta também dá para colocar até 6 apps ou sites. Tudo fica em Personalização, aba Kisland, em "Atalhos".
+Na Kisland aberta, cada cartão agora é escolhido por si: temperatura da CPU, temperatura da GPU, RAM, disco e energia. Os que sobram dividem a largura entre si.
 
-O ícone de volume ficou mais leve e não muda mais de tamanho conforme o nível.
+A barra de volume da Kisland ganhou o mesmo desenho do resto: trilho fino, a parte cheia na cor de destaque e uma bolinha branca. As barras de ajuste do app inteiro (limites de temperatura, opacidade, tamanho da Kisland) seguem o mesmo desenho. O ícone de volume ficou do tamanho dos outros, e as saídas de som mostram só o nome do aparelho ("Alto-falantes", "LG ULTRAWIDE"), sem o nome da placa.
 
-O contador de FPS está mais preciso e não oscila mais à toa: agora ele mede como o PresentMon, pelo tempo de cada quadro, e não conta em dobro jogos que desenham em mais de um lugar.
-
-Novo: com o mouse em cima da Kisland, a roda muda o volume, e o clique da roda pausa ou volta a música.
-
-Novo: troca da saída de som. Com a Kisland aberta, embaixo do volume, um clique passa o som para o fone, a caixa ou o monitor.
-
-Novo: bandeja de arquivos. Arraste arquivos até a Kisland e eles ficam ali, à mão: clique para abrir, arraste para levar a outro lugar, ou copie todos e cole numa pasta.
-
-O guia da Kisland ganhou três passos novos, sobre o calendário, os atalhos e o chat de IA no anel, e a roda do mouse, a troca da saída de som e a bandeja. Dá para ligar cada um direto no guia.
-
-Novo: você escolhe o que a Kisland mostra no modo jogo, quando o jogo está em tela cheia no mesmo monitor que ela. Antes ficava só o FPS; agora, em "No modo jogo, ela mostra", dá para juntar temperatura e uso da CPU e da GPU, RAM, potência, relógio e música. Por padrão vêm o FPS e as temperaturas da CPU e da GPU.
-
-Corrigido: em telas pequenas, como a de notebooks, o instalador, a configuração inicial, o guia da Kisland e outras telas passavam do fim da tela e cortavam os botões. Agora toda tela que não cabe ganha barra de rolagem; no instalador e na configuração inicial, os botões ficam sempre à vista e só o meio rola.
-
-As barras de ajuste (limites de temperatura, opacidade, tamanho da Kisland) ganharam o mesmo desenho da barra de volume da Kisland.
-
-Os textos da Kisland ficaram mais fáceis de ler, principalmente no tema claro. O nome da música, o app, os tempos e o rodapé ganharam um contorno suave na cor do fundo, e não somem mais quando há uma janela escura atrás da Kisland.
-
-Corrigido: os sensores de temperatura paravam de funcionar depois de reiniciar o PC. O driver que dá acesso a eles fica parado até alguém pedir para carregá-lo, e ninguém pedia — funcionava logo após instalar, e morria no primeiro reinício. Agora o KInfo carrega esse driver sozinho ao abrir.
-
-O relatório de diagnóstico passou a dizer se esse driver está rodando, e não só se está instalado. Registrado e parado lê tanto quanto não instalado, e o relatório não separava os dois.
-
-Atualizar não falha mais por causa de uma sobra: um instalador antigo que não podia ser apagado derrubava o download antes de ele começar.
+Corrigido: em telas pequenas, como a de notebooks, o instalador, a configuração inicial, o guia da Kisland e outras telas passavam do fim da tela e cortavam os botões. Agora toda tela que não cabe ganha barra de rolagem; no instalador e na configuração inicial, os botões ficam sempre à vista e só o meio rola. A barra de rolagem também não encosta mais no conteúdo.
