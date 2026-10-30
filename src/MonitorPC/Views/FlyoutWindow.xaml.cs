@@ -1740,6 +1740,14 @@ public partial class FlyoutWindow : Window
     private void CardRam_Click(object sender, RoutedEventArgs e) =>
         new MemoriaWindow(_sensores) { Owner = this }.ShowDialog();
 
+    /// <summary>
+    /// O anel da aba Geral abre quem está usando a CPU — o mesmo que o cartão
+    /// de RAM faz para a memória. Faltava o equivalente para processamento:
+    /// dava para ver que a CPU estava a 90%, e não quem a estava usando.
+    /// </summary>
+    private void Processador_Click(object sender, RoutedEventArgs e) =>
+        new ProcessadorWindow(_sensores) { Owner = this }.ShowDialog();
+
     private void Log_Click(object sender, RoutedEventArgs e)
     {
         new LogDiscoWindow(_cfg, _sensores) { Owner = this }.ShowDialog();

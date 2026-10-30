@@ -168,6 +168,28 @@
             </ControlTemplate.Triggers>
         </ControlTemplate>
 
+        <!--
+            O anel grande da aba Geral é clicável: abre quem está usando a CPU.
+
+            Sem moldura própria — o anel já é o desenho, e uma borda de botão
+            em volta dele competiria com o número. O que anuncia que dá para
+            clicar é o cursor e um realce leve ao passar o mouse, no mesmo tom
+            que as linhas clicáveis usam.
+
+            CornerRadius alto para o realce acompanhar o círculo em vez de
+            desenhar um quadrado atrás dele.
+        -->
+        <ControlTemplate x:Key="AnelClicavel" TargetType="Button">
+            <Border x:Name="bg" CornerRadius="120" Background="Transparent">
+                <ContentPresenter />
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="bg" Property="Background" Value="{DynamicResource Chip}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
         <!-- Barra de rolagem fina, no tom do painel. O WPF so usa esta se o
              estilo for aplicado por tipo, sem chave. -->
         <Style TargetType="ScrollBar">

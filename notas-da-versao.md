@@ -1,1 +1,3 @@
 Corrigido: a bandeja de arquivos da Kisland não recebia nada. Arrastar um arquivo até ela não fazia efeito nenhum, porque a janela da Kisland recusava o arquivo antes de a bandeja chegar a vê-lo. Agora soltar arquivos na Kisland, fechada ou aberta, guarda eles na bandeja, inclusive com o KInfo rodando como administrador.
+
+Novo: ver o que está usando a CPU. Na aba Geral, clique no anel grande da temperatura e abre a lista de programas por uso de processamento, com a opção de fechá-los — do mesmo jeito que o cartão de RAM já fazia para a memória. A lista se atualiza sozinha, porque uso de CPU só existe entre duas medições.

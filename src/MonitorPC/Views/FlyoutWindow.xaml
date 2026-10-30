@@ -299,7 +299,20 @@
 
             <!-- ======================= TOPO: GERAL ======================= -->
             <StackPanel x:Name="TopoGeral">
-                <Grid Width="220" Height="220" Margin="0,16,0,0">
+                <!--
+                    O anel é um botão: clicar abre quem está usando a CPU, do
+                    mesmo jeito que o cartão de RAM abre quem está usando
+                    memória. Botão, e não um clique no Grid, porque o painel
+                    inteiro arrasta por qualquer ponto vazio — e o arrasto
+                    reconhece controle e sai do caminho, mas não reconheceria
+                    um Grid com evento de mouse.
+                -->
+                <Button x:Name="BotaoProcessador" Margin="0,16,0,0"
+                        HorizontalAlignment="Center" Cursor="Hand"
+                        Template="{StaticResource AnelClicavel}"
+                        ToolTip="Ver o que está usando a CPU"
+                        Click="Processador_Click">
+                <Grid Width="220" Height="220">
                     <Ellipse Width="200" Height="200" Stroke="{DynamicResource Trilho}" StrokeThickness="10" />
                     <Path x:Name="Anel" Stroke="{DynamicResource Acento}" StrokeThickness="10"
                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
@@ -315,6 +328,7 @@
                                    HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                 </Grid>
+                </Button>
 
                 <!-- As duas colunas se dividem pela carga: o preenchimento acompanha a
                      largura real do painel, sem conta em pixels que possa dar negativa. -->

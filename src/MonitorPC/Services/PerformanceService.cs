@@ -210,6 +210,100 @@ public static class PerformanceService
     }
 
     /// <summary>
+    /// A ultima amostra de tempo de CPU de cada processo, para a proxima
+    /// leitura ter de onde tirar a diferenca.
+    ///
+    /// Guarda tambem o instante em que o processo comecou: o Windows reaproveita
+    /// PID, e sem essa conferencia um processo novo herdaria o tempo acumulado
+    /// do que morreu com o mesmo numero — e apareceria usando a CPU inteira.
+    /// </summary>
+    private static readonly Dictionary<int, (TimeSpan Tempo, DateTime Quando, DateTime Inicio)>
+        AmostraDeCpu = new();
+
+    /// <summary>
+    /// Processos por uso de CPU, somados por nome.
+    ///
+    /// Diferente da memoria, uso de CPU nao e um valor que existe num instante:
+    /// e trabalho feito entre dois instantes. Entao a primeira chamada nao tem
+    /// o que medir e devolve todo mundo em zero; a partir da segunda, cada
+    /// linha e o que o processo consumiu desde a chamada anterior. Quem exibe
+    /// precisa chamar de novo depois de um intervalo — e e por isso que a tela
+    /// de processamento se atualiza sozinha e a de memoria nao precisa.
+    /// </summary>
+    public static List<ProcessoCpu> PorCpu(int quantos = 12)
+    {
+        var agora = DateTime.UtcNow;
+        var sessao = Process.GetCurrentProcess().SessionId;
+        var nucleos = Math.Max(1, Environment.ProcessorCount);
+
+        var lista = new List<ProcessoCpu>();
+        var vistos = new HashSet<int>();
+
+        foreach (var p in Process.GetProcesses())
+        {
+            try
+            {
+                if (p.SessionId != sessao) continue;
+
+                var tempo = p.TotalProcessorTime;
+                var inicio = p.StartTime;
+
+                vistos.Add(p.Id);
+
+                double pct = 0;
+
+                if (AmostraDeCpu.TryGetValue(p.Id, out var anterior) && anterior.Inicio == inicio)
+                {
+                    var decorrido = (agora - anterior.Quando).TotalSeconds;
+
+                    if (decorrido > 0.05)
+                        pct = (tempo - anterior.Tempo).TotalSeconds / decorrido / nucleos * 100;
+                }
+
+                AmostraDeCpu[p.Id] = (tempo, agora, inicio);
+
+                lista.Add(new ProcessoCpu(
+                    p.Id,
+                    p.ProcessName,
+                    string.IsNullOrWhiteSpace(p.MainWindowTitle) ? p.ProcessName : p.MainWindowTitle,
+                    // Arredondamento de relogio pode dar fracao de ponto acima
+                    // de 100 num pico; cortar evita barra passando do fim.
+                    Math.Clamp(pct, 0, 100),
+                    Protegidos.Contains(p.ProcessName) || p.Id == Environment.ProcessId,
+                    p.MainWindowHandle != IntPtr.Zero));
+            }
+            catch
+            {
+                // Processo encerrado no meio da varredura, ou protegido demais
+                // para informar o tempo de CPU. Nos dois casos nao ha o que
+                // mostrar e nao ha o que consertar.
+            }
+            finally
+            {
+                p.Dispose();
+            }
+        }
+
+        // Quem morreu sai do historico, senao o dicionario cresce para sempre
+        // numa sessao longa e ainda guarda PID pronto para ser reaproveitado.
+        foreach (var morto in AmostraDeCpu.Keys.Where(k => !vistos.Contains(k)).ToList())
+            AmostraDeCpu.Remove(morto);
+
+        // Mesma regra da memoria: varios processos com o mesmo nome — as abas
+        // de um navegador, por exemplo — viram uma linha, com a soma.
+        return lista
+            .GroupBy(x => x.Nome)
+            .Select(g => g.OrderByDescending(x => x.CpuPct).First() with
+            {
+                CpuPct = Math.Clamp(g.Sum(x => x.CpuPct), 0, 100),
+                TemJanela = g.Any(x => x.TemJanela)
+            })
+            .OrderByDescending(x => x.CpuPct)
+            .Take(quantos)
+            .ToList();
+    }
+
+    /// <summary>
     /// O que aconteceu ao pedir para um programa fechar.
     ///
     /// <paramref name="SemJanela"/> existe separado de <paramref name="Recusados"/>
