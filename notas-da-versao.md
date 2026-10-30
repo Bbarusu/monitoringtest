@@ -17,3 +17,5 @@ Novo: troca da saída de som. Com a Kisland aberta, embaixo do volume, um clique
 Novo: bandeja de arquivos. Arraste arquivos até a Kisland e eles ficam ali, à mão: clique para abrir, arraste para levar a outro lugar, ou copie todos e cole numa pasta.
 
 O guia da Kisland ganhou três passos novos, sobre o calendário, os atalhos e o chat de IA no anel, e a roda do mouse, a troca da saída de som e a bandeja. Dá para ligar cada um direto no guia.
+
+Novo: você escolhe o que a Kisland mostra no modo jogo, quando o jogo está em tela cheia no mesmo monitor que ela. Antes ficava só o FPS; agora, em "No modo jogo, ela mostra", dá para juntar temperatura e uso da CPU e da GPU, RAM, potência, relógio e música. Por padrão vêm o FPS e as temperaturas da CPU e da GPU.

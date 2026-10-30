@@ -223,21 +223,23 @@ public partial class IlhaWindow : Window
 
         AplicarContorno();
 
-        // No modo jogo, so o FPS (e um aviso de temperatura, se houver): o
-        // resto disputaria a atencao com o jogo, na mesma tela.
+        // No modo jogo, o FPS, um aviso de temperatura se houver, e o que a
+        // pessoa escolheu para o jogo na aba Kisland. CPU, GPU, RAM, potencia, relogio e musica seguem a lista do modo
+        // jogo quando ele esta ativo; o resto so aparece fora dele.
         var normal = !_modoJogo;
         if (_cfg.IlhaFps && !_fps.Rodando) _tentarFpsEm = 0;
         ChipFps.Visibility = Visivel(_cfg.IlhaFps && _jogo is not null);
-        ChipCpu.Visibility = Visivel(normal && (_cfg.IlhaCpu || _cfg.IlhaCpuUso));
-        ChipGpu.Visibility = Visivel(normal && (_cfg.IlhaGpu || _cfg.IlhaGpuUso));
-        ChipRam.Visibility = Visivel(normal && _cfg.IlhaRam);
+        ChipCpu.Visibility = Visivel(MostraCpuTemp || MostraCpuUso);
+        ChipGpu.Visibility = Visivel(MostraGpuTemp || MostraGpuUso);
+        ChipRam.Visibility = Visivel(MostraRam);
         ChipDisco.Visibility = Visivel(normal && _cfg.IlhaDisco);
-        ChipPotencia.Visibility = Visivel(normal && _cfg.IlhaPotencia);
+        ChipPotencia.Visibility = Visivel(MostraPotencia);
         ChipVolume.Visibility = Visivel(normal && _cfg.IlhaVolume && _volume.Disponivel);
-        ChipRelogio.Visibility = Visivel(normal && (_cfg.IlhaRelogio || _cfg.IlhaData));
-        TextoRelogio.Visibility = Visivel(_cfg.IlhaRelogio);
-        TextoData.Visibility = Visivel(_cfg.IlhaData);
-        IconeRelogio.Data = Geometry.Parse(_cfg.IlhaRelogio ? DesenhoRelogio : DesenhoCalendario);
+        var data = normal && _cfg.IlhaData;
+        ChipRelogio.Visibility = Visivel(MostraRelogio || data);
+        TextoRelogio.Visibility = Visivel(MostraRelogio);
+        TextoData.Visibility = Visivel(data);
+        IconeRelogio.Data = Geometry.Parse(MostraRelogio ? DesenhoRelogio : DesenhoCalendario);
         // O que aparece com ela aberta, como escolhido na aba Kisland.
         BlocoVolume.Visibility = Visivel(_volume.Disponivel && _cfg.IlhaAbertaVolume);
         GradeTemperaturas.Visibility = Visivel(_cfg.IlhaAbertaTemperaturas);
@@ -253,6 +255,16 @@ public partial class IlhaWindow : Window
         AtualizarRelogio();
         AplicarMidia(false);
     }
+
+    // O que a pilula mostra agora: a lista do dia a dia ou a do modo jogo.
+    private bool MostraCpuTemp => _modoJogo ? _cfg.IlhaJogoCpu : _cfg.IlhaCpu;
+    private bool MostraCpuUso => _modoJogo ? _cfg.IlhaJogoCpuUso : _cfg.IlhaCpuUso;
+    private bool MostraGpuTemp => _modoJogo ? _cfg.IlhaJogoGpu : _cfg.IlhaGpu;
+    private bool MostraGpuUso => _modoJogo ? _cfg.IlhaJogoGpuUso : _cfg.IlhaGpuUso;
+    private bool MostraRam => _modoJogo ? _cfg.IlhaJogoRam : _cfg.IlhaRam;
+    private bool MostraPotencia => _modoJogo ? _cfg.IlhaJogoPotencia : _cfg.IlhaPotencia;
+    private bool MostraRelogio => _modoJogo ? _cfg.IlhaJogoRelogio : _cfg.IlhaRelogio;
+    private bool MostraMusica => _modoJogo ? _cfg.IlhaJogoMusica : _cfg.IlhaMusica;
 
     /// <summary>
     /// Contorno suave, na cor do fundo da Kisland, nos textos que ficam direto
@@ -632,7 +644,7 @@ public partial class IlhaWindow : Window
     private void AtualizarRelogio()
     {
         var agora = DateTime.Now;
-        if (_cfg.IlhaRelogio) TextoRelogio.Text = agora.ToString("HH:mm");
+        if (MostraRelogio) TextoRelogio.Text = agora.ToString("HH:mm");
         if (_cfg.IlhaData) TextoData.Text = $"{SemanasCurtas[(int)agora.DayOfWeek]} {agora.Day}";
         if (_cfg.IlhaAbertaCalendario) AtualizarCalendario();
     }
@@ -1039,7 +1051,7 @@ public partial class IlhaWindow : Window
         // Animacoes paradas quando ninguem as ve.
         var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && Compacta.Visibility == Visibility.Visible;
 
-        if (pilulaNaTela && MidiaVisivel() is { Tocando: true } && _cfg.IlhaMusica) AndarEqualizador();
+        if (pilulaNaTela && MidiaVisivel() is { Tocando: true } && MostraMusica) AndarEqualizador();
         else PararEqualizador();
 
         if (pilulaNaTela && BotaoAnel.Visibility == Visibility.Visible) AndarAnel();
@@ -1069,8 +1081,8 @@ public partial class IlhaWindow : Window
 
     private void AplicarSensores(Snapshot s)
     {
-        TextoCpu.Text = Rotulo("CPU", _cfg.IlhaCpu ? s.CpuTemp : null, _cfg.IlhaCpuUso ? s.CpuUso : null);
-        TextoGpu.Text = Rotulo("GPU", _cfg.IlhaGpu ? s.GpuTemp : null, _cfg.IlhaGpuUso ? s.GpuUso : null);
+        TextoCpu.Text = Rotulo("CPU", MostraCpuTemp ? s.CpuTemp : null, MostraCpuUso ? s.CpuUso : null);
+        TextoGpu.Text = Rotulo("GPU", MostraGpuTemp ? s.GpuTemp : null, MostraGpuUso ? s.GpuUso : null);
         TextoRam.Text = s.RamUso is { } ram ? $"RAM {ram:F0}%" : "RAM --";
         TextoDisco.Text = s.DiscoTempMaior is > 0 ? $"Disco {s.DiscoTempMaior:F0}°" : "Disco --";
         TextoPotencia.Text = s.WattsTotais > 0 ? $"{s.WattsTotais:F0} W" : "-- W";
@@ -1169,7 +1181,7 @@ public partial class IlhaWindow : Window
 
         var estado = MidiaVisivel();
 
-        var mostrar = estado is not null && _cfg.IlhaMusica && !_modoJogo;
+        var mostrar = estado is not null && MostraMusica;
         MidiaCompacta.Visibility = Visivel(mostrar);
 
         PausadoPequeno.Visibility = Visivel(estado is { Tocando: false });

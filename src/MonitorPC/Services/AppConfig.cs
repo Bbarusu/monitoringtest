@@ -208,6 +208,18 @@ public sealed class AppConfig
     /// </summary>
     public bool IlhaFicarEmTelaCheia { get; set; }
 
+    // O que a Kisland mostra no modo jogo: o jogo do contador de FPS em tela
+    // cheia no mesmo monitor que ela. O FPS aparece sempre; o resto e escolha,
+    // separada da do dia a dia, porque durante o jogo o que interessa e outro.
+    public bool IlhaJogoCpu { get; set; } = true;
+    public bool IlhaJogoCpuUso { get; set; }
+    public bool IlhaJogoGpu { get; set; } = true;
+    public bool IlhaJogoGpuUso { get; set; }
+    public bool IlhaJogoRam { get; set; }
+    public bool IlhaJogoPotencia { get; set; }
+    public bool IlhaJogoRelogio { get; set; }
+    public bool IlhaJogoMusica { get; set; }
+
     /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;
 

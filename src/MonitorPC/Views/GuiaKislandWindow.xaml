@@ -437,7 +437,7 @@
 
                 <!-- ======================== PASSO FPS ======================== -->
                 <StackPanel x:Name="PassoFps" Visibility="Collapsed">
-                    <!-- Um "jogo" ocupando a tela, e a Kisland enxuta, só com o FPS. -->
+                    <!-- Um "jogo" ocupando a tela, e a Kisland enxuta, no modo jogo. -->
                     <Border Style="{StaticResource Mesa}">
                         <Grid>
                             <Border Background="#1B2433" />
@@ -457,7 +457,7 @@
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="Tá jogando? Ela conta o FPS" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Liga o contador e a Kisland percebe sozinha quando tem um jogo aberto, em qualquer monitor, e mostra o FPS dele. Se o jogo estiver na mesma tela, ela fica pequenininha, só com o número, para não atrapalhar." />
+                               Text="Liga o contador e a Kisland percebe sozinha quando tem um jogo aberto, em qualquer monitor, e mostra o FPS dele. Se o jogo estiver na mesma tela, ela fica enxuta, só com o FPS e o que você escolher para o modo jogo na Personalização." />
                     <Border Style="{StaticResource LinhaItem}" Margin="0,16,0,0" Padding="12,10">
                         <Grid>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">

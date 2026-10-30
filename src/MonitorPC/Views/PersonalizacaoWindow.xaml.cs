@@ -176,6 +176,14 @@ public partial class PersonalizacaoWindow : Window
         IlhaAbertaCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
         IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
         IlhaSaidasDeSom.IsChecked = _cfg.IlhaSaidasDeSom;
+        IlhaJogoCpu.IsChecked = _cfg.IlhaJogoCpu;
+        IlhaJogoCpuUso.IsChecked = _cfg.IlhaJogoCpuUso;
+        IlhaJogoGpu.IsChecked = _cfg.IlhaJogoGpu;
+        IlhaJogoGpuUso.IsChecked = _cfg.IlhaJogoGpuUso;
+        IlhaJogoRam.IsChecked = _cfg.IlhaJogoRam;
+        IlhaJogoPotencia.IsChecked = _cfg.IlhaJogoPotencia;
+        IlhaJogoRelogio.IsChecked = _cfg.IlhaJogoRelogio;
+        IlhaJogoMusica.IsChecked = _cfg.IlhaJogoMusica;
         IlhaBandeja.IsChecked = _cfg.IlhaBandeja;
         IlhaRodaVolume.IsChecked = _cfg.IlhaRodaMudaVolume;
         IlhaIa.SelectedIndex = Math.Max(0, _idsDeIa.IndexOf(_cfg.IlhaIa ?? ""));
@@ -255,6 +263,14 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaAbertaCalendario = IlhaAbertaCalendario.IsChecked == true;
         _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
         _cfg.IlhaSaidasDeSom = IlhaSaidasDeSom.IsChecked == true;
+        _cfg.IlhaJogoCpu = IlhaJogoCpu.IsChecked == true;
+        _cfg.IlhaJogoCpuUso = IlhaJogoCpuUso.IsChecked == true;
+        _cfg.IlhaJogoGpu = IlhaJogoGpu.IsChecked == true;
+        _cfg.IlhaJogoGpuUso = IlhaJogoGpuUso.IsChecked == true;
+        _cfg.IlhaJogoRam = IlhaJogoRam.IsChecked == true;
+        _cfg.IlhaJogoPotencia = IlhaJogoPotencia.IsChecked == true;
+        _cfg.IlhaJogoRelogio = IlhaJogoRelogio.IsChecked == true;
+        _cfg.IlhaJogoMusica = IlhaJogoMusica.IsChecked == true;
         _cfg.IlhaBandeja = IlhaBandeja.IsChecked == true;
         _cfg.IlhaRodaMudaVolume = IlhaRodaVolume.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
@@ -580,6 +596,14 @@ public partial class PersonalizacaoWindow : Window
         // A excecao so existe com a regra (esconder) e o contador ligados.
         var excecaoValida = IlhaTelaCheia.IsChecked == true && IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
         IlhaFicarEmTelaCheia.IsEnabled = excecaoValida;
+
+        // A lista do modo jogo so vale com o contador ligado.
+        var comFps = IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
+        CartaoModoJogo.IsEnabled = comFps;
+        CartaoModoJogo.Opacity = comFps ? 1 : 0.5;
+        DicaModoJogo.Text = comFps
+            ? "Quando o jogo está em tela cheia no mesmo monitor que a Kisland. O FPS aparece sempre."
+            : "Ligue \"FPS em jogos\" acima para a Kisland saber quando você está jogando.";
         LinhaFpsTelaCheia.Opacity = excecaoValida ? 1 : 0.5;
 
         // Com a ilha desligada as opcoes dela ficam a mostra, mas apagadas:

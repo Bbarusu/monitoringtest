@@ -102,8 +102,10 @@ cobre o monitor, está maximizada ou ocupa metade dele — em qualquer monitor,
 com ou sem foco.
 
 Com o jogo em tela cheia sem borda no mesmo monitor da Kisland, ela entra no
-modo jogo: só o FPS (e um aviso de temperatura, se houver), sem abrir ao passar
-o mouse. Tela cheia em outro monitor não a esconde mais. Tela cheia exclusiva
+modo jogo: o FPS, um aviso de temperatura se houver, e o que estiver marcado
+em "No modo jogo, ela mostra" (`IlhaJogo*`: temperatura e uso de CPU e GPU,
+RAM, potência, relógio e música; por padrão, as temperaturas de CPU e GPU). Não
+abre ao passar o mouse, e a roda e o clique do meio não agem. Tela cheia em outro monitor não a esconde mais. Tela cheia exclusiva
 continua escondendo: nada aparece por cima, e o Windows não diz em qual monitor
 ela está.
 
