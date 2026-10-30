@@ -38,9 +38,12 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
+        <!-- A barra de rolagem fica na margem interna do painel, com 6 px de
+             folga do conteúdo e da borda: o conteúdo tem a mesma largura com
+             ou sem barra, e ela não encosta em nada. -->
             <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-        <StackPanel>
+                          HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
+        <StackPanel Margin="0,0,14,0">
 
             <!-- Cabecalho: o titulo e os chips mudam conforme a aba -->
             <Grid>

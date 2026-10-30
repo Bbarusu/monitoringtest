@@ -70,8 +70,9 @@ public static class Janelas
     /// e cortado. Com a rolagem por fora, o que nao cabe passa a rolar. Numa
     /// tela em que tudo cabe, a barra nem aparece e nada muda.
     ///
-    /// A rolagem avanca sobre a margem interna do painel, onde a barra fica:
-    /// o conteudo tem a mesma largura com ou sem barra.
+    /// A rolagem avanca 14 px sobre a margem interna do painel, onde a barra
+    /// (8 px) fica com 6 px de folga do conteudo e 6 da borda: o conteudo tem
+    /// a mesma largura com ou sem barra, e ela nao encosta em nada.
     ///
     /// Janela que cuida da propria rolagem (botoes fixos embaixo, so o meio
     /// rolando) marca o painel com Tag="RolagemPropria" e fica de fora.
@@ -82,7 +83,7 @@ public static class Janelas
         if (painel.Tag is "RolagemPropria") return;
         if (painel.Child is not FrameworkElement conteudo || conteudo is ScrollViewer) return;
 
-        var folga = Math.Min(12, painel.Padding.Right);
+        var folga = Math.Min(14, painel.Padding.Right);
 
         painel.Child = null;
         var m = conteudo.Margin;

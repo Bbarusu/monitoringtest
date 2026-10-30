@@ -21,9 +21,12 @@
             troca de um problema por outro. Aqui o conteúdo rola inteiro,
             botões incluídos: são poucas linhas e todas alcançáveis.
         -->
+        <!-- A barra de rolagem fica na margem interna do painel, com 6 px de
+             folga do conteúdo e da borda: o conteúdo tem a mesma largura com
+             ou sem barra, e ela não encosta em nada. -->
         <ScrollViewer x:Name="Rolagem" VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-        <StackPanel x:Name="Conteudo">
+                      HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
+        <StackPanel x:Name="Conteudo" Margin="0,0,14,0">
 
             <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
