@@ -108,9 +108,10 @@ papéis (console, multimídia e comunicação).
 A bandeja recebe arquivos por `WM_DROPFILES` (`DragAcceptFiles`), e não pelo
 arrastar do WPF: o Windows não deixa o Explorer arrastar para um app elevado
 pelo OLE, e pelo caminho antigo deixa, liberadas `WM_DROPFILES`, `WM_COPYDATA` e
-`WM_COPYGLOBALDATA` com `ChangeWindowMessageFilterEx`. Por isso a Kisland não
-pode ter elementos com `AllowDrop` (uma caixa de texto, por exemplo): o WPF
-registraria o OLE e o caminho antigo pararia. Guarda só os caminhos, até 12, e
+`WM_COPYGLOBALDATA` com `ChangeWindowMessageFilterEx`. O WPF registra toda
+janela como destino OLE ao criá-la, e com esse registro o Windows nunca tenta
+o caminho antigo; por isso a Kisland cancela o registro (`RevokeDragDrop`)
+assim que nasce. Pelo mesmo motivo ela não pode ter elementos com `AllowDrop`. Guarda só os caminhos, até 12, e
 só enquanto o app está aberto. Clique abre pelo Explorer; arrastar para fora usa
 o OLE, que com o app elevado pode não chegar ao Explorer — para isso há o
 copiar, que põe os arquivos na área de transferência para colar numa pasta.

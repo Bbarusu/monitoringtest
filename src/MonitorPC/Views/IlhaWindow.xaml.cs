@@ -1791,16 +1791,31 @@ public partial class IlhaWindow : Window
     /// Pelo jeito antigo do Windows (WM_DROPFILES), e nao pelo arrastar do
     /// WPF, de proposito: o KInfo costuma rodar como administrador, e o
     /// Windows nao deixa o Explorer, que roda como usuario comum, arrastar
-    /// para um app elevado pelo caminho novo. Pelo antigo deixa, desde que o
-    /// app libere estas tres mensagens.
+    /// para um app elevado pelo caminho novo (OLE). Pelo antigo deixa, desde
+    /// que o app libere estas tres mensagens.
+    ///
+    /// O que faltava, e fazia a bandeja nunca receber nada: o WPF registra
+    /// TODA janela que cria como destino OLE, tenha ou nao algum elemento
+    /// com AllowDrop. Com esse registro o Windows nem tenta o caminho
+    /// antigo — entrega ao WPF, que recusa (nada aqui aceita arquivos) ou,
+    /// com o app elevado, nem isso. Cancelar o registro do WPF
+    /// (RevokeDragDrop) deixa so o caminho antigo, que e o que funciona.
     /// </summary>
     private void PrepararBandeja()
     {
         try
         {
-            ChangeWindowMessageFilterEx(_handle, ArquivosSoltos, Permitir, IntPtr.Zero);
-            ChangeWindowMessageFilterEx(_handle, CopiaDeDados, Permitir, IntPtr.Zero);
-            ChangeWindowMessageFilterEx(_handle, CopiaDeDadosGlobal, Permitir, IntPtr.Zero);
+            var revogado = RevokeDragDrop(_handle);
+            // 0 = cancelado; DRAGDROP_E_NOTREGISTERED = ja nao havia registro.
+            if (revogado != 0 && revogado != NaoRegistrado)
+                Log.Nota($"Bandeja: RevokeDragDrop devolveu 0x{revogado:X8}");
+
+            var filtro = ChangeWindowMessageFilterEx(_handle, ArquivosSoltos, Permitir, IntPtr.Zero) &
+                         ChangeWindowMessageFilterEx(_handle, CopiaDeDados, Permitir, IntPtr.Zero) &
+                         ChangeWindowMessageFilterEx(_handle, CopiaDeDadosGlobal, Permitir, IntPtr.Zero);
+            if (!filtro)
+                Log.Nota($"Bandeja: ChangeWindowMessageFilterEx falhou ({Marshal.GetLastWin32Error()})");
+
             DragAcceptFiles(_handle, _cfg.IlhaBandeja);
         }
         catch (Exception ex)
@@ -2167,6 +2182,12 @@ public partial class IlhaWindow : Window
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ChangeWindowMessageFilterEx(IntPtr janela, uint mensagem, uint acao, IntPtr extra);
+
+    /// <summary>DRAGDROP_E_NOTREGISTERED: a janela nao tinha destino OLE.</summary>
+    private const int NaoRegistrado = unchecked((int)0x80040100);
+
+    [DllImport("ole32.dll")]
+    private static extern int RevokeDragDrop(IntPtr janela);
 
     [DllImport("shell32.dll")]
     private static extern void DragAcceptFiles(IntPtr janela, [MarshalAs(UnmanagedType.Bool)] bool aceitar);
