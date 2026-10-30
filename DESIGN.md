@@ -165,9 +165,10 @@ de arquivos num minicartão: título com a contagem, copiar e esvaziar em botõe
 arquivos em quadros de canto 12 com o ícone do Windows; na pílula, um chip com a contagem.
 
 ### Guia da Kisland
-Convite único no painel (cartão "Novidade", botões "Depois" e "Bora ver") e guia de cinco passos, em
+Convite único no painel (cartão "Novidade", botões "Depois" e "Bora ver") e guia de nove passos, em
 linguagem próxima: "Oi, essa é a Kisland", "Passou o mouse, ela abre", "Você escolhe o que aparece",
-"Funciona em qualquer tela", "Combina com o seu KInfo". Cada passo tem prévia e o controle real.
+"O mês inteiro à vista", "O circulozinho virou atalho", "Som e arquivos na ponta do mouse",
+"Funciona em qualquer tela", "Tá jogando? Ela conta o FPS", "Combina com o seu KInfo". Cada passo tem prévia e o controle real.
 
 ### Componentes de energia
 As quantidades são **detectadas do hardware**; o usuário ajusta à mão apenas o que o PC não enxerga,

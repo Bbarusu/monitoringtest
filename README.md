@@ -109,7 +109,7 @@ ela está.
 
 ### Guia
 
-`GuiaKislandWindow` são seis passos com prévia desenhada e o controle de
+`GuiaKislandWindow` são nove passos com prévia desenhada e o controle de
 verdade: o que se mexe ali grava na configuração na hora. Aparece uma vez só,
 pelo convite que o painel mostra na primeira abertura de uma versão que tem o
 guia (`GuiaKislandVisto`), para quem instalou agora e para quem atualizou. Fica

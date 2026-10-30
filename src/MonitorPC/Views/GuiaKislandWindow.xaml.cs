@@ -16,7 +16,7 @@ namespace MonitorPC.Views;
 /// </summary>
 public partial class GuiaKislandWindow : Window
 {
-    private const int Passos = 6;
+    private const int Passos = 9;
 
     /// <summary>A mesma paleta da Personalizacao.</summary>
     private static readonly (string Nome, string Hex)[] Paleta =
@@ -58,10 +58,21 @@ public partial class GuiaKislandWindow : Window
         ItemVolume.IsChecked = _cfg.IlhaVolume;
         ItemRam.IsChecked = _cfg.IlhaRam;
         ItemRelogio.IsChecked = _cfg.IlhaRelogio;
+        ItemData.IsChecked = _cfg.IlhaData;
+        ItemCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
+        ItemRoda.IsChecked = _cfg.IlhaRodaMudaVolume;
+        ItemSaidas.IsChecked = _cfg.IlhaSaidasDeSom;
+        ItemBandeja.IsChecked = _cfg.IlhaBandeja;
 
-        var hora = DateTime.Now.ToString("HH:mm");
+        var agora = DateTime.Now;
+        var hora = agora.ToString("HH:mm");
         PreviaHora.Text = hora;
         PreviaHora5.Text = hora;
+        PreviaHoraAtalhos.Text = hora;
+        PreviaData.Text = $"{SemanasCurtas[(int)agora.DayOfWeek]} {agora.Day}";
+
+        MontarIas();
+        MontarCalendario();
 
         MontarPaleta();
         MontarPontos();
@@ -110,9 +121,12 @@ public partial class GuiaKislandWindow : Window
         Passo1.Visibility = Visivel(_passo == 0);
         Passo2.Visibility = Visivel(_passo == 1);
         Passo3.Visibility = Visivel(_passo == 2);
-        Passo4.Visibility = Visivel(_passo == 3);
-        PassoFps.Visibility = Visivel(_passo == 4);
-        Passo5.Visibility = Visivel(_passo == 5);
+        PassoCalendario.Visibility = Visivel(_passo == 3);
+        PassoAtalhos.Visibility = Visivel(_passo == 4);
+        PassoSom.Visibility = Visivel(_passo == 5);
+        Passo4.Visibility = Visivel(_passo == 6);
+        PassoFps.Visibility = Visivel(_passo == 7);
+        Passo5.Visibility = Visivel(_passo == 8);
 
         Contagem.Text = $"Conhecendo a Kisland · {_passo + 1} de {Passos}";
         BotaoVoltar.Visibility = _passo == 0 ? Visibility.Hidden : Visibility.Visible;
@@ -182,6 +196,11 @@ public partial class GuiaKislandWindow : Window
         _cfg.IlhaRam = ItemRam.IsChecked == true;
         _cfg.IlhaRelogio = ItemRelogio.IsChecked == true;
         _cfg.IlhaFps = ItemFps.IsChecked == true;
+        _cfg.IlhaData = ItemData.IsChecked == true;
+        _cfg.IlhaAbertaCalendario = ItemCalendario.IsChecked == true;
+        _cfg.IlhaRodaMudaVolume = ItemRoda.IsChecked == true;
+        _cfg.IlhaSaidasDeSom = ItemSaidas.IsChecked == true;
+        _cfg.IlhaBandeja = ItemBandeja.IsChecked == true;
 
         Confirmar();
     }
@@ -203,6 +222,134 @@ public partial class GuiaKislandWindow : Window
     {
         _cfg.Salvar();
         _aoMudar();
+    }
+
+    // ------------------------------------------------------------------
+    // Calendario e chat de IA
+
+    private static readonly string[] Meses =
+    {
+        "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+        "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"
+    };
+    private static readonly string[] Semanas =
+    {
+        "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
+    };
+    private static readonly string[] SemanasCurtas = { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" };
+    private static readonly string[] Iniciais = { "D", "S", "T", "Q", "Q", "S", "S" };
+
+    /// <summary>
+    /// A previa do passo do calendario: o mes de verdade, com hoje marcado,
+    /// como na Kisland aberta, so que menor.
+    /// </summary>
+    private void MontarCalendario()
+    {
+        var hoje = DateTime.Today;
+        PreviaMes.Text = $"{Meses[hoje.Month - 1]} {hoje.Year}";
+        PreviaSemana.Text = Semanas[(int)hoje.DayOfWeek];
+        PreviaDia.Text = hoje.Day.ToString();
+
+        var grade = PreviaCalendario;
+        var primeiro = new DateTime(hoje.Year, hoje.Month, 1);
+        var vazios = (int)primeiro.DayOfWeek;
+        var semanas = (vazios + DateTime.DaysInMonth(hoje.Year, hoje.Month) + 6) / 7;
+
+        for (var c = 0; c < 7; c++)
+            grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(22) });
+        grade.RowDefinitions.Add(new RowDefinition { Height = new GridLength(14) });
+        for (var l = 0; l < semanas; l++)
+            grade.RowDefinitions.Add(new RowDefinition { Height = new GridLength(16) });
+
+        for (var c = 0; c < 7; c++)
+        {
+            var inicial = new TextBlock
+            {
+                Text = Iniciais[c],
+                FontSize = 9,
+                FontWeight = FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            inicial.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+            Grid.SetColumn(inicial, c);
+            grade.Children.Add(inicial);
+        }
+
+        var inicio = primeiro.AddDays(-vazios);
+        for (var i = 0; i < semanas * 7; i++)
+        {
+            var dia = inicio.AddDays(i);
+            var linha = i / 7 + 1;
+            var coluna = i % 7;
+
+            if (dia == hoje)
+            {
+                var marca = new System.Windows.Shapes.Ellipse { Width = 15, Height = 15 };
+                marca.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Acento");
+                Grid.SetRow(marca, linha);
+                Grid.SetColumn(marca, coluna);
+                grade.Children.Add(marca);
+            }
+
+            var numero = new TextBlock
+            {
+                Text = dia.Day.ToString(),
+                FontSize = 9.5,
+                FontWeight = dia == hoje ? FontWeights.SemiBold : FontWeights.Normal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            if (dia == hoje)
+                numero.Foreground = Brushes.White;
+            else
+                numero.SetResourceReference(TextBlock.ForegroundProperty,
+                    dia.Month == hoje.Month ? "Texto" : "TextoMuitoFraco");
+            if (dia.Month != hoje.Month) numero.Opacity = 0.55;
+
+            Grid.SetRow(numero, linha);
+            Grid.SetColumn(numero, coluna);
+            grade.Children.Add(numero);
+        }
+    }
+
+    /// <summary>Id de cada linha do seletor de chat, na mesma ordem dos itens.</summary>
+    private readonly List<string> _idsDeIa = new();
+
+    /// <summary>
+    /// Os chats conhecidos. "Outro" so aparece para quem ja tem um endereco
+    /// proprio escolhido: digitar o endereco e coisa da Personalizacao.
+    /// </summary>
+    private void MontarIas()
+    {
+        EscolhaIa.Items.Add("Nenhum");
+        _idsDeIa.Add("");
+
+        foreach (var ia in AtalhoService.Ias)
+        {
+            EscolhaIa.Items.Add(ia.Nome);
+            _idsDeIa.Add(ia.Id);
+        }
+
+        if (_cfg.IlhaIa == AtalhoService.IaOutra)
+        {
+            EscolhaIa.Items.Add("Outro");
+            _idsDeIa.Add(AtalhoService.IaOutra);
+        }
+
+        EscolhaIa.SelectedIndex = Math.Max(0, _idsDeIa.IndexOf(_cfg.IlhaIa ?? ""));
+    }
+
+    private void Ia_Escolhida(object sender, SelectionChangedEventArgs e)
+    {
+        if (_carregando) return;
+
+        var indice = EscolhaIa.SelectedIndex;
+        var id = indice >= 0 && indice < _idsDeIa.Count ? _idsDeIa[indice] : "";
+
+        _cfg.IlhaIa = id.Length == 0 ? null : id;
+        Confirmar();
     }
 
     /// <summary>A pilula do passo 3 mostra o que esta marcado, e o anel quando nada esta.</summary>

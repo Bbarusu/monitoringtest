@@ -9,7 +9,7 @@
         FontFamily="{StaticResource FonteUI}">
 
     <!--
-        O guia da Kisland: cinco passos, cada um com uma prévia desenhada e o
+        O guia da Kisland: nove passos, cada um com uma prévia desenhada e o
         controle de verdade. O que se mexe aqui vale na hora — não é demonstração,
         é a própria configuração, então ninguém precisa repetir tudo depois na
         Personalização.
@@ -129,7 +129,7 @@
 
             <!-- Cabeçalho -->
             <Grid>
-                <TextBlock x:Name="Contagem" Text="Conhecendo a Kisland · 1 de 5" FontSize="12" FontWeight="Medium"
+                <TextBlock x:Name="Contagem" Text="Conhecendo a Kisland · 1 de 9" FontSize="12" FontWeight="Medium"
                            VerticalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
                 <Button HorizontalAlignment="Right" Cursor="Hand" Click="Pular_Click" ToolTip="Fechar o guia">
                     <Button.Template>
@@ -160,7 +160,7 @@
                             <Border Width="150" Height="70" CornerRadius="0,0,10,10" Background="{DynamicResource Acento}"
                                     Opacity="0.45" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,50,0" />
                             <Border Style="{StaticResource PilulaGuia}">
-                                <StackPanel Orientation="Horizontal"><Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource Chip}"><Path Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16" Stroke="{DynamicResource Icone}" StrokeThickness="1.8" Width="15" Height="15" Stretch="Uniform" /></Border><StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="16" Margin="10,0,4,0"><Rectangle Style="{StaticResource BarraGuia}" Height="7" /><Rectangle Style="{StaticResource BarraGuia}" Height="16" /><Rectangle Style="{StaticResource BarraGuia}" Height="10" /><Rectangle Style="{StaticResource BarraGuia}" Height="13" Margin="0" /></StackPanel><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></StackPanel></Border><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M5,6 L19,6 A2,2 0 0,1 21,8 L21,16 A2,2 0 0,1 19,18 L5,18 A2,2 0 0,1 3,16 L3,8 A2,2 0 0,1 5,6 Z M7,10 L11,10" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 58°" /></StackPanel></Border><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M3,10.5 C3,9.7 3.7,9 4.5,9 L7,9 L10.8,5.6 C11.5,5 12.5,5.5 12.5,6.4 L12.5,17.6 C12.5,18.5 11.5,19 10.8,18.4 L7,15 L4.5,15 C3.7,15 3,14.3 3,13.5 Z M16,9.5 C17.3,10.8 17.3,13.2 16,14.5 M18.8,7 C21.5,9.7 21.5,14.3 18.8,17" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="70%" /></StackPanel></Border></StackPanel>
+                                <StackPanel Orientation="Horizontal"><Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource Chip}"><Path Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16" Stroke="{DynamicResource Icone}" StrokeThickness="1.8" Width="15" Height="15" Stretch="Uniform" /></Border><StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="16" Margin="10,0,4,0"><Rectangle Style="{StaticResource BarraGuia}" Height="7" /><Rectangle Style="{StaticResource BarraGuia}" Height="16" /><Rectangle Style="{StaticResource BarraGuia}" Height="10" /><Rectangle Style="{StaticResource BarraGuia}" Height="13" Margin="0" /></StackPanel><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></StackPanel></Border><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M5,6 L19,6 A2,2 0 0,1 21,8 L21,16 A2,2 0 0,1 19,18 L5,18 A2,2 0 0,1 3,16 L3,8 A2,2 0 0,1 5,6 Z M7,10 L11,10" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 58°" /></StackPanel></Border><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" StrokeThickness="1.6" Data="M5,9.9 C5,9.4 5.4,9 5.9,9 L8,9 L11,6.5 C11.6,6 12.5,6.4 12.5,7.2 L12.5,16.8 C12.5,17.6 11.6,18 11,17.5 L8,15 L5.9,15 C5.4,15 5,14.6 5,14.1 Z M15.6,10.2 C16.4,11.2 16.4,12.8 15.6,13.8 M17.9,8.3 C19.7,10.4 19.7,13.6 17.9,15.7" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="70%" /></StackPanel></Border></StackPanel>
                             </Border>
                         </Grid>
                     </Border>
@@ -239,7 +239,7 @@
                 <StackPanel x:Name="Passo3" Visibility="Collapsed">
                     <Border Style="{StaticResource Mesa}">
                         <Border Style="{StaticResource PilulaGuia}" Margin="0,16,0,0">
-                            <StackPanel Orientation="Horizontal"><StackPanel x:Name="PreviaMusica" Orientation="Horizontal"><Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource Chip}"><Path Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16" Stroke="{DynamicResource Icone}" StrokeThickness="1.8" Width="15" Height="15" Stretch="Uniform" /></Border><StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="16" Margin="10,0,4,0"><Rectangle Style="{StaticResource BarraGuia}" Height="7" /><Rectangle Style="{StaticResource BarraGuia}" Height="16" /><Rectangle Style="{StaticResource BarraGuia}" Height="10" /><Rectangle Style="{StaticResource BarraGuia}" Height="13" Margin="0" /></StackPanel></StackPanel><Border x:Name="PreviaCpu" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></StackPanel></Border><Border x:Name="PreviaGpu" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M5,6 L19,6 A2,2 0 0,1 21,8 L21,16 A2,2 0 0,1 19,18 L5,18 A2,2 0 0,1 3,16 L3,8 A2,2 0 0,1 5,6 Z M7,10 L11,10" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 58°" /></StackPanel></Border><Border x:Name="PreviaRam" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M4,8 L20,8 A1,1 0 0,1 21,9 L21,15 A1,1 0 0,1 20,16 L4,16 A1,1 0 0,1 3,15 L3,9 A1,1 0 0,1 4,8 Z M7,16 L7,19 M12,16 L12,19 M17,16 L17,19" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="RAM 53%" /></StackPanel></Border><Border x:Name="PreviaVolume" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M3,10.5 C3,9.7 3.7,9 4.5,9 L7,9 L10.8,5.6 C11.5,5 12.5,5.5 12.5,6.4 L12.5,17.6 C12.5,18.5 11.5,19 10.8,18.4 L7,15 L4.5,15 C3.7,15 3,14.3 3,13.5 Z M16,9.5 C17.3,10.8 17.3,13.2 16,14.5 M18.8,7 C21.5,9.7 21.5,14.3 18.8,17" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="70%" /></StackPanel></Border><Border x:Name="PreviaRelogio" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M12,3 A9,9 0 1,1 11.99,3 Z M12,7 L12,12 L15,14" /><TextBlock x:Name="PreviaHora" Style="{StaticResource TextoChipGuia}" Text="--:--" /></StackPanel></Border><Border x:Name="PreviaBotao" Width="30" Height="30" CornerRadius="15" Margin="6,0,0,0" Background="{DynamicResource Chip}"><Path Data="M12,3 A9,9 0 1,0 12,21 A2,2 0 0,0 14,19 C14,18 13,17.5 13,16.5 C13,15.5 13.7,15 15,15 L17,15 A3,3 0 0,0 20,12 C20,7 16,3 12,3 Z" Stroke="{DynamicResource Icone}" StrokeThickness="1.8" Width="13" Height="13" Stretch="Uniform" /></Border><Grid x:Name="PreviaAnel" Width="32" Height="32" VerticalAlignment="Center"><Ellipse Width="30" Height="30" Stroke="{DynamicResource Acento}" StrokeThickness="1" Opacity="0.28" /><Ellipse Width="21" Height="21" Stroke="{DynamicResource Acento}" StrokeThickness="3.5" /></Grid></StackPanel>
+                            <StackPanel Orientation="Horizontal"><StackPanel x:Name="PreviaMusica" Orientation="Horizontal"><Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource Chip}"><Path Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16" Stroke="{DynamicResource Icone}" StrokeThickness="1.8" Width="15" Height="15" Stretch="Uniform" /></Border><StackPanel Orientation="Horizontal" VerticalAlignment="Center" Height="16" Margin="10,0,4,0"><Rectangle Style="{StaticResource BarraGuia}" Height="7" /><Rectangle Style="{StaticResource BarraGuia}" Height="16" /><Rectangle Style="{StaticResource BarraGuia}" Height="10" /><Rectangle Style="{StaticResource BarraGuia}" Height="13" Margin="0" /></StackPanel></StackPanel><Border x:Name="PreviaCpu" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="CPU 62°" /></StackPanel></Border><Border x:Name="PreviaGpu" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M5,6 L19,6 A2,2 0 0,1 21,8 L21,16 A2,2 0 0,1 19,18 L5,18 A2,2 0 0,1 3,16 L3,8 A2,2 0 0,1 5,6 Z M7,10 L11,10" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="GPU 58°" /></StackPanel></Border><Border x:Name="PreviaRam" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M4,8 L20,8 A1,1 0 0,1 21,9 L21,15 A1,1 0 0,1 20,16 L4,16 A1,1 0 0,1 3,15 L3,9 A1,1 0 0,1 4,8 Z M7,16 L7,19 M12,16 L12,19 M17,16 L17,19" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="RAM 53%" /></StackPanel></Border><Border x:Name="PreviaVolume" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" StrokeThickness="1.6" Data="M5,9.9 C5,9.4 5.4,9 5.9,9 L8,9 L11,6.5 C11.6,6 12.5,6.4 12.5,7.2 L12.5,16.8 C12.5,17.6 11.6,18 11,17.5 L8,15 L5.9,15 C5.4,15 5,14.6 5,14.1 Z M15.6,10.2 C16.4,11.2 16.4,12.8 15.6,13.8 M17.9,8.3 C19.7,10.4 19.7,13.6 17.9,15.7" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="70%" /></StackPanel></Border><Border x:Name="PreviaRelogio" Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M12,3 A9,9 0 1,1 11.99,3 Z M12,7 L12,12 L15,14" /><TextBlock x:Name="PreviaHora" Style="{StaticResource TextoChipGuia}" Text="--:--" /></StackPanel></Border><Border x:Name="PreviaBotao" Width="30" Height="30" CornerRadius="15" Margin="6,0,0,0" Background="{DynamicResource Chip}"><Path Data="M12,3 A9,9 0 1,0 12,21 A2,2 0 0,0 14,19 C14,18 13,17.5 13,16.5 C13,15.5 13.7,15 15,15 L17,15 A3,3 0 0,0 20,12 C20,7 16,3 12,3 Z" Stroke="{DynamicResource Icone}" StrokeThickness="1.8" Width="13" Height="13" Stretch="Uniform" /></Border><Grid x:Name="PreviaAnel" Width="32" Height="32" VerticalAlignment="Center"><Ellipse Width="30" Height="30" Stroke="{DynamicResource Acento}" StrokeThickness="1" Opacity="0.28" /><Ellipse Width="21" Height="21" Stroke="{DynamicResource Acento}" StrokeThickness="3.5" /></Grid></StackPanel>
                         </Border>
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="Você escolhe o que aparece" />
@@ -285,6 +285,128 @@
                             <Grid>
                                 <TextBlock Text="Relógio" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                                 <CheckBox x:Name="ItemRelogio" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+
+                <!-- ====================== PASSO CALENDÁRIO ====================== -->
+                <StackPanel x:Name="PassoCalendario" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <Border Width="330" Margin="0,10,0,0" CornerRadius="12" Padding="14,10"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid Margin="0,0,12,0">
+                                    <StackPanel>
+                                        <TextBlock x:Name="PreviaMes" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextoFraco}" />
+                                        <TextBlock x:Name="PreviaSemana" FontSize="13" FontWeight="SemiBold" Margin="0,2,0,0" Foreground="{DynamicResource Acento}" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="PreviaDia" FontSize="40" FontWeight="Light" FontFamily="{StaticResource FonteNumero}"
+                                               VerticalAlignment="Bottom" Margin="0,0,0,-4" Foreground="{DynamicResource Texto}" />
+                                </Grid>
+                                <Grid x:Name="PreviaCalendario" Grid.Column="1" />
+                            </Grid>
+                        </Border>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="O mês inteiro à vista" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Aberta, a Kisland mostra o calendário do mês com o dia de hoje marcado, igualzinho ao widget do iPhone. Fechada, ela pode mostrar a data do lado da hora." />
+                    <UniformGrid Columns="2" Margin="0,16,0,0">
+                        <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,0">
+                            <Grid>
+                                <TextBlock Text="Data na Kisland fechada" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemData" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="4,0,0,0">
+                            <Grid>
+                                <TextBlock Text="Calendário na aberta" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemCalendario" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                    </UniformGrid>
+                </StackPanel>
+
+                <!-- ======================= PASSO ATALHOS ======================= -->
+                <StackPanel x:Name="PassoAtalhos" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <Grid>
+                            <Border Style="{StaticResource PilulaGuia}">
+                                <StackPanel Orientation="Horizontal"><Grid Width="32" Height="32" VerticalAlignment="Center"><Ellipse Width="30" Height="30" Stroke="{DynamicResource Acento}" StrokeThickness="1" Opacity="0.28" /><Ellipse Width="21" Height="21" Stroke="{DynamicResource Acento}" StrokeThickness="3.5" /></Grid><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" Data="M12,3 A9,9 0 1,1 11.99,3 Z M12,7 L12,12 L15,14" /><TextBlock x:Name="PreviaData" Style="{StaticResource TextoChipGuia}" Foreground="{DynamicResource Acento}" Text="--" /><TextBlock x:Name="PreviaHoraAtalhos" Style="{StaticResource TextoChipGuia}" Text="--:--" /></StackPanel></Border></StackPanel>
+                            </Border>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,12">
+                                <StackPanel Margin="10,0"><Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Chip}"><Grid Width="24" Height="24"><Ellipse Width="24" Height="24" Stroke="{DynamicResource Acento}" StrokeThickness="1" Opacity="0.3" /><Ellipse Width="15" Height="15" Stroke="{DynamicResource Acento}" StrokeThickness="2.6" /></Grid></Border><TextBlock Text="Chat de IA" FontSize="10.5" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" /></StackPanel><StackPanel Margin="10,0"><Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Chip}"><TextBlock Text="S" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Acento}" /></Border><TextBlock Text="Spotify" FontSize="10.5" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" /></StackPanel><StackPanel Margin="10,0"><Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Chip}"><TextBlock Text="Y" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Acento}" /></Border><TextBlock Text="Youtube" FontSize="10.5" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" /></StackPanel><StackPanel Margin="10,0"><Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Chip}"><TextBlock Text="D" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Acento}" /></Border><TextBlock Text="Discord" FontSize="10.5" Margin="0,5,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextoFraco}" /></StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="O circulozinho virou atalho" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Escolhe um chat de IA e o anel que pulsa na Kisland passa a abrir ele com um clique. Aberta, ela ainda guarda até 6 apps ou sites seus: é só colocar na Personalização, aba Kisland." />
+                    <Border Style="{StaticResource LinhaItem}" Margin="0,16,0,0" Padding="12,10">
+                        <Grid>
+                            <TextBlock Text="Chat de IA no anel" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Texto}" />
+                            <ComboBox x:Name="EscolhaIa" Style="{StaticResource Seletor}" MinWidth="130"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      SelectionChanged="Ia_Escolhida" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- ========================= PASSO SOM ========================= -->
+                <StackPanel x:Name="PassoSom" Visibility="Collapsed">
+                    <Border Style="{StaticResource Mesa}">
+                        <Grid>
+                            <Border Style="{StaticResource PilulaGuia}">
+                                <StackPanel Orientation="Horizontal"><Border Style="{StaticResource ChipGuia}" Margin="0"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" StrokeThickness="1.6" Data="M5,9.9 C5,9.4 5.4,9 5.9,9 L8,9 L11,6.5 C11.6,6 12.5,6.4 12.5,7.2 L12.5,16.8 C12.5,17.6 11.6,18 11,17.5 L8,15 L5.9,15 C5.4,15 5,14.6 5,14.1 Z M15.6,10.2 C16.4,11.2 16.4,12.8 15.6,13.8 M17.9,8.3 C19.7,10.4 19.7,13.6 17.9,15.7" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="72%" /></StackPanel></Border><Border Style="{StaticResource ChipGuia}"><StackPanel Orientation="Horizontal"><Path Style="{StaticResource IconeChipGuia}" StrokeThickness="1.8" Data="M4,13 L7,5 L17,5 L20,13 L20,18 A2,2 0 0,1 18,20 L6,20 A2,2 0 0,1 4,18 Z M4,13 L9,13 L10,15 L14,15 L15,13 L20,13" /><TextBlock Style="{StaticResource TextoChipGuia}" Text="3" /></StackPanel></Border></StackPanel>
+                            </Border>
+                            <!-- O mouse com a roda girando, ao lado da Kisland. -->
+                            <Path Data="M12,3 A6,6 0 0,1 18,9 L18,15 A6,6 0 0,1 6,15 L6,9 A6,6 0 0,1 12,3 Z M12,7 L12,10"
+                                  Stroke="{DynamicResource Acento}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Width="22" Height="28" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="250,20,0,0" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18">
+                                <Border CornerRadius="13" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource InfoFundo}" BorderBrush="{DynamicResource Acento}" BorderThickness="1">
+                                    <TextBlock Text="Fones de ouvido" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource InfoTexto}" />
+                                </Border>
+                                <Border CornerRadius="13" Padding="10,5" Margin="0,0,6,0" Background="{DynamicResource Chip}" BorderBrush="{DynamicResource Trilho}" BorderThickness="1">
+                                    <TextBlock Text="Alto-falantes" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                                </Border>
+                                <Border CornerRadius="13" Padding="10,5" Background="{DynamicResource Chip}" BorderBrush="{DynamicResource Trilho}" BorderThickness="1">
+                                    <TextBlock Text="Monitor" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource Texto}" />
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Som e arquivos na ponta do mouse" />
+                    <TextBlock Style="{StaticResource TextoPasso}"
+                               Text="Gira a roda do mouse em cima da Kisland para mudar o volume, e clica com a roda para pausar a música. Aberta, ela passa o som para o fone, a caixa ou o monitor num clique. E dá para arrastar arquivos até ela: eles ficam ali, à mão, até você usar." />
+                    <UniformGrid Columns="3" Margin="0,14,0,0">
+                        <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,0">
+                            <Grid>
+                                <TextBlock Text="Roda no volume" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemRoda" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="4,0,4,0">
+                            <Grid>
+                                <TextBlock Text="Trocar saída" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemSaidas" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                          Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
+                            </Grid>
+                        </Border>
+                        <Border Style="{StaticResource LinhaItem}" Margin="4,0,0,0">
+                            <Grid>
+                                <TextBlock Text="Bandeja" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <CheckBox x:Name="ItemBandeja" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                           Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
                             </Grid>
                         </Border>

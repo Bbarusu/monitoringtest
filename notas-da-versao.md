@@ -15,3 +15,5 @@ Novo: com o mouse em cima da Kisland, a roda muda o volume, e o clique da roda p
 Novo: troca da saída de som. Com a Kisland aberta, embaixo do volume, um clique passa o som para o fone, a caixa ou o monitor.
 
 Novo: bandeja de arquivos. Arraste arquivos até a Kisland e eles ficam ali, à mão: clique para abrir, arraste para levar a outro lugar, ou copie todos e cole numa pasta.
+
+O guia da Kisland ganhou três passos novos, sobre o calendário, os atalhos e o chat de IA no anel, e a roda do mouse, a troca da saída de som e a bandeja. Dá para ligar cada um direto no guia.
