@@ -421,16 +421,37 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
-                            <TextBlock Text="Temperatura da CPU e da GPU" FontSize="13" FontWeight="Medium"
+                            <TextBlock Text="Temperatura da CPU" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
-                            <CheckBox x:Name="IlhaAbertaTemperaturas" Style="{StaticResource CaixaDeSelecao}"
+                            <CheckBox x:Name="IlhaAbertaCpu" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
-                            <TextBlock Text="RAM, disco e energia" FontSize="13" FontWeight="Medium"
+                            <TextBlock Text="Temperatura da GPU" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
-                            <CheckBox x:Name="IlhaAbertaSistema" Style="{StaticResource CaixaDeSelecao}"
+                            <CheckBox x:Name="IlhaAbertaGpu" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="RAM" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaAbertaRam" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Disco" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaAbertaDisco" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
+                            <TextBlock Text="Energia" FontSize="13" FontWeight="Medium"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                            <CheckBox x:Name="IlhaAbertaEnergia" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>

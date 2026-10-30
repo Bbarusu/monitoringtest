@@ -191,8 +191,11 @@ public partial class PersonalizacaoWindow : Window
         MontarListaDeAtalhos();
         IlhaBotaoPersonalizacao.IsChecked = _cfg.IlhaBotaoPersonalizacao;
         IlhaAbertaPlayer.IsChecked = _cfg.IlhaAbertaPlayer;
-        IlhaAbertaTemperaturas.IsChecked = _cfg.IlhaAbertaTemperaturas;
-        IlhaAbertaSistema.IsChecked = _cfg.IlhaAbertaSistema;
+        IlhaAbertaCpu.IsChecked = _cfg.AbertaCpu;
+        IlhaAbertaGpu.IsChecked = _cfg.AbertaGpu;
+        IlhaAbertaRam.IsChecked = _cfg.AbertaRam;
+        IlhaAbertaDisco.IsChecked = _cfg.AbertaDisco;
+        IlhaAbertaEnergia.IsChecked = _cfg.AbertaEnergia;
         IlhaAbertaVolume.IsChecked = _cfg.IlhaAbertaVolume;
         IlhaAbertaPerfis.IsChecked = _cfg.IlhaAbertaPerfis;
         IlhaFps.IsChecked = _cfg.IlhaFps;
@@ -275,8 +278,11 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaRodaMudaVolume = IlhaRodaVolume.IsChecked == true;
         _cfg.IlhaBotaoPersonalizacao = IlhaBotaoPersonalizacao.IsChecked == true;
         _cfg.IlhaAbertaPlayer = IlhaAbertaPlayer.IsChecked == true;
-        _cfg.IlhaAbertaTemperaturas = IlhaAbertaTemperaturas.IsChecked == true;
-        _cfg.IlhaAbertaSistema = IlhaAbertaSistema.IsChecked == true;
+        _cfg.IlhaAbertaCpu = IlhaAbertaCpu.IsChecked == true;
+        _cfg.IlhaAbertaGpu = IlhaAbertaGpu.IsChecked == true;
+        _cfg.IlhaAbertaRam = IlhaAbertaRam.IsChecked == true;
+        _cfg.IlhaAbertaDisco = IlhaAbertaDisco.IsChecked == true;
+        _cfg.IlhaAbertaEnergia = IlhaAbertaEnergia.IsChecked == true;
         _cfg.IlhaAbertaVolume = IlhaAbertaVolume.IsChecked == true;
         _cfg.IlhaAbertaPerfis = IlhaAbertaPerfis.IsChecked == true;
         _cfg.IlhaFps = IlhaFps.IsChecked == true;

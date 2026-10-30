@@ -242,8 +242,13 @@ public partial class IlhaWindow : Window
         IconeRelogio.Data = Geometry.Parse(MostraRelogio ? DesenhoRelogio : DesenhoCalendario);
         // O que aparece com ela aberta, como escolhido na aba Kisland.
         BlocoVolume.Visibility = Visivel(_volume.Disponivel && _cfg.IlhaAbertaVolume);
-        GradeTemperaturas.Visibility = Visivel(_cfg.IlhaAbertaTemperaturas);
-        GradeSistema.Visibility = Visivel(_cfg.IlhaAbertaSistema);
+        CartaoCpu.Visibility = Visivel(_cfg.AbertaCpu);
+        CartaoGpu.Visibility = Visivel(_cfg.AbertaGpu);
+        CartaoRam.Visibility = Visivel(_cfg.AbertaRam);
+        CartaoDisco.Visibility = Visivel(_cfg.AbertaDisco);
+        CartaoEnergia.Visibility = Visivel(_cfg.AbertaEnergia);
+        AjustarFileira(GradeTemperaturas);
+        AjustarFileira(GradeSistema);
         GradePerfis.Visibility = Visivel(_cfg.IlhaAbertaPerfis);
         BlocoCalendario.Visibility = Visivel(_cfg.IlhaAbertaCalendario);
         MontarAtalhos();
@@ -302,6 +307,24 @@ public partial class IlhaWindow : Window
     }
 
     private static Visibility Visivel(bool sim) => sim ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>
+    /// Uma fileira de cartoes com so os escolhidos, dividindo a largura entre
+    /// eles: sobrou um, ele ocupa a linha toda; nenhum, a fileira some. O
+    /// espaco de 12 entre cartoes fica so entre vizinhos, nunca nas pontas.
+    /// </summary>
+    private static void AjustarFileira(System.Windows.Controls.Primitives.UniformGrid fileira)
+    {
+        var visiveis = fileira.Children.OfType<FrameworkElement>()
+            .Where(c => c.Visibility == Visibility.Visible)
+            .ToList();
+
+        fileira.Visibility = Visivel(visiveis.Count > 0);
+        fileira.Columns = Math.Max(1, visiveis.Count);
+
+        for (var i = 0; i < visiveis.Count; i++)
+            visiveis[i].Margin = new Thickness(i == 0 ? 0 : 6, 0, i == visiveis.Count - 1 ? 0 : 6, 0);
+    }
 
     /// <summary>Margens originais dos blocos da Kisland aberta, lidas do XAML na primeira vez.</summary>
     private Dictionary<FrameworkElement, Thickness>? _margens;

@@ -227,8 +227,24 @@ public sealed class AppConfig
     // O que a Kisland mostra aberta. O rodape fica sempre: e dele que saem o
     // painel e a Personalizacao.
     public bool IlhaAbertaPlayer { get; set; } = true;
+
+    // Antigas, de quando CPU e GPU iam juntas e RAM, disco e energia tambem.
+    // Ficam para quem ja tinha escolhido: as novas, vazias, herdam delas.
     public bool IlhaAbertaTemperaturas { get; set; } = true;
     public bool IlhaAbertaSistema { get; set; } = true;
+
+    // Cada cartao da Kisland aberta por si. Vazio segue a escolha antiga.
+    public bool? IlhaAbertaCpu { get; set; }
+    public bool? IlhaAbertaGpu { get; set; }
+    public bool? IlhaAbertaRam { get; set; }
+    public bool? IlhaAbertaDisco { get; set; }
+    public bool? IlhaAbertaEnergia { get; set; }
+
+    [JsonIgnore] public bool AbertaCpu => IlhaAbertaCpu ?? IlhaAbertaTemperaturas;
+    [JsonIgnore] public bool AbertaGpu => IlhaAbertaGpu ?? IlhaAbertaTemperaturas;
+    [JsonIgnore] public bool AbertaRam => IlhaAbertaRam ?? IlhaAbertaSistema;
+    [JsonIgnore] public bool AbertaDisco => IlhaAbertaDisco ?? IlhaAbertaSistema;
+    [JsonIgnore] public bool AbertaEnergia => IlhaAbertaEnergia ?? IlhaAbertaSistema;
     public bool IlhaAbertaVolume { get; set; } = true;
     public bool IlhaAbertaPerfis { get; set; } = true;
     public bool IlhaAbertaCalendario { get; set; } = true;

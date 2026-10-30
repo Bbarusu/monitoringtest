@@ -495,7 +495,7 @@
 
                 <!-- Temperaturas -->
                 <UniformGrid x:Name="GradeTemperaturas" Columns="2" Margin="0,16,0,0">
-                    <Border Margin="0,0,6,0" CornerRadius="12" Padding="12"
+                    <Border x:Name="CartaoCpu" Margin="0,0,6,0" CornerRadius="12" Padding="12"
                             Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock x:Name="RotuloCpu" Text="CPU" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
@@ -507,7 +507,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <Border Margin="6,0,0,0" CornerRadius="12" Padding="12"
+                    <Border x:Name="CartaoGpu" Margin="6,0,0,0" CornerRadius="12" Padding="12"
                             Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock x:Name="RotuloGpu" Text="GPU" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
@@ -523,7 +523,7 @@
 
                 <!-- Memoria, disco e energia -->
                 <UniformGrid x:Name="GradeSistema" Columns="3" Margin="0,12,0,0">
-                    <Border Style="{StaticResource MiniCartao}" Margin="0,0,6,0">
+                    <Border x:Name="CartaoRam" Style="{StaticResource MiniCartao}" Margin="0,0,6,0">
                         <StackPanel>
                             <TextBlock x:Name="RotuloRam" Text="RAM" FontSize="11"
                                        Foreground="{DynamicResource TextoFraco}" TextTrimming="CharacterEllipsis" />
@@ -535,7 +535,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <Border Style="{StaticResource MiniCartao}" Margin="6,0,6,0">
+                    <Border x:Name="CartaoDisco" Style="{StaticResource MiniCartao}" Margin="6,0,6,0">
                         <StackPanel>
                             <TextBlock Text="Disco" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
@@ -546,7 +546,7 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <Border Style="{StaticResource MiniCartao}" Margin="6,0,0,0">
+                    <Border x:Name="CartaoEnergia" Style="{StaticResource MiniCartao}" Margin="6,0,0,0">
                         <StackPanel>
                             <TextBlock Text="Energia" FontSize="11" Foreground="{DynamicResource TextoFraco}" />
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
