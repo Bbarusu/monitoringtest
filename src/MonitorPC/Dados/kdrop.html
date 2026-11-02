@@ -87,6 +87,9 @@
   <div id="escolhidos"></div>
   <label class="escolher" for="arquivos">+ Escolher fotos e arquivos</label>
   <input type="file" id="arquivos" multiple>
+  <!-- Campos de escolhas anteriores: ficam guardados aqui, vivos. Veja o
+       comentario em "Escolher e mandar". -->
+  <div id="guardados" hidden></div>
 </main>
 
 <footer>
@@ -204,25 +207,92 @@
 
   // ---- Escolher e mandar ------------------------------------------------
 
-  $("arquivos").addEventListener("change", function () {
-    for (var i = 0; i < this.files.length; i++) escolhidos.push(this.files[i]);
-    this.value = "";
-    desenharEscolhidos();
-  });
+  // Fotos da galeria do iPhone nao sao arquivos de verdade: o Safari cria
+  // uma copia temporaria presa ao campo de escolha. Limpar o campo (para
+  // escolher mais) apagava essas copias, e a foto nao existia mais na hora
+  // de enviar — por isso arquivos iam e fotos nao. Agora:
+  // - o campo usado nunca e limpo: fica guardado, e um campo novo toma o
+  //   lugar dele para a proxima escolha;
+  // - cada escolhido e lido para a memoria na hora (ate 100 MB), enquanto a
+  //   copia do Safari certamente existe. Maior que isso, vai direto.
+  var LIMITE_NA_MEMORIA = 100 * 1048576;
+  var contagemDeCampos = 0;
+
+  function ligarCampo(campo) {
+    campo.addEventListener("change", function () {
+      var arquivos = Array.prototype.slice.call(this.files || []);
+      if (!arquivos.length) return;
+
+      // Este campo fica como esta, guardado; um novo assume o lugar dele.
+      var novo = document.createElement("input");
+      novo.type = "file";
+      novo.multiple = true;
+      this.id = "arquivos-" + (++contagemDeCampos);
+      this.parentNode.replaceChild(novo, this);
+      novo.id = "arquivos";
+      $("guardados").appendChild(this);
+      ligarCampo(novo);
+
+      arquivos.forEach(adicionar);
+      desenharEscolhidos();
+    });
+  }
+  ligarCampo($("arquivos"));
+
+  // O iPhone chama toda foto de "image.jpg". Com nomes repetidos, cada uma
+  // ganha um nome com a data e a hora, e um numero.
+  function nomeDaFoto(original, indice) {
+    var ponto = original.lastIndexOf(".");
+    var ext = ponto > 0 ? original.slice(ponto) : ".jpg";
+    var d = new Date();
+    var dois = function (n) { return (n < 10 ? "0" : "") + n; };
+    return "Foto " + d.getFullYear() + "-" + dois(d.getMonth() + 1) + "-" + dois(d.getDate()) + " " +
+           dois(d.getHours()) + "." + dois(d.getMinutes()) + "." + dois(d.getSeconds()) +
+           (indice > 1 ? " (" + indice + ")" : "") + ext;
+  }
+
+  function adicionar(f) {
+    var nomeFinal = f.name || "arquivo";
+    var generico = /^image\.(jpe?g|png|heic|heif|gif|webp)$/i.test(nomeFinal);
+    var repetido = escolhidos.some(function (e) { return e.nome === nomeFinal; });
+    if (generico || repetido) nomeFinal = nomeDaFoto(nomeFinal, escolhidos.length + 1);
+
+    var item = { nome: nomeFinal, arquivo: f, tamanho: f.size, lendo: false, erro: null };
+    escolhidos.push(item);
+
+    if (f.size > 0 && f.size <= LIMITE_NA_MEMORIA && f.arrayBuffer) {
+      item.lendo = true;
+      f.arrayBuffer().then(function (dados) {
+        item.arquivo = new Blob([dados], { type: f.type || "application/octet-stream" });
+        item.tamanho = item.arquivo.size;
+        item.lendo = false;
+        desenharEscolhidos();
+      }, function () {
+        item.lendo = false;
+        item.erro = "Não deu para ler esta foto. Escolha de novo.";
+        desenharEscolhidos();
+      });
+    }
+  }
 
   function desenharEscolhidos() {
     var lista = $("escolhidos");
     lista.textContent = "";
-    escolhidos.forEach(function (f, i) {
-      var linha = linhaDeArquivo(f.name, tamanho(f.size), "escolhido");
+    escolhidos.forEach(function (e, i) {
+      var detalhe = e.erro ? e.erro : e.lendo ? "Preparando…" : tamanho(e.tamanho);
+      var linha = linhaDeArquivo(e.nome, detalhe, "escolhido");
       var tirar = el("button", "secundario", "Tirar");
       tirar.onclick = function () { if (!enviando) { escolhidos.splice(i, 1); desenharEscolhidos(); } };
       linha.appendChild(tirar);
       lista.appendChild(linha);
     });
     var n = escolhidos.length;
-    $("enviar").disabled = n === 0;
+    var preparando = escolhidos.some(function (e) { return e.lendo; });
+    var comErro = escolhidos.some(function (e) { return e.erro; });
+    $("enviar").disabled = n === 0 || preparando || comErro;
     $("enviar").textContent = n === 0 ? "Escolha ao menos um arquivo"
+                            : preparando ? "Preparando as fotos…"
+                            : comErro ? "Tire o que não deu para ler"
                             : "Colocar " + n + (n === 1 ? " arquivo" : " arquivos") + " na bandeja";
   }
 
@@ -246,7 +316,7 @@
     mostrar("esperando");
 
     var corpo = { cliente: cliente, nome: nome, pc: false,
-                  arquivos: escolhidos.map(function (f) { return { nome: f.name, tamanho: f.size }; }) };
+                  arquivos: escolhidos.map(function (e) { return { nome: e.nome, tamanho: e.tamanho }; }) };
 
     fetch("api/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) })
       .then(function (r) { if (!r.ok) throw new Error("pedido " + r.status); return r.json(); })
@@ -272,7 +342,7 @@
 
   function mandar(pedido) {
     mostrar("enviando");
-    var total = escolhidos.reduce(function (s, f) { return s + f.size; }, 0) || 1;
+    var total = escolhidos.reduce(function (s, e) { return s + e.tamanho; }, 0) || 1;
     var feito = 0, i = 0;
 
     (function proximo() {
@@ -286,18 +356,18 @@
 
       var f = escolhidos[i];
       var xhr = new XMLHttpRequest();
-      xhr.open("POST", "api/enviar/" + pedido + "?nome=" + encodeURIComponent(f.name));
+      xhr.open("POST", "api/enviar/" + pedido + "?nome=" + encodeURIComponent(f.nome));
       xhr.upload.onprogress = function (ev) {
         var p = Math.min(100, Math.round((feito + ev.loaded) * 100 / total));
         $("progresso").style.width = p + "%";
         $("porcentagem").textContent = p + "%";
       };
       xhr.onload = function () {
-        if (xhr.status !== 200) return terminar("O envio de " + f.name + " falhou (" + xhr.status + ").");
-        feito += f.size; i++; proximo();
+        if (xhr.status !== 200) return terminar("O envio de " + f.nome + " falhou (" + xhr.status + ").");
+        feito += f.tamanho; i++; proximo();
       };
-      xhr.onerror = function () { terminar("A conexão caiu no meio do envio."); };
-      xhr.send(f);
+      xhr.onerror = function () { terminar("A conexão caiu no meio do envio de " + f.nome + "."); };
+      xhr.send(f.arquivo);
     })();
   }
 
