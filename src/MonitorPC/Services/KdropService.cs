@@ -386,6 +386,8 @@ public sealed class KdropService : IDisposable
             pedido.Estado = aceitar ? EstadoDoPedido.Aceito : EstadoDoPedido.Recusado;
         }
 
+        Log.Nota($"Kdrop: pedido {pedido.Id} {(aceitar ? "aceito" : "recusado")}");
+
         if (aceitar && lembrar && _cfg.KdropConfiaveis.All(c => c.Id != pedido.OrigemId))
         {
             _cfg.KdropConfiaveis.Add(new AparelhoConfiavel { Id = pedido.OrigemId, Nome = pedido.OrigemNome });
@@ -717,6 +719,8 @@ public sealed class KdropService : IDisposable
         pedido.Estado = confiavel ? EstadoDoPedido.Aceito : EstadoDoPedido.Esperando;
         _pedidos[pedido.Id] = pedido;
 
+        Log.Nota($"Kdrop: pedido {pedido.Id} de {pedido.OrigemNome}, {pedido.Arquivos.Count} arquivo(s){(confiavel ? ", aceito sozinho" : "")}");
+
         if (confiavel) PedidoMudou?.Invoke(pedido);
         else PedidoChegou?.Invoke(pedido);
 
@@ -749,17 +753,25 @@ public sealed class KdropService : IDisposable
     {
         if (!_pedidos.TryGetValue(id, out var pedido) || pedido.Estado != EstadoDoPedido.Aceito)
         {
+            Log.Nota($"Kdrop: envio para pedido {id} {(pedido is null ? "desconhecido" : pedido.Estado.ToString())}, recusado");
             res.StatusCode = 403;
             return;
         }
 
-        // So entra arquivo que estava no pedido aceito, pelo nome.
-        var nome = NomeSeguro(req.QueryString["nome"] ?? "");
-        if (pedido.Arquivos.All(a => a.Nome != nome))
+        // Cabem tantos arquivos quantos o pedido aceito declarou, e nada
+        // alem. Nao confere o nome com o do pedido: o iPhone renomeia fotos
+        // ao enviar ("image.jpg"), e acentos podem chegar codificados de
+        // outro jeito — conferir o nome recusava envios legitimos.
+        bool cabe;
+        lock (pedido) cabe = pedido.Salvos.Count < pedido.Arquivos.Count;
+        if (!cabe)
         {
+            Log.Nota($"Kdrop: envio a mais no pedido {id}, recusado");
             res.StatusCode = 403;
             return;
         }
+
+        var nome = NomeSeguro(req.QueryString["nome"] ?? "");
 
         var pasta = Pasta(_cfg);
         Directory.CreateDirectory(pasta);
@@ -783,6 +795,8 @@ public sealed class KdropService : IDisposable
                 }
             }
         }
+
+        Log.Nota($"Kdrop: recebido {Path.GetFileName(destino)} ({new FileInfo(destino).Length} bytes)");
 
         bool terminou;
         lock (pedido)

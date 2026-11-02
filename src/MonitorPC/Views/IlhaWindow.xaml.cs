@@ -407,7 +407,11 @@ public partial class IlhaWindow : Window
     /// </summary>
     private void ConferirInatividade()
     {
-        var parado = _cfg.IlhaProtegerTela && _cfg.IlhaEsconderParado && TempoParado() >= TimeSpan.FromMinutes(10);
+        // Com o Kdrop no meio de algo (um pedido esperando, arquivos chegando),
+        // o PC "parado" e so a pessoa no celular: a Kisland fica.
+        var kdropOcupado = _pedidoKdrop is not null || _recebendoKdrop is { Estado: EstadoDoPedido.Aceito };
+        var parado = _cfg.IlhaProtegerTela && _cfg.IlhaEsconderParado && !kdropOcupado &&
+                     TempoParado() >= TimeSpan.FromMinutes(10);
 
         if (parado && !_escondidaPorInatividade)
         {
@@ -2445,7 +2449,16 @@ public partial class IlhaWindow : Window
         PedidoKdrop.Visibility = Visibility.Visible;
         _soBandeja = true;
 
-        if (!_ativa || _escondidaPorTelaCheia || _escondidaPorInatividade) return;
+        if (!_ativa || _escondidaPorTelaCheia) return;
+
+        // Escondida pelo PC parado: o pedido a traz de volta. Quem esta
+        // mandando esta no celular, e o PC ficou parado justamente por isso.
+        if (_escondidaPorInatividade)
+        {
+            _escondidaPorInatividade = false;
+            Show();
+            Posicionar();
+        }
 
         if (_expandida) AplicarMidia(false);
         else Expandir();
