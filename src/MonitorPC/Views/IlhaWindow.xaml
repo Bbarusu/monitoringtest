@@ -729,6 +729,14 @@
                             <TextBlock x:Name="MotivoKdrop" Visibility="Collapsed" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
                                        Foreground="{DynamicResource AvisoIcone}" />
 
+                            <!--
+                                O que os outros PCs da casa puseram na bandeja
+                                deles: chega junto com o anúncio de cada um.
+                                Toque traz para a pasta do Kdrop e para esta
+                                bandeja, sem pedido de aceite.
+                            -->
+                            <StackPanel x:Name="BandejasDeFora" Visibility="Collapsed" />
+
                             <Border x:Name="QrKdrop" Visibility="Collapsed" Margin="0,8,0,0" CornerRadius="12" Padding="10"
                                     Background="{DynamicResource Fundo}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                                 <Grid>

@@ -28,6 +28,13 @@ public sealed class AparelhoConfiavel
 /// <param name="Endereco">Para PCs: "http://192.168.0.20:48620/". Celulares nao tem.</param>
 public sealed record AparelhoKdrop(string Id, string Nome, bool EhPc, string? Endereco, bool EhNotebook);
 
+/// <summary>
+/// Um item de uma bandeja, como o Kdrop mostra para fora: arquivo ou pasta
+/// (que viaja como .zip). Tamanho -1 para pasta: somar tudo dentro dela a
+/// cada anuncio custaria caro.
+/// </summary>
+public sealed record ItemKdrop(string Id, string Nome, long Tamanho, bool Pasta);
+
 public enum EstadoDoPedido { Esperando, Aceito, Recusado, Expirado, Concluido }
 
 /// <summary>Um envio chegando: quem manda, o que, e em que pe esta.</summary>
@@ -104,7 +111,10 @@ public sealed class KdropService : IDisposable
     private readonly ConcurrentDictionary<string, (AparelhoKdrop Aparelho, DateTime Visto)> _pcs = new();
     private readonly ConcurrentDictionary<string, Celular> _celulares = new();
     private readonly ConcurrentDictionary<string, PedidoKdrop> _pedidos = new();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<ItemKdrop>> _bandejasDosPcs = new();
     private string _assinaturaDosAparelhos = "";
+    private string _assinaturaDasBandejas = "";
+    private string _assinaturaDaMinhaBandeja = "";
 
     private sealed class Celular
     {
@@ -128,6 +138,7 @@ public sealed class KdropService : IDisposable
     public event Action<PedidoKdrop>? PedidoMudou;
     public event Action<string>? ArquivoRecebido;
     public event Action? AparelhosMudaram;
+    public event Action? BandejasMudaram;
 
     public KdropService(AppConfig cfg, Func<IReadOnlyList<string>> bandeja)
     {
@@ -187,6 +198,7 @@ public sealed class KdropService : IDisposable
         _anuncio = null;
         _pcs.Clear();
         _celulares.Clear();
+        _bandejasDosPcs.Clear();
     }
 
     public void Dispose() => Parar();
@@ -250,10 +262,73 @@ public sealed class KdropService : IDisposable
     private void ConferirAparelhos()
     {
         var assinatura = string.Join("|", Aparelhos().Select(a => a.Id + a.Nome));
-        if (assinatura == _assinaturaDosAparelhos) return;
+        if (assinatura != _assinaturaDosAparelhos)
+        {
+            _assinaturaDosAparelhos = assinatura;
+            AparelhosMudaram?.Invoke();
+        }
 
-        _assinaturaDosAparelhos = assinatura;
-        AparelhosMudaram?.Invoke();
+        ConferirBandejas();
+    }
+
+    /// <summary>
+    /// O que esta na bandeja de cada outro PC da casa, de quem esta ligado
+    /// agora. Chega junto com o anuncio de cada um, sem precisar perguntar.
+    /// </summary>
+    public IReadOnlyList<(AparelhoKdrop Pc, IReadOnlyList<ItemKdrop> Itens)> BandejasDosPcs() =>
+        Aparelhos()
+            .Where(a => a.EhPc)
+            .Select(a => (Pc: a, Itens: _bandejasDosPcs.TryGetValue(a.Id, out var itens) ? itens : Array.Empty<ItemKdrop>()))
+            .Where(b => b.Itens.Count > 0)
+            .ToList();
+
+    private void ConferirBandejas()
+    {
+        var assinatura = string.Join("|", BandejasDosPcs().Select(b => b.Pc.Id + ":" + string.Join(",", b.Itens.Select(i => i.Id))));
+        if (assinatura == _assinaturaDasBandejas) return;
+
+        _assinaturaDasBandejas = assinatura;
+        BandejasMudaram?.Invoke();
+    }
+
+    /// <summary>
+    /// A bandeja deste PC mudou (algo entrou ou saiu): anuncia ja, para os
+    /// outros PCs verem sem esperar o proximo anuncio. O celular ve na
+    /// proxima pergunta, em ate 2 s.
+    /// </summary>
+    public void BandejaMudou()
+    {
+        string assinatura;
+        try { assinatura = string.Join("|", _bandeja()); }
+        catch { return; }
+
+        if (assinatura == _assinaturaDaMinhaBandeja) return;
+        _assinaturaDaMinhaBandeja = assinatura;
+
+        try { _anuncio?.Change(TimeSpan.Zero, TimeSpan.FromSeconds(5)); }
+        catch (ObjectDisposedException) { }
+    }
+
+    /// <summary>Os itens da bandeja deste PC que ainda existem, arquivos e pastas.</summary>
+    private List<ItemKdrop> MinhaBandeja()
+    {
+        var itens = new List<ItemKdrop>();
+        foreach (var caminho in _bandeja())
+        {
+            try
+            {
+                if (File.Exists(caminho))
+                    itens.Add(new ItemKdrop(IdDoArquivo(caminho), Path.GetFileName(caminho), new FileInfo(caminho).Length, false));
+                else if (Directory.Exists(caminho))
+                    itens.Add(new ItemKdrop(IdDoArquivo(caminho), Path.GetFileName(caminho.TrimEnd('\\', '/')), -1, true));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Sumiu ou ficou sem acesso no meio: fica de fora desta vez.
+            }
+        }
+
+        return itens;
     }
 
     private sealed class Anuncio
@@ -263,6 +338,9 @@ public sealed class KdropService : IDisposable
         public string Nome { get; set; } = "";
         public int Porta { get; set; }
         public bool Notebook { get; set; }
+
+        /// <summary>O que esta na bandeja de quem anuncia (ate 12 itens, cabe folgado num pacote).</summary>
+        public List<ItemKdrop>? Bandeja { get; set; }
     }
 
     private void IniciarDescoberta(CancellationToken fim)
@@ -286,6 +364,10 @@ public sealed class KdropService : IDisposable
 
                         var endereco = $"http://{r.RemoteEndPoint.Address}:{(a.Porta > 0 ? a.Porta : Porta)}/";
                         _pcs[a.Id] = (new AparelhoKdrop(a.Id, a.Nome, true, endereco, a.Notebook), DateTime.UtcNow);
+                        _bandejasDosPcs[a.Id] = (a.Bandeja ?? new List<ItemKdrop>())
+                            .Where(i => !string.IsNullOrEmpty(i.Id) && !string.IsNullOrEmpty(i.Nome))
+                            .Take(50)
+                            .ToList();
                         ConferirAparelhos();
                     }
                     catch (OperationCanceledException) { break; }
@@ -299,9 +381,14 @@ public sealed class KdropService : IDisposable
             {
                 try
                 {
+                    List<ItemKdrop> bandeja;
+                    try { bandeja = MinhaBandeja(); }
+                    catch { bandeja = new List<ItemKdrop>(); }
+
                     var anuncio = JsonSerializer.SerializeToUtf8Bytes(new Anuncio
                     {
-                        Kdrop = 1, Id = _id, Nome = NomeDestePc, Porta = Porta, Notebook = EhNotebook()
+                        Kdrop = 1, Id = _id, Nome = NomeDestePc, Porta = Porta, Notebook = EhNotebook(),
+                        Bandeja = bandeja
                     }, Json);
                     _udp?.Send(anuncio, anuncio.Length, new IPEndPoint(IPAddress.Broadcast, PortaDescoberta));
                 }
@@ -647,10 +734,9 @@ public sealed class KdropService : IDisposable
         var pcs = new List<object> { new { nome = NomeDestePc, endereco = (string?)null, eu = true } };
         pcs.AddRange(Aparelhos().Where(a => a.EhPc).Select(a => (object)new { nome = a.Nome, endereco = a.Endereco, eu = false }));
 
-        var bandeja = _bandeja()
-            .Where(File.Exists)
-            .Select(c => new FileInfo(c))
-            .Select(f => new { id = IdDoArquivo(f.FullName), nome = f.Name, tamanho = f.Length });
+        // Pasta vai como .zip, montado na hora do download.
+        var bandeja = MinhaBandeja()
+            .Select(i => new { id = i.Id, nome = i.Pasta ? i.Nome + ".zip" : i.Nome, tamanho = i.Tamanho, pasta = i.Pasta });
 
         await Escrever(res, JsonSerializer.Serialize(new
         {
@@ -670,6 +756,13 @@ public sealed class KdropService : IDisposable
     private async Task Baixar(string id, HttpListenerResponse res)
     {
         var caminho = _bandeja().FirstOrDefault(c => IdDoArquivo(c) == id);
+
+        if (caminho is not null && Directory.Exists(caminho))
+        {
+            BaixarPasta(caminho, res);
+            return;
+        }
+
         if (caminho is null || !File.Exists(caminho))
         {
             res.StatusCode = 404;
@@ -683,6 +776,135 @@ public sealed class KdropService : IDisposable
         await using var fluxo = File.OpenRead(caminho);
         res.ContentLength64 = fluxo.Length;
         await fluxo.CopyToAsync(res.OutputStream);
+    }
+
+    /// <summary>
+    /// Pasta da bandeja: vai como .zip, montado enquanto sai, sem arquivo
+    /// temporario no disco. Sem tamanho conhecido antes, a resposta vai em
+    /// pedacos (chunked). Arquivo que nao abre (em uso, sem acesso) fica de
+    /// fora, e o resto vai.
+    /// </summary>
+    private static void BaixarPasta(string pasta, HttpListenerResponse res)
+    {
+        var nome = Path.GetFileName(pasta.TrimEnd('\\', '/')) + ".zip";
+        res.ContentType = "application/zip";
+        res.AddHeader("Content-Disposition", $"attachment; filename*=UTF-8''{Uri.EscapeDataString(nome)}");
+        res.SendChunked = true;
+
+        using var zip = new System.IO.Compression.ZipArchive(res.OutputStream, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true);
+        foreach (var arquivo in Directory.EnumerateFiles(pasta, "*", new EnumerationOptions
+                 {
+                     RecurseSubdirectories = true,
+                     IgnoreInaccessible = true,
+                     AttributesToSkip = FileAttributes.ReparsePoint
+                 }))
+        {
+            FileStream fluxo;
+            try
+            {
+                fluxo = new FileStream(arquivo, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                continue;
+            }
+
+            using (fluxo)
+            {
+                var relativo = Path.GetRelativePath(pasta, arquivo).Replace('\\', '/');
+                var entrada = zip.CreateEntry(relativo, System.IO.Compression.CompressionLevel.Fastest);
+                entrada.LastWriteTime = File.GetLastWriteTime(arquivo);
+                using var destino = entrada.Open();
+                fluxo.CopyTo(destino);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Buscar da bandeja de outro PC
+
+    /// <summary>
+    /// Traz um item da bandeja de outro PC para este: vai para a pasta do
+    /// Kdrop e o caminho volta para entrar na bandeja daqui. Sem pedido nem
+    /// aceite, porque quem busca e a propria pessoa, no PC dela, e o outro
+    /// PC ja deixou o item a vista ao po-lo na bandeja. Pasta chega como .zip
+    /// e e aberta numa pasta de mesmo nome.
+    /// </summary>
+    /// <returns>O caminho do que chegou, ou nulo se nao deu.</returns>
+    public async Task<string?> BuscarDePc(AparelhoKdrop pc, ItemKdrop item, IProgress<int>? progresso)
+    {
+        if (pc.Endereco is null) return null;
+
+        var pasta = Pasta(_cfg);
+        string? temporario = null;
+
+        try
+        {
+            Directory.CreateDirectory(pasta);
+
+            using var http = new HttpClient { BaseAddress = new Uri(pc.Endereco), Timeout = Timeout.InfiniteTimeSpan };
+            using var resposta = await http.GetAsync($"api/arquivo/{Uri.EscapeDataString(item.Id)}", HttpCompletionOption.ResponseHeadersRead);
+            if (!resposta.IsSuccessStatusCode)
+            {
+                Log.Nota($"Kdrop: buscar {item.Nome} de {pc.Nome} deu {(int)resposta.StatusCode}");
+                return null;
+            }
+
+            var nome = NomeSeguro(item.Nome);
+            var destino = item.Pasta
+                ? temporario = Path.Combine(Path.GetTempPath(), $"kdrop-{Guid.NewGuid():N}.zip")
+                : CaminhoLivre(pasta, nome);
+
+            var total = item.Tamanho > 0 ? item.Tamanho : resposta.Content.Headers.ContentLength ?? -1;
+            await using (var origem = await resposta.Content.ReadAsStreamAsync())
+            await using (var arquivo = File.Create(destino))
+            {
+                var buffer = new byte[81920];
+                long lidos = 0;
+                int n;
+                var ultimoAviso = DateTime.MinValue;
+                while ((n = await origem.ReadAsync(buffer)) > 0)
+                {
+                    await arquivo.WriteAsync(buffer.AsMemory(0, n));
+                    lidos += n;
+                    if (total > 0 && DateTime.UtcNow - ultimoAviso > TimeSpan.FromMilliseconds(250))
+                    {
+                        ultimoAviso = DateTime.UtcNow;
+                        progresso?.Report((int)Math.Clamp(lidos * 100 / total, 0, 99));
+                    }
+                }
+            }
+
+            if (item.Pasta)
+            {
+                var final = PastaLivre(pasta, nome);
+                System.IO.Compression.ZipFile.ExtractToDirectory(destino, final);
+                destino = final;
+            }
+
+            progresso?.Report(100);
+            Log.Nota($"Kdrop: buscado {Path.GetFileName(destino)} de {pc.Nome}");
+            return destino;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Kdrop: buscar de outro PC", ex);
+            return null;
+        }
+        finally
+        {
+            if (temporario is not null)
+                try { File.Delete(temporario); } catch { }
+        }
+    }
+
+    /// <summary>"Fotos", e se ja existir, "Fotos (2)".</summary>
+    private static string PastaLivre(string pasta, string nome)
+    {
+        var caminho = Path.Combine(pasta, nome);
+        for (var i = 2; Directory.Exists(caminho) || File.Exists(caminho); i++)
+            caminho = Path.Combine(pasta, $"{nome} ({i})");
+        return caminho;
     }
 
     private sealed class PedidoRecebido

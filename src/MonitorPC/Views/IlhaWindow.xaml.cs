@@ -2067,6 +2067,9 @@ public partial class IlhaWindow : Window
 
         BlocoBandeja.Visibility = Visivel(_cfg.IlhaBandeja);
         AtualizarChipBandeja();
+
+        // O que entrou ou saiu fica a vista dos outros aparelhos na hora.
+        _kdrop?.BandejaMudou();
     }
 
     /// <summary>O chip da pilula: quantos arquivos, e o progresso do Kdrop quando algo esta chegando.</summary>
@@ -2293,6 +2296,7 @@ public partial class IlhaWindow : Window
             _kdrop.PedidoMudou += p => Dispatcher.BeginInvoke(() => PedidoMudou(p));
             _kdrop.ArquivoRecebido += c => Dispatcher.BeginInvoke(() => ReceberDoKdrop(c));
             _kdrop.AparelhosMudaram += () => Dispatcher.BeginInvoke(() => MontarAparelhos());
+            _kdrop.BandejasMudaram += () => Dispatcher.BeginInvoke(() => MontarBandejasDeFora());
             _kdrop.Iniciar();
         }
         else if (!KdropLigado && _kdrop is not null)
@@ -2311,6 +2315,9 @@ public partial class IlhaWindow : Window
         _recebendoKdrop = null;
         _soBandeja = false;
         _estadoDoAparelho.Clear();
+        _buscando.Clear();
+        BandejasDeFora.Children.Clear();
+        BandejasDeFora.Visibility = Visibility.Collapsed;
         PedidoKdrop.Visibility = Visibility.Collapsed;
         QrKdrop.Visibility = Visibility.Collapsed;
         AreaKdrop.Visibility = Visibility.Collapsed;
@@ -2344,6 +2351,129 @@ public partial class IlhaWindow : Window
         DicaKdrop.Text = aparelhos.Count == 0
             ? "· nenhum aparelho por perto ainda"
             : "· toque para mandar tudo, ou arraste um arquivo até o aparelho";
+
+        MontarBandejasDeFora();
+    }
+
+    /// <summary>Itens sendo trazidos de outro PC: "42%", ou "Não veio" quando falha.</summary>
+    private readonly Dictionary<string, string> _buscando = new();
+
+    /// <summary>
+    /// As bandejas dos outros PCs da casa, cada uma com o nome do PC em cima.
+    /// Toque num item traz para este PC: vai para a pasta do Kdrop e entra
+    /// nesta bandeja.
+    /// </summary>
+    private void MontarBandejasDeFora()
+    {
+        BandejasDeFora.Children.Clear();
+
+        var bandejas = _kdrop is { Rodando: true } kdrop ? kdrop.BandejasDosPcs() : Array.Empty<(AparelhoKdrop, IReadOnlyList<ItemKdrop>)>();
+        BandejasDeFora.Visibility = Visivel(bandejas.Count > 0);
+
+        foreach (var (pc, itens) in bandejas)
+        {
+            var titulo = new TextBlock
+            {
+                FontSize = 11,
+                Margin = new Thickness(0, 10, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            titulo.Inlines.Add(new System.Windows.Documents.Run($"Na bandeja de {pc.Nome}") { FontWeight = FontWeights.Medium });
+            titulo.Inlines.Add(new System.Windows.Documents.Run(" · toque para trazer"));
+            titulo.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+            BandejasDeFora.Children.Add(titulo);
+
+            var grade = new System.Windows.Controls.Primitives.UniformGrid { Columns = 6, Margin = new Thickness(0, 8, 0, 0) };
+            foreach (var item in itens.Take(MaximoNaBandeja))
+                grade.Children.Add(ItemDeFora(pc, item));
+            BandejasDeFora.Children.Add(grade);
+        }
+    }
+
+    private Button ItemDeFora(AparelhoKdrop pc, ItemKdrop item)
+    {
+        var chave = pc.Id + "/" + item.Id;
+        _buscando.TryGetValue(chave, out var estado);
+
+        var circulo = new Border
+        {
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(12),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
+        if (estado is not null && estado.EndsWith('%'))
+        {
+            circulo.BorderThickness = new Thickness(2);
+            circulo.SetResourceReference(Border.BorderBrushProperty, "Acento");
+        }
+
+        var desenho = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse(item.Pasta
+                ? "M3,7 A2,2 0 0,1 5,5 L9,5 L11,7 L19,7 A2,2 0 0,1 21,9 L21,18 A2,2 0 0,1 19,20 L5,20 A2,2 0 0,1 3,18 Z"
+                : "M6,3 L14,3 L19,8 L19,19 A2,2 0 0,1 17,21 L7,21 A2,2 0 0,1 5,19 L5,4 A1,1 0 0,1 6,3 Z M14,3 L14,8 L19,8"),
+            StrokeThickness = 1.6,
+            StrokeLineJoin = PenLineJoin.Round,
+            Width = 18,
+            Height = 18,
+            Stretch = Stretch.Uniform
+        };
+        desenho.SetResourceReference(Shape.StrokeProperty, "Icone");
+        circulo.Child = desenho;
+
+        var rotulo = new TextBlock
+        {
+            Text = estado ?? item.Nome,
+            FontSize = 10.5,
+            Margin = new Thickness(0, 5, 0, 0),
+            MaxWidth = 64,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        rotulo.SetResourceReference(TextBlock.ForegroundProperty, estado is null ? "TextoFraco" : "InfoTexto");
+
+        var conteudo = new StackPanel();
+        conteudo.Children.Add(circulo);
+        conteudo.Children.Add(rotulo);
+
+        var detalhe = item.Pasta ? "pasta, chega aberta" : Tamanho(item.Tamanho);
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoAtalho"),
+            Content = conteudo,
+            ToolTip = $"{item.Nome} · {detalhe}\nNa bandeja de {pc.Nome}. Clique para trazer para este PC"
+        };
+        botao.Click += async (_, _) => await BuscarDeFora(pc, item);
+        return botao;
+    }
+
+    private async Task BuscarDeFora(AparelhoKdrop pc, ItemKdrop item)
+    {
+        if (_kdrop is null) return;
+
+        var chave = pc.Id + "/" + item.Id;
+        if (_buscando.TryGetValue(chave, out var atual) && atual.EndsWith('%')) return;
+
+        void Mostrar(string? texto)
+        {
+            if (texto is null) _buscando.Remove(chave);
+            else _buscando[chave] = texto;
+            MontarBandejasDeFora();
+        }
+
+        Mostrar("0%");
+        var caminho = await _kdrop.BuscarDePc(pc, item, new Progress<int>(p => Mostrar($"{p}%")));
+
+        if (caminho is null)
+        {
+            Mostrar("Não veio");
+            return;
+        }
+
+        Mostrar(null);
+        ReceberDoKdrop(caminho);
     }
 
     private Button CirculoDeAparelho(object alvo, string nome, string desenho, string estado)

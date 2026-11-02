@@ -117,6 +117,14 @@ de fora:
 - Anúncio UDP na porta 48621, a cada 5 s, para os KInfo da rede se acharem.
 - O envio para outro PC é o mesmo caminho do celular: pede, espera o aceite,
   envia arquivo por arquivo.
+- A bandeja fica à vista da casa assim que algo entra nela: o anúncio UDP leva
+  a lista (id, nome, tamanho, se é pasta) e sai na hora em que a bandeja muda
+  (`BandejaMudou`), não só a cada 5 s. Cada KInfo mostra na Kisland as
+  bandejas dos outros PCs, e um toque busca o item por `GET /api/arquivo/{id}`
+  (`BuscarDePc`), sem aceite: quem busca é a pessoa no próprio PC, e o dono
+  já deixou o item à vista. O celular vê pela pergunta de 2 s e destaca o que
+  chegou depois de a página abrir. Pasta vai como .zip montado enquanto sai
+  (chunked, sem arquivo temporário) e, buscada por outro PC, chega aberta.
 
 Todo pedido passa pelo aceite na Kisland (prazo de 60 s), a não ser de aparelho
 em `KdropConfiaveis`. Só entra arquivo que estava no pedido aceito, com o nome

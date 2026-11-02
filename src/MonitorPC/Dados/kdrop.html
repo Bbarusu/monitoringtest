@@ -133,6 +133,11 @@
   var escolhidos = [];
   var enviando = false;
   var novosVistos = {};
+  // O que ja estava na bandeja quando a pagina abriu nao e novidade; o que
+  // aparece depois (posto na bandeja no PC agora ha pouco) ganha "Acabou de
+  // chegar" por 2 minutos.
+  var conhecidos = null;
+  var chegouEm = {};
 
   function tamanho(b) {
     if (b < 1024) return b + " B";
@@ -194,9 +199,19 @@
     lista.textContent = "";
     var itens = e.bandeja || [];
     if (!itens.length) lista.appendChild(el("div", "vazio", "A bandeja deste PC está vazia. No PC, arraste arquivos até a Kisland para eles aparecerem aqui."));
+    var agora = Date.now();
+    if (conhecidos === null) {
+      conhecidos = {};
+      itens.forEach(function (a) { conhecidos[a.id] = true; });
+    }
     itens.forEach(function (a) {
-      var linha = linhaDeArquivo(a.nome, novosVistos[a.id] ? "Mandado para você · " + tamanho(a.tamanho) : tamanho(a.tamanho),
-                                 novosVistos[a.id] ? "novo" : "");
+      if (!conhecidos[a.id]) { conhecidos[a.id] = true; chegouEm[a.id] = agora; }
+      var recente = chegouEm[a.id] && agora - chegouEm[a.id] < 120000;
+      var medida = a.pasta ? "Pasta · baixa como .zip" : tamanho(a.tamanho);
+      var detalhe = novosVistos[a.id] ? "Mandado para você · " + medida
+                  : recente ? "Acabou de chegar · " + medida
+                  : medida;
+      var linha = linhaDeArquivo(a.nome, detalhe, novosVistos[a.id] || recente ? "novo" : "");
       var baixar = el("a", "baixar", "Baixar");
       baixar.href = "api/arquivo/" + a.id;
       baixar.setAttribute("download", a.nome);
