@@ -520,8 +520,9 @@ public partial class IlhaWindow : Window
 
         _margens ??= blocos.ToDictionary(b => b, b => b.Margin);
 
-        // Pedido do Kdrop esperando resposta: so a bandeja, onde ele esta.
-        if (_soBandeja)
+        // Pedido do Kdrop esperando resposta, ou arquivo chegando arrastado:
+        // so a bandeja, onde ele vai cair.
+        if (_soBandeja || _soltandoNaBandeja)
             foreach (var bloco in blocos)
                 if (!ReferenceEquals(bloco, BlocoBandeja)) bloco.Visibility = Visibility.Collapsed;
 
@@ -729,6 +730,8 @@ public partial class IlhaWindow : Window
         var agora = DateTime.UtcNow;
         var dentro = CursorEmCima();
 
+        if (ConferirArrastoDeFora(dentro, agora)) return;
+
         // Mouse chegando perto (a 60 px) ja acende a Kisland escurecida: ela
         // fica legivel antes de o cursor chegar em cima.
         if (dentro || CursorEmCima(60)) Acordar();
@@ -798,6 +801,130 @@ public partial class IlhaWindow : Window
     }
 
     private static bool BotaoEsquerdoApertado() => (GetAsyncKeyState(TeclaBotaoEsquerdo) & 0x8000) != 0;
+
+    // ------------------------------------------------------------------
+    // Arrastar arquivos de fora ate a bandeja
+
+    /// <summary>Quanto o arrasto precisa ficar em cima da pilula para ela abrir a bandeja.</summary>
+    private static readonly TimeSpan EsperaParaSoltar = TimeSpan.FromMilliseconds(250);
+
+    private bool _botaoAntes;
+    private bool _apertoDeFora;
+    private DateTime? _arrastoDentroDesde;
+
+    /// <summary>A Kisland aberta por um arrasto de fora: so a bandeja, esperando o arquivo.</summary>
+    private bool _soltandoNaBandeja;
+
+    private const string DicaBandejaPadrao = "Arraste arquivos até a Kisland para deixá-los aqui, à mão.";
+
+    /// <summary>
+    /// Arrastar um arquivo do Explorer ate a bandeja: antes, com a Kisland
+    /// aberta, ir buscar o arquivo tirava o mouse dela e ela fechava; fechada,
+    /// ela nao abria com o botao apertado. Agora, quem chega com o botao
+    /// apertado desde fora (arrastando alguma coisa) abre a Kisland na hora,
+    /// so com a bandeja, sem a espera normal de abrir.
+    ///
+    /// O arrastar do Windows nao avisa a Kisland de nada (ela recebe pelo
+    /// caminho antigo, WM_DROPFILES, que so diz o que caiu, quando cai). Por
+    /// isso o que vale e o botao e o cursor: botao apertado longe da Kisland
+    /// e cursor chegando nela com o desenho de arrasto. O desenho separa o
+    /// arquivo de quem so esta arrastando uma janela para o alto da tela (a
+    /// seta comum) ou selecionando texto.
+    /// </summary>
+    /// <returns>Verdadeiro quando o arrasto cuidou deste decimo de segundo.</returns>
+    private bool ConferirArrastoDeFora(bool dentro, DateTime agora)
+    {
+        var apertado = BotaoEsquerdoApertado();
+
+        // O botao desceu agora: conta como "de fora" so se foi longe da Kisland.
+        if (apertado && !_botaoAntes) _apertoDeFora = !dentro && !CursorEmCima(20);
+        _botaoAntes = apertado;
+
+        if (!apertado)
+        {
+            _apertoDeFora = false;
+            _arrastoDentroDesde = null;
+            if (_soltandoNaBandeja) TerminarSoltura(dentro);
+            return false;
+        }
+
+        if (!_apertoDeFora || !_cfg.IlhaBandeja || _modoJogo || !_ativa) return false;
+
+        if (!dentro)
+        {
+            _arrastoDentroDesde = null;
+            return false;
+        }
+
+        Acordar();
+        _foraDesde = null;
+        _dentroDesde = null;
+
+        if (_expandida) return true;
+
+        _arrastoDentroDesde ??= agora;
+        if (agora - _arrastoDentroDesde < EsperaParaSoltar || !CursorDeArrasto()) return true;
+
+        _soltandoNaBandeja = true;
+        Expandir();
+        DicaBandeja.Text = "Solte aqui para deixar na bandeja.";
+        DicaBandeja.Visibility = Visibility.Visible;
+        return true;
+    }
+
+    /// <summary>
+    /// Botao solto. Caiu na Kisland: ela fica aberta, agora inteira, mostrando
+    /// o arquivo (quem o poe na bandeja e o WM_DROPFILES). Soltou fora,
+    /// desistiu: ela fecha.
+    /// </summary>
+    private void TerminarSoltura(bool dentro)
+    {
+        _soltandoNaBandeja = false;
+        DicaBandeja.Text = DicaBandejaPadrao;
+
+        if (!dentro) Recolher();
+        if (_pedidoKdrop is null) AplicarConfiguracao();
+        else MontarBandeja();
+    }
+
+    /// <summary>
+    /// O cursor e o de arrastar arquivo? Arrastando, o Windows troca a seta
+    /// pelo desenho de copiar, mover ou "nao pode". Seta comum, texto, mao ou
+    /// as setas de redimensionar sao de outra coisa. Sem conseguir ler o
+    /// cursor, conta como arrasto.
+    /// </summary>
+    private static bool CursorDeArrasto()
+    {
+        var info = new InfoDoCursor { Tamanho = Marshal.SizeOf<InfoDoCursor>() };
+        if (!GetCursorInfo(ref info) || info.Cursor == IntPtr.Zero) return true;
+
+        foreach (var comum in CursoresComuns)
+            if (info.Cursor == LoadCursor(IntPtr.Zero, comum))
+                return false;
+
+        return true;
+    }
+
+    /// <summary>IDC_ARROW, IBEAM, WAIT, CROSS, SIZENWSE, SIZENESW, SIZEWE, SIZENS, SIZEALL, HAND, APPSTARTING.</summary>
+    private static readonly IntPtr[] CursoresComuns =
+        new[] { 32512, 32513, 32514, 32515, 32642, 32643, 32644, 32645, 32646, 32649, 32650 }
+            .Select(id => (IntPtr)id).ToArray();
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InfoDoCursor
+    {
+        public int Tamanho;
+        public int Sinais;
+        public IntPtr Cursor;
+        public Ponto Posicao;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorInfo(ref InfoDoCursor info);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr LoadCursor(IntPtr instancia, IntPtr nome);
 
     private void Expandir()
     {

@@ -155,6 +155,13 @@ só enquanto o app está aberto. Clique abre pelo Explorer; arrastar para fora u
 o OLE, que com o app elevado pode não chegar ao Explorer — para isso há o
 copiar, que põe os arquivos na área de transferência para colar numa pasta.
 
+Como o `WM_DROPFILES` não avisa nada durante o arrasto, a Kisland percebe que
+um arquivo vem chegando pelo botão e pelo cursor: botão apertado longe dela,
+cursor parado 250 ms em cima da pílula e com o desenho de arrasto (não a seta
+comum, texto ou redimensionar, o que tira quem só arrasta uma janela para o
+alto). Ela abre na hora, só com a bandeja, fica aberta enquanto o botão estiver
+apertado e fecha se ele for solto fora.
+
 `DetectorDeJogo` decide quem é jogo: quem entrega pelo menos 10 quadros por
 segundo, não está na lista de programas que desenham muito sem serem jogos
 (navegadores, Discord, OBS, players de vídeo…) e tem uma janela visível que
