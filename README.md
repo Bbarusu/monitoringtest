@@ -152,6 +152,16 @@ som. Trocar a padrão usa `IPolicyConfig`, a interface não documentada do próp
 painel de som, a mesma dos apps de troca de áudio; a troca vale para os três
 papéis (console, multimídia e comunicação).
 
+O mixer (`MixerService`) lê as sessões de áudio da saída padrão
+(`IAudioSessionManager2`), as mesmas do mixer do Windows: volume e mudo por
+sessão, via `ISimpleAudioVolume`, relativos ao volume geral. Sessões do mesmo
+.exe viram uma linha só (o Chrome abre várias), e o caminho do .exe vem de
+`QueryFullProcessImageName`, que funciona até com processos protegidos. Nada
+fica aberto: a lista é lida de novo a cada 2 s, só com o mixer aberto, e as
+linhas só são refeitas quando muda o conjunto de apps — senão o controle sairia
+da mão de quem está arrastando. A roda do mouse em cima de uma linha muda
+aquele app.
+
 A bandeja recebe arquivos por `WM_DROPFILES` (`DragAcceptFiles`), e não pelo
 arrastar do WPF: o Windows não deixa o Explorer arrastar para um app elevado
 pelo OLE, e pelo caminho antigo deixa, liberadas `WM_DROPFILES`, `WM_COPYDATA` e

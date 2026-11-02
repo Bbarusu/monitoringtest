@@ -263,7 +263,12 @@ public partial class IlhaWindow : Window
         MontarBandeja();
         if (_handle != IntPtr.Zero) DragAcceptFiles(_handle, _cfg.IlhaBandeja);
         AtualizarKdrop();
-        if (_expandida) MontarSaidas();
+        BotaoMixer.Visibility = Visivel(_cfg.IlhaMixer);
+        if (_expandida)
+        {
+            MontarSaidas();
+            MontarMixer();
+        }
 
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
         AtualizarRelogio();
@@ -942,6 +947,7 @@ public partial class IlhaWindow : Window
         AplicarMidia(false);
         AplicarVolume(_volume.Nivel, _volume.Mudo, false);
         MontarSaidas();
+        MontarMixer();
         MontarBandeja();
         AtualizarProgresso();
 
@@ -976,6 +982,10 @@ public partial class IlhaWindow : Window
             _volume.Conferir();
             if (antes != _volume.Disponivel) AplicarConfiguracao();
         }
+
+        // Mixer aberto: acompanha o que muda no Windows (app que abriu ou
+        // fechou, volume mexido no mixer dele).
+        if (_segundos % 2 == 0 && _expandida && MixerDeSom.Visibility == Visibility.Visible) MontarMixer();
 
         AtualizarFps();
         ConferirTelaCheia();
@@ -1830,6 +1840,13 @@ public partial class IlhaWindow : Window
         if (passos == 0) return true;
         _rodaAcumulada -= passos * 120;
 
+        // Em cima de uma linha do mixer, a roda muda o volume daquele app.
+        if (_expandida && LinhaSobOCursor() is { } linha)
+        {
+            linha.Controle.Value = Math.Clamp(linha.Controle.Value + passos * PassoDaRoda, 0, 100);
+            return true;
+        }
+
         var nivel = Math.Clamp(_volume.Nivel + passos * PassoDaRoda, 0, 100);
 
         // Subir o volume com o som mudo tira o mudo, como no Windows.
@@ -1848,6 +1865,222 @@ public partial class IlhaWindow : Window
         if (!_expandida) MostrarAviso(Aviso.Volume, TimeSpan.FromSeconds(1.5));
 
         return true;
+    }
+
+    // ------------------------------------------------------------------
+    // Mixer: o volume de cada app
+
+    /// <summary>Uma linha do mixer, guardada no Tag da grade dela.</summary>
+    private sealed record LinhaDoMixer(string Chave, Slider Controle, TextBlock Valor, FrameworkElement Icone, TextBlock Nome);
+
+    private readonly Dictionary<string, LinhaDoMixer> _linhasDoMixer = new();
+    private readonly Dictionary<string, bool> _mudoNoMixer = new();
+    private string _assinaturaDoMixer = "";
+    private bool _ajustandoMixer;
+
+    private void Mixer_Click(object sender, RoutedEventArgs e)
+    {
+        _cfg.IlhaMixerAberto = !_cfg.IlhaMixerAberto;
+        _cfg.Salvar();
+        MontarMixer();
+    }
+
+    /// <summary>
+    /// Abre, fecha ou atualiza o mixer. Com os mesmos apps de antes, so os
+    /// valores mudam — refazer as linhas a cada 2 s tiraria o controle da mao
+    /// de quem esta arrastando.
+    /// </summary>
+    private void MontarMixer()
+    {
+        var aberto = _cfg.IlhaMixer && _cfg.IlhaMixerAberto && _volume.Disponivel;
+        MixerDeSom.Visibility = Visivel(aberto);
+        IconeMixer.SetResourceReference(Shape.StrokeProperty, aberto ? "Acento" : "Icone");
+
+        if (!aberto)
+        {
+            AppsDoMixer.Children.Clear();
+            _linhasDoMixer.Clear();
+            _assinaturaDoMixer = "";
+            return;
+        }
+
+        var apps = MixerService.Apps();
+        MixerVazio.Visibility = Visivel(apps.Count == 0);
+
+        var assinatura = string.Join("|", apps.Select(a => a.Chave));
+        if (assinatura != _assinaturaDoMixer)
+        {
+            _assinaturaDoMixer = assinatura;
+            AppsDoMixer.Children.Clear();
+            _linhasDoMixer.Clear();
+            foreach (var app in apps)
+                AppsDoMixer.Children.Add(LinhaDoApp(app));
+        }
+
+        _ajustandoMixer = true;
+        foreach (var app in apps)
+        {
+            if (!_linhasDoMixer.TryGetValue(app.Chave, out var linha)) continue;
+
+            _mudoNoMixer[app.Chave] = app.Mudo;
+            linha.Icone.Opacity = app.Mudo ? 0.4 : 1;
+            linha.Nome.SetResourceReference(TextBlock.ForegroundProperty, app.Ativo ? "Texto" : "TextoFraco");
+
+            // Quem esta arrastando manda no controle ate soltar.
+            if (linha.Controle.IsMouseCaptureWithin) continue;
+            linha.Controle.Value = app.Nivel;
+            linha.Valor.Text = app.Mudo ? "Mudo" : $"{app.Nivel}%";
+        }
+        _ajustandoMixer = false;
+    }
+
+    private Grid LinhaDoApp(AppDeSom app)
+    {
+        var grade = new Grid { Margin = new Thickness(0, 6, 0, 0), Background = Brushes.Transparent };
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(104) });
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
+
+        // Icone do app; tocar silencia so ele.
+        var quadro = new Border
+        {
+            Width = 28,
+            Height = 28,
+            CornerRadius = new CornerRadius(8),
+            Child = IconeDoApp(app)
+        };
+        quadro.SetResourceReference(Border.BackgroundProperty, "Chip");
+
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoSemMoldura"),
+            Content = quadro,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = $"Silenciar ou voltar o som de {app.Nome}"
+        };
+        var chave = app.Chave;
+        botao.Click += (_, _) =>
+        {
+            _mudoNoMixer.TryGetValue(chave, out var mudo);
+            MixerService.DefinirMudo(chave, !mudo);
+            MontarMixer();
+        };
+
+        var nome = new TextBlock
+        {
+            Text = app.Nome,
+            FontSize = 12,
+            FontWeight = FontWeights.Medium,
+            Margin = new Thickness(10, 0, 8, 0),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = app.Nome
+        };
+        nome.SetResourceReference(TextBlock.ForegroundProperty, app.Ativo ? "Texto" : "TextoFraco");
+
+        var controle = new Slider
+        {
+            Style = (Style)FindResource("SliderIlha"),
+            Minimum = 0,
+            Maximum = 100,
+            IsMoveToPointEnabled = true,
+            IsSnapToTickEnabled = true,
+            TickFrequency = 1,
+            Value = app.Nivel,
+            VerticalAlignment = VerticalAlignment.Center,
+            Focusable = false
+        };
+
+        var valor = new TextBlock
+        {
+            Text = app.Mudo ? "Mudo" : $"{app.Nivel}%",
+            FontSize = 13,
+            FontWeight = FontWeights.Light,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        valor.SetResourceReference(TextBlock.FontFamilyProperty, "FonteNumero");
+        valor.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
+        controle.ValueChanged += (_, e) =>
+        {
+            if (_ajustandoMixer) return;
+
+            var nivel = (int)Math.Round(e.NewValue);
+            MixerService.Definir(chave, nivel);
+
+            // Subir o volume de um app mudo tira o mudo, como no Windows.
+            if (e.NewValue > e.OldValue && _mudoNoMixer.TryGetValue(chave, out var mudo) && mudo)
+            {
+                MixerService.DefinirMudo(chave, false);
+                _mudoNoMixer[chave] = false;
+                quadro.Opacity = 1;
+            }
+
+            valor.Text = $"{nivel}%";
+        };
+
+        Grid.SetColumn(botao, 0);
+        Grid.SetColumn(nome, 1);
+        Grid.SetColumn(controle, 2);
+        Grid.SetColumn(valor, 3);
+        grade.Children.Add(botao);
+        grade.Children.Add(nome);
+        grade.Children.Add(controle);
+        grade.Children.Add(valor);
+
+        quadro.Opacity = app.Mudo ? 0.4 : 1;
+        var linha = new LinhaDoMixer(chave, controle, valor, quadro, nome);
+        grade.Tag = linha;
+        _linhasDoMixer[chave] = linha;
+        _mudoNoMixer[chave] = app.Mudo;
+        return grade;
+    }
+
+    /// <summary>O icone do .exe, como o Windows mostra; para os sons do sistema, o alto-falante.</summary>
+    private UIElement IconeDoApp(AppDeSom app)
+    {
+        if (!app.Sistema && app.Caminho is not null && AtalhoService.Icone(app.Caminho) is { } icone)
+        {
+            var imagem = new Image { Source = icone, Width = 18, Height = 18 };
+            RenderOptions.SetBitmapScalingMode(imagem, BitmapScalingMode.HighQuality);
+            return imagem;
+        }
+
+        var desenho = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse(app.Sistema
+                ? Corpo + OndaPerto
+                : "M4,5 L20,5 L20,16 L4,16 Z M9,20 L15,20 M12,16 L12,20"),
+            StrokeThickness = 1.6,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round,
+            Width = 14,
+            Height = 14,
+            Stretch = Stretch.Uniform
+        };
+        desenho.SetResourceReference(Shape.StrokeProperty, "Icone");
+        return desenho;
+    }
+
+    /// <summary>A linha do mixer embaixo do cursor, para a roda do mouse.</summary>
+    private LinhaDoMixer? LinhaSobOCursor()
+    {
+        if (MixerDeSom.Visibility != Visibility.Visible) return null;
+
+        DependencyObject? atual = Mouse.DirectlyOver as DependencyObject;
+        while (atual is not null)
+        {
+            if (atual is FrameworkElement { Tag: LinhaDoMixer linha }) return linha;
+            if (ReferenceEquals(atual, MixerDeSom)) return null;
+            atual = atual is Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(atual)
+                : LogicalTreeHelper.GetParent(atual);
+        }
+
+        return null;
     }
 
     // ------------------------------------------------------------------

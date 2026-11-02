@@ -563,6 +563,17 @@
                                       Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                         </Grid>
                         <Grid Margin="0,4">
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
+                                <TextBlock Text="Mixer de volume" FontSize="13" FontWeight="Medium"
+                                           Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="Um botão ao lado do volume abre o volume de cada app, como o mixer do Windows." FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextoFraco}" />
+                            </StackPanel>
+                            <CheckBox x:Name="IlhaMixer" Style="{StaticResource CaixaDeSelecao}"
+                                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                                      Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
+                        </Grid>
+                        <Grid Margin="0,4">
                             <TextBlock Text="Modos de energia" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
                             <CheckBox x:Name="IlhaAbertaPerfis" Style="{StaticResource CaixaDeSelecao}"

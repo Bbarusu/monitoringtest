@@ -13,3 +13,8 @@ Novo: o que entra na bandeja fica disponível pelo Kdrop para os outros aparelho
 - Soltou um arquivo na bandeja, os outros PCs com KInfo já o veem na Kisland deles, em "Na bandeja de (nome do PC)". Um toque traz o arquivo para a pasta do Kdrop e para a bandeja daquele PC, sem precisar aceitar nada.
 - No celular, a página do Kdrop mostra o arquivo em até 2 segundos, marcado como "Acabou de chegar".
 - Pastas também valem agora: o celular baixa como .zip, e outro PC recebe a pasta já aberta.
+
+Novo: mixer de volume na Kisland.
+- Um botão ao lado de "Volume", na Kisland aberta, mostra o volume de cada app que está usando o som, como o mixer do Windows. Cada app tem o seu controle, e tocar no ícone dele silencia só aquele app.
+- A roda do mouse em cima de um app muda o volume dele.
+- O mixer lembra se ficou aberto, e dá para tirar o botão na Personalização, aba Kisland.

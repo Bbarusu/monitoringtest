@@ -595,6 +595,16 @@
                                 </Button>
                                 <TextBlock Text="Volume" FontSize="13" FontWeight="Medium" Margin="10,0,0,0"
                                            VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <!-- Mixer: o volume de cada app, como o do Windows. -->
+                                <Button x:Name="BotaoMixer" Style="{StaticResource BotaoRedondoPequeno}" Width="28" Height="28"
+                                        Margin="8,0,0,0" VerticalAlignment="Center"
+                                        ToolTip="Mixer: o volume de cada app" Click="Mixer_Click">
+                                    <Path x:Name="IconeMixer"
+                                          Data="M6,4 L6,20 M12,4 L12,20 M18,4 L18,20 M4,14 L8,14 M10,8 L14,8 M16,16 L20,16"
+                                          Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          Width="13" Height="13" Stretch="Uniform" />
+                                </Button>
                             </StackPanel>
                             <TextBlock x:Name="ValorVolume" Text="--" FontSize="28" FontWeight="Light"
                                        FontFamily="{StaticResource FonteNumero}" Foreground="{DynamicResource Texto}"
@@ -603,6 +613,21 @@
                         <Slider x:Name="SliderVolume" Style="{StaticResource SliderIlha}" Minimum="0" Maximum="100" Margin="0,10,0,0"
                                 IsMoveToPointEnabled="True" IsSnapToTickEnabled="True" TickFrequency="1"
                                 ValueChanged="SliderVolume_Alterado" />
+
+                        <!--
+                            Mixer: uma linha por app com som na saída atual —
+                            ícone (toque silencia só ele), nome, controle e
+                            porcentagem. Montado no código; lido de novo a cada
+                            2 s enquanto aberto, para acompanhar o mixer do
+                            Windows.
+                        -->
+                        <StackPanel x:Name="MixerDeSom" Visibility="Collapsed" Margin="0,12,0,0">
+                            <Border Height="1" Margin="0,0,0,4" Background="{DynamicResource Borda}" />
+                            <StackPanel x:Name="AppsDoMixer" />
+                            <TextBlock x:Name="MixerVazio" Visibility="Collapsed" FontSize="11" Margin="0,6,0,0"
+                                       TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}"
+                                       Text="Nenhum app usando o som agora." />
+                        </StackPanel>
 
                         <!-- Saídas de som ativas, com a atual marcada. Só com mais
                              de uma: com uma só não há o que trocar. -->

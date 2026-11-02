@@ -182,6 +182,7 @@ public partial class PersonalizacaoWindow : Window
         IlhaAbertaCalendario.IsChecked = _cfg.IlhaAbertaCalendario;
         IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
         IlhaSaidasDeSom.IsChecked = _cfg.IlhaSaidasDeSom;
+        IlhaMixer.IsChecked = _cfg.IlhaMixer;
         IlhaIaApp.IsChecked = _cfg.IlhaIaPreferirApp;
         KdropLigado.IsChecked = _cfg.Kdrop;
         KdropNome.Text = _cfg.KdropNome ?? "";
@@ -284,6 +285,7 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaAbertaCalendario = IlhaAbertaCalendario.IsChecked == true;
         _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
         _cfg.IlhaSaidasDeSom = IlhaSaidasDeSom.IsChecked == true;
+        _cfg.IlhaMixer = IlhaMixer.IsChecked == true;
         _cfg.IlhaIaPreferirApp = IlhaIaApp.IsChecked == true;
         _cfg.Kdrop = KdropLigado.IsChecked == true;
         if (IlhaEspera.SelectedIndex >= 0)

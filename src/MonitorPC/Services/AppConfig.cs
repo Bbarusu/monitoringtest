@@ -286,6 +286,12 @@ public sealed class AppConfig
     /// <summary>Botoes para trocar a saida de som (fone, caixa, monitor), junto do volume.</summary>
     public bool IlhaSaidasDeSom { get; set; } = true;
 
+    /// <summary>Botao do mixer (o volume de cada app) ao lado do volume.</summary>
+    public bool IlhaMixer { get; set; } = true;
+
+    /// <summary>O mixer estava aberto da ultima vez: a Kisland abre com ele aberto.</summary>
+    public bool IlhaMixerAberto { get; set; }
+
     /// <summary>
     /// Bandeja de arquivos: arrastar um arquivo ate a Kisland deixa ele ali, a
     /// mao, ate ser usado. Guarda so o caminho, e so enquanto o app esta aberto.

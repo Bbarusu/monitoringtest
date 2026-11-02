@@ -164,6 +164,12 @@ igual ao escuro, sem transparência. Kisland preta com a mesma paleta, sem borda
 contra marca: deslocamento de 1–2 px a cada 3 min, opacidade 35% sem o mouse por perto, e esconder com
 o PC parado.
 
+Mixer: botão redondo pequeno (28) ao lado do título "Volume", com o desenho de três controles; aberto,
+o desenho fica na cor de destaque. Abaixo do controle geral, separado por uma linha, uma linha por
+app: ícone do .exe num quadro de canto 8 (toque silencia; mudo, o quadro fica a 40%), nome em 12
+médio (Texto tocando agora, TextoFraco parado), o mesmo controle fino do volume e a porcentagem em
+fonte leve.
+
 Saídas de som em botões de canto 13 sob o volume, a atual nas cores do perfil escolhido (fundo
 InfoFundo, borda na cor de destaque); ícone de fone, monitor ou caixa pelo nome do aparelho. Bandeja
 de arquivos num minicartão: título com a contagem, copiar e esvaziar em botões redondos, e os
