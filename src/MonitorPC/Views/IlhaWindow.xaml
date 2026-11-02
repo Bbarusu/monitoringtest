@@ -184,6 +184,28 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Botao de acao principal (Aceitar do Kdrop): cheio, na cor de destaque. -->
+        <Style x:Key="BotaoPrincipalIlha" TargetType="Button">
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="12" Background="{DynamicResource Acento}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Opacity" Value="0.88" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="MiniCartao" TargetType="Border">
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="12,10" />
@@ -637,10 +659,98 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
+                        <!--
+                            Kdrop: um pedido chegando. Fica no topo da bandeja,
+                            na cor de destaque, até ser respondido ou o prazo
+                            acabar; enquanto isso a Kisland mostra só a bandeja.
+                        -->
+                        <Border x:Name="PedidoKdrop" Visibility="Collapsed" Margin="0,10,0,0" CornerRadius="12" Padding="12"
+                                Background="{DynamicResource InfoFundo}" BorderBrush="{DynamicResource Acento}" BorderThickness="1">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Chip}" VerticalAlignment="Top">
+                                        <Path x:Name="IconePedidoKdrop" Stroke="{DynamicResource Icone}" StrokeThickness="1.6"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                              Width="18" Height="18" Stretch="Uniform" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                        <TextBlock Text="Kdrop" FontSize="11" Foreground="{DynamicResource InfoTexto}" />
+                                        <TextBlock x:Name="TituloPedidoKdrop" FontSize="14" FontWeight="SemiBold" Margin="0,2,0,0"
+                                                   TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                        <TextBlock x:Name="DetalhePedidoKdrop" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
+                                                   TextTrimming="CharacterEllipsis" MaxHeight="34"
+                                                   Foreground="{DynamicResource TextoFraco}" />
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <CheckBox x:Name="LembrarPedidoKdrop" Style="{StaticResource CaixaDeSelecao}"
+                                              VerticalAlignment="Center" Focusable="False" />
+                                    <TextBlock Text="Aceitar sozinho deste aparelho da próxima vez" FontSize="12" Margin="8,0,0,0"
+                                               Foreground="{DynamicResource Icone}" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <UniformGrid Columns="2" Margin="0,12,0,0">
+                                    <Button Style="{StaticResource BotaoLargo}" Height="40" Margin="0,0,5,0"
+                                            Content="Recusar" Click="RecusarKdrop_Click" />
+                                    <Button Style="{StaticResource BotaoPrincipalIlha}" Height="40" Margin="5,0,0,0"
+                                            Content="Aceitar" Click="AceitarKdrop_Click" />
+                                </UniformGrid>
+                            </StackPanel>
+                        </Border>
+
                         <TextBlock x:Name="DicaBandeja" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextoFraco}"
                                    Text="Arraste arquivos até a Kisland para deixá-los aqui, à mão." />
                         <UniformGrid x:Name="GradeBandeja" Columns="6" Margin="0,8,0,0" />
+
+                        <!--
+                            Kdrop: os aparelhos da casa em círculos, como no
+                            AirDrop. Toque manda a bandeja inteira; arrastar um
+                            arquivo até um deles manda só aquele. O último,
+                            "Celular", mostra o QR Code ali mesmo.
+                        -->
+                        <StackPanel x:Name="AreaKdrop" Visibility="Collapsed">
+                            <Border Height="1" Margin="0,10,0,10" Background="{DynamicResource Borda}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="M12,15 L12,3 M7,8 L12,3 L17,8 M4,14 L4,18 A2,2 0 0,0 6,20 L18,20 A2,2 0 0,0 20,18 L20,14"
+                                      Stroke="{DynamicResource Acento}" StrokeThickness="2" StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="13" Height="13" Stretch="Uniform"
+                                      VerticalAlignment="Center" />
+                                <TextBlock Text="Kdrop" FontSize="12" FontWeight="SemiBold" Margin="8,0,0,0"
+                                           VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
+                                <TextBlock x:Name="DicaKdrop" FontSize="11" Margin="6,0,0,0" VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextoFraco}"
+                                           Text="· toque para mandar tudo, ou arraste um arquivo até o aparelho" />
+                            </StackPanel>
+                            <WrapPanel x:Name="AparelhosKdrop" Margin="0,8,0,0" />
+                            <TextBlock x:Name="MotivoKdrop" Visibility="Collapsed" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource AvisoIcone}" />
+
+                            <Border x:Name="QrKdrop" Visibility="Collapsed" Margin="0,8,0,0" CornerRadius="12" Padding="10"
+                                    Background="{DynamicResource Fundo}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Background="White" CornerRadius="10" Padding="8" VerticalAlignment="Center">
+                                        <Image x:Name="ImagemQrKdrop" Width="116" Height="116"
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Aponte a câmera do celular" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource Texto}" />
+                                        <TextBlock FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}"
+                                                   Text="Abre esta bandeja no navegador do celular, na mesma rede Wi-Fi. Ou digite:" />
+                                        <TextBlock x:Name="EnderecoKdrop" FontSize="13" FontWeight="Medium" Margin="0,6,0,0"
+                                                   Foreground="{DynamicResource Acento}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

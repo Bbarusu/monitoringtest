@@ -103,6 +103,34 @@ entrada no PC (`GetLastInputInfo`) ela se esconde e volta no primeiro
 movimento. O Windows não informa se a tela é OLED, então nada disso depende de
 detectar a tela.
 
+### Kdrop
+
+A bandeja aberta para a casa (`KdropService`), só na rede local e sem serviço
+de fora:
+
+- Servidor HTTP (`HttpListener`) na porta 48620. Serve a página do celular
+  (`Dados/kdrop.html`, recurso embutido): a bandeja vista de fora, com os PCs
+  da casa, os arquivos para baixar e o envio do celular para o PC.
+  `GET /api/estado` (o celular pergunta a cada 2 s e assim aparece na Kisland),
+  `GET /api/arquivo/{id}`, `POST /api/pedido`, `GET /api/pedido/{id}` e
+  `POST /api/enviar/{pedido}?nome=`.
+- Anúncio UDP na porta 48621, a cada 5 s, para os KInfo da rede se acharem.
+- O envio para outro PC é o mesmo caminho do celular: pede, espera o aceite,
+  envia arquivo por arquivo.
+
+Todo pedido passa pelo aceite na Kisland (prazo de 60 s), a não ser de aparelho
+em `KdropConfiaveis`. Só entra arquivo que estava no pedido aceito, com o nome
+limpo, e nunca sobrescreve: repetido vira "foto (2).jpg". Vai para
+`KdropPasta` (Downloads\Kdrop por padrão) e entra na bandeja. HTTP comum: com
+criptografia seria preciso certificado, e o celular avisaria de site inseguro.
+Na primeira vez o KInfo cria a regra "KInfo Kdrop" no Firewall, só para redes
+privadas e de domínio. O `HttpListener` em todas as interfaces exige o app
+elevado. QR Code pelo QRCoder.
+
+Arrastar um arquivo da bandeja até um aparelho é feito à mão, com o mouse preso
+ao item: o arrasto do Windows não serve, porque a Kisland cancelou o registro
+dela como destino (veja a bandeja). Saindo da Kisland, vira o arrasto normal.
+
 ### Roda do mouse, saídas de som e bandeja
 
 A roda e o clique do meio chegam por mensagem do Windows (`WM_MOUSEWHEEL`,

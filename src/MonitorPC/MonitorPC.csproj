@@ -48,6 +48,10 @@
          contador de FPS da Kisland. E a biblioteca da propria Microsoft para
          rastreamento de eventos; a do PresentMon faz o mesmo em C++. -->
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.*" />
+
+    <!-- QR Code do Kdrop, para o celular abrir a bandeja apontando a camera.
+         Biblioteca livre (MIT), sem dependencias. -->
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
   <!--
@@ -57,6 +61,9 @@
   -->
   <ItemGroup>
     <EmbeddedResource Include="Dados\catalogo.json" LogicalName="catalogo.json" />
+
+    <!-- A pagina que o celular abre no Kdrop: a bandeja vista de fora. -->
+    <EmbeddedResource Include="Dados\kdrop.html" LogicalName="kdrop.html" />
   </ItemGroup>
 
 </Project>

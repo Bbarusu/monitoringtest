@@ -1,13 +1,8 @@
-Corrigido: a bandeja de arquivos da Kisland não recebia nada. Arrastar um arquivo até ela não fazia efeito nenhum, porque a janela da Kisland recusava o arquivo antes de a bandeja chegar a vê-lo. Agora soltar arquivos na Kisland, fechada ou aberta, guarda eles na bandeja, inclusive com o KInfo rodando como administrador.
+Novo: Kdrop, a bandeja da Kisland aberta para a casa. Com ele, o celular e os outros PCs com KInfo, no mesmo Wi-Fi, mandam e pegam arquivos da bandeja, sem instalar nada no celular.
 
-Novo: ver o que está usando a CPU. Na aba Geral, clique no anel grande da temperatura e abre a lista de programas por uso de processamento, com a opção de fechá-los — do mesmo jeito que o cartão de RAM já fazia para a memória. A lista se atualiza sozinha, porque uso de CPU só existe entre duas medições.
+- No PC: na bandeja aparecem os aparelhos por perto, em círculos. Toque em um para mandar tudo o que está na bandeja, ou arraste um arquivo até ele para mandar só aquele.
+- No celular: toque em "Celular", na bandeja, e aponte a câmera para o QR Code. Abre a bandeja do PC no navegador: dá para baixar o que está nela e colocar fotos e arquivos do celular.
+- Todo envio pede o seu aceite: a Kisland abre na bandeja com Aceitar e Recusar. Dá para marcar um aparelho para aceitar sozinho da próxima vez.
+- O que chega fica na bandeja e em Downloads › Kdrop.
 
-Novo: a Kisland espera o mouse ficar parado em cima dela antes de abrir, 5 segundos por padrão. Dá tempo de clicar no anel de IA ou num item sem ela se abrir por cima. Em Personalização, aba Kisland, "Esperar antes de abrir" tem 0,5 s, 1 s, 2 s, 3 s e 5 s.
-
-Novo: o anel de IA abre o app do chat quando ele está instalado no PC (ChatGPT, Claude, Copilot e os outros, inclusive os instalados pelo Edge ou pelo Chrome). Sem o app, abre o site, como antes. A Personalização mostra se o app foi encontrado.
-
-Na Kisland aberta, os cartões de CPU, GPU, RAM, disco e energia se reorganizam conforme o que está ligado: até três ficam lado a lado numa linha só, em vez de um embaixo do outro.
-
-Corrigido: o contador de FPS achava que o Parsec era um jogo. Programas de acesso remoto e transmissão (Parsec, AnyDesk, TeamViewer, Área de Trabalho Remota, Moonlight e outros) não contam mais como jogo.
-
-O painel mostra a versão do KInfo no canto de baixo, à direita, logo abaixo do botão de Ajustes.
+Vem desligado. Para ligar: Personalização, aba Kisland, "Kdrop". Precisa do KInfo instalado com acesso completo, e da rede do Windows marcada como Privada.

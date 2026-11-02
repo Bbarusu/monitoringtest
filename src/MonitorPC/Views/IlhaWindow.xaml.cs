@@ -139,6 +139,7 @@ public partial class IlhaWindow : Window
             _midia.Mudou -= Midia_Mudou;
             _volume.Mudou -= Volume_Mudou;
             _fps.Dispose();
+            _kdrop?.Dispose();
         };
 
         _sensores.Atualizado += Sensores_Atualizados;
@@ -197,6 +198,7 @@ public partial class IlhaWindow : Window
         _jogo = null;
         _modoJogo = false;
         _escondidaPorInatividade = false;
+        PararKdrop();
         Hide();
     }
 
@@ -260,6 +262,7 @@ public partial class IlhaWindow : Window
         MontarAtalhos();
         MontarBandeja();
         if (_handle != IntPtr.Zero) DragAcceptFiles(_handle, _cfg.IlhaBandeja);
+        AtualizarKdrop();
         if (_expandida) MontarSaidas();
 
         if (_sensores.Ultimo is { } ultimo) AplicarSensores(ultimo);
@@ -513,6 +516,11 @@ public partial class IlhaWindow : Window
 
         _margens ??= blocos.ToDictionary(b => b, b => b.Margin);
 
+        // Pedido do Kdrop esperando resposta: so a bandeja, onde ele esta.
+        if (_soBandeja)
+            foreach (var bloco in blocos)
+                if (!ReferenceEquals(bloco, BlocoBandeja)) bloco.Visibility = Visibility.Collapsed;
+
         var primeiro = true;
         foreach (var bloco in blocos)
         {
@@ -754,6 +762,13 @@ public partial class IlhaWindow : Window
             return;
         }
 
+        // Com um pedido do Kdrop na tela, ela so fecha depois da resposta.
+        if (_pedidoKdrop is not null)
+        {
+            _foraDesde = null;
+            return;
+        }
+
         _foraDesde ??= agora;
         if (agora - _foraDesde >= EsperaParaFechar) Recolher();
     }
@@ -835,6 +850,7 @@ public partial class IlhaWindow : Window
         ConferirTelaCheia();
         ConferirInatividade();
         ConferirBrilho();
+        ConferirPedidoKdrop();
 
         // Contra marca na tela: a cada 3 minutos, um passo de 1 ou 2 px.
         if (Mexendo && _segundos % 180 == 0)
@@ -1919,12 +1935,27 @@ public partial class IlhaWindow : Window
         TituloDaBandeja();
 
         BlocoBandeja.Visibility = Visivel(_cfg.IlhaBandeja);
-        ChipBandeja.Visibility = Visivel(_cfg.IlhaBandeja && quantos > 0 && !_modoJogo);
-        TextoBandeja.Text = quantos.ToString();
+        AtualizarChipBandeja();
+    }
+
+    /// <summary>O chip da pilula: quantos arquivos, e o progresso do Kdrop quando algo esta chegando.</summary>
+    private void AtualizarChipBandeja()
+    {
+        var quantos = _bandeja.Count;
+        var recebendo = _recebendoKdrop is { Estado: EstadoDoPedido.Aceito };
+
+        ChipBandeja.Visibility = Visivel(_cfg.IlhaBandeja && (quantos > 0 || recebendo) && !_modoJogo);
+        TextoBandeja.Text = recebendo ? $"{quantos} · {_recebendoKdrop!.Porcentagem}%" : quantos.ToString();
     }
 
     private void TituloDaBandeja()
     {
+        if (_recebendoKdrop is { Estado: EstadoDoPedido.Aceito } chegando)
+        {
+            TituloBandeja.Text = $"Bandeja · recebendo de {chegando.OrigemNome} · {chegando.Porcentagem}%";
+            return;
+        }
+
         var quantos = _bandeja.Count;
         TituloBandeja.Text = quantos switch
         {
@@ -2054,6 +2085,21 @@ public partial class IlhaWindow : Window
             return;
 
         _inicioDoArrasto = null;
+
+        // Com o Kdrop e algum aparelho por perto, o arrasto comeca dentro da
+        // Kisland: soltar num aparelho manda o arquivo; sair da Kisland vira
+        // o arrasto normal, para uma pasta ou outro programa.
+        if (_kdrop is { Rodando: true } && _kdrop.Aparelhos().Count > 0)
+        {
+            ArrastarParaAparelho(botao, caminho);
+            return;
+        }
+
+        ArrastarParaFora(botao, caminho);
+    }
+
+    private void ArrastarParaFora(Button botao, string caminho)
+    {
         botao.ReleaseMouseCapture();
 
         try
@@ -2069,6 +2115,471 @@ public partial class IlhaWindow : Window
         // Movido (ou apagado): o caminho nao existe mais, e MontarBandeja o tira.
         MontarBandeja();
         AtualizarSemItens();
+    }
+
+    // ------------------------------------------------------------------
+    // Kdrop: a bandeja aberta para a casa
+
+    private KdropService? _kdrop;
+
+    /// <summary>Pedido esperando resposta; com ele, a Kisland mostra so a bandeja e nao fecha.</summary>
+    private PedidoKdrop? _pedidoKdrop;
+
+    /// <summary>Pedido aceito, com arquivos chegando: o progresso vai no titulo e no chip da bandeja.</summary>
+    private PedidoKdrop? _recebendoKdrop;
+
+    private bool _soBandeja;
+
+    /// <summary>O que cada circulo diz embaixo do nome: "Mandando 42%", "Enviado".</summary>
+    private readonly Dictionary<string, string> _estadoDoAparelho = new();
+
+    private System.Windows.Media.Imaging.BitmapSource? _qr;
+    private string? _qrDe;
+    private string? _arrastandoParaAparelho;
+
+    private const string DesenhoCelular =
+        "M8,2 L16,2 A2,2 0 0,1 18,4 L18,20 A2,2 0 0,1 16,22 L8,22 A2,2 0 0,1 6,20 L6,4 A2,2 0 0,1 8,2 Z M11,18 L13,18";
+    private const string DesenhoNotebook = "M5,6 L19,6 L19,15 L5,15 Z M3,18 L21,18";
+    private const string DesenhoDesktop = "M4,5 L20,5 L20,16 L4,16 Z M9,20 L15,20 M12,16 L12,20";
+    private const string DesenhoQr =
+        "M4,4 L10,4 L10,10 L4,10 Z M14,4 L20,4 L20,10 L14,10 Z M4,14 L10,14 L10,20 L4,20 Z " +
+        "M14,14 L16,14 M18,14 L20,14 L20,16 M14,18 L14,20 L16,20 M18,18 L20,18 L20,20";
+
+    /// <summary>O Kdrop so existe com a Kisland ativa, a bandeja ligada e ele ligado.</summary>
+    private bool KdropLigado => _ativa && _cfg.IlhaBandeja && _cfg.Kdrop;
+
+    private void AtualizarKdrop()
+    {
+        if (KdropLigado && _kdrop is null)
+        {
+            _kdrop = new KdropService(_cfg, () =>
+            {
+                // O servidor pergunta de outra thread; a bandeja mora nesta.
+                try { return Dispatcher.Invoke(() => _bandeja.ToList()); }
+                catch { return new List<string>(); }
+            });
+            _kdrop.PedidoChegou += p => Dispatcher.BeginInvoke(() => MostrarPedido(p));
+            _kdrop.PedidoMudou += p => Dispatcher.BeginInvoke(() => PedidoMudou(p));
+            _kdrop.ArquivoRecebido += c => Dispatcher.BeginInvoke(() => ReceberDoKdrop(c));
+            _kdrop.AparelhosMudaram += () => Dispatcher.BeginInvoke(() => MontarAparelhos());
+            _kdrop.Iniciar();
+        }
+        else if (!KdropLigado && _kdrop is not null)
+        {
+            PararKdrop();
+        }
+
+        MontarAparelhos();
+    }
+
+    private void PararKdrop()
+    {
+        _kdrop?.Dispose();
+        _kdrop = null;
+        _pedidoKdrop = null;
+        _recebendoKdrop = null;
+        _soBandeja = false;
+        _estadoDoAparelho.Clear();
+        PedidoKdrop.Visibility = Visibility.Collapsed;
+        QrKdrop.Visibility = Visibility.Collapsed;
+        AreaKdrop.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Os aparelhos em circulos, como no AirDrop: PCs com KInfo e celulares
+    /// com a bandeja aberta, e por ultimo o "Celular", que mostra o QR Code.
+    /// </summary>
+    private void MontarAparelhos()
+    {
+        AreaKdrop.Visibility = Visivel(_kdrop is not null);
+        if (_kdrop is null) return;
+
+        MotivoKdrop.Text = _kdrop.Motivo ?? "";
+        MotivoKdrop.Visibility = Visivel(_kdrop.Motivo is not null);
+
+        AparelhosKdrop.Children.Clear();
+        if (!_kdrop.Rodando) return;
+
+        var aparelhos = _kdrop.Aparelhos();
+        foreach (var aparelho in aparelhos)
+        {
+            var desenho = !aparelho.EhPc ? DesenhoCelular : aparelho.EhNotebook ? DesenhoNotebook : DesenhoDesktop;
+            _estadoDoAparelho.TryGetValue(aparelho.Id, out var estado);
+            AparelhosKdrop.Children.Add(CirculoDeAparelho(aparelho, aparelho.Nome, desenho, estado ?? "Pronto"));
+        }
+
+        AparelhosKdrop.Children.Add(CirculoDeAparelho("qr", "Celular", DesenhoQr, "QR Code"));
+
+        DicaKdrop.Text = aparelhos.Count == 0
+            ? "· nenhum aparelho por perto ainda"
+            : "· toque para mandar tudo, ou arraste um arquivo até o aparelho";
+    }
+
+    private Button CirculoDeAparelho(object alvo, string nome, string desenho, string estado)
+    {
+        var ehQr = alvo is "qr";
+
+        var circulo = new Border
+        {
+            Width = 52,
+            Height = 52,
+            CornerRadius = new CornerRadius(26),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        if (ehQr)
+        {
+            circulo.BorderThickness = new Thickness(1.5);
+            circulo.SetResourceReference(Border.BorderBrushProperty,
+                QrKdrop.Visibility == Visibility.Visible ? "Acento" : "Trilho");
+            circulo.Background = Brushes.Transparent;
+        }
+        else
+        {
+            circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
+            // Mandando: anel na cor de destaque; enviado: anel verde.
+            if (estado.StartsWith("Mandando") || estado.StartsWith("Esperando"))
+            {
+                circulo.BorderThickness = new Thickness(2);
+                circulo.SetResourceReference(Border.BorderBrushProperty, "Acento");
+            }
+            else if (estado is "Enviado" or "Mandado")
+            {
+                circulo.BorderThickness = new Thickness(2);
+                circulo.BorderBrush = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
+            }
+        }
+
+        var icone = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse(desenho),
+            StrokeThickness = 1.6,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round,
+            Width = 22,
+            Height = 22,
+            Stretch = Stretch.Uniform
+        };
+        icone.SetResourceReference(Shape.StrokeProperty, "Icone");
+
+        var dentro = new Grid();
+        dentro.Children.Add(icone);
+        if (!ehQr)
+        {
+            // Ponto verde de "ligado", no canto do circulo.
+            dentro.Children.Add(new Ellipse
+            {
+                Width = 12,
+                Height = 12,
+                Fill = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E)),
+                StrokeThickness = 2,
+                Stroke = (Brush)FindResource("Cartao"),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, -1, -1)
+            });
+        }
+        circulo.Child = dentro;
+
+        var rotulo = new TextBlock
+        {
+            Text = nome,
+            FontSize = 11,
+            FontWeight = FontWeights.Medium,
+            Margin = new Thickness(0, 6, 0, 0),
+            MaxWidth = 84,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        rotulo.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
+        var situacao = new TextBlock
+        {
+            Text = estado,
+            FontSize = 10,
+            Margin = new Thickness(0, 1, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        situacao.SetResourceReference(TextBlock.ForegroundProperty,
+            estado is "Pronto" or "QR Code" ? "TextoFraco" : "InfoTexto");
+
+        var conteudo = new StackPanel { Width = 84, Margin = new Thickness(0, 0, 4, 0) };
+        conteudo.Children.Add(circulo);
+        conteudo.Children.Add(rotulo);
+        conteudo.Children.Add(situacao);
+
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoSemMoldura"),
+            Content = conteudo,
+            Tag = alvo,
+            ToolTip = ehQr ? "Abrir a bandeja no celular" : $"Mandar a bandeja para {nome}"
+        };
+        botao.Click += Aparelho_Click;
+        return botao;
+    }
+
+    private async void Aparelho_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button botao) return;
+
+        if (botao.Tag is "qr")
+        {
+            AlternarQr();
+            return;
+        }
+
+        if (botao.Tag is AparelhoKdrop aparelho)
+            await MandarPeloKdrop(aparelho, _bandeja.ToList());
+    }
+
+    /// <summary>
+    /// Manda arquivos da bandeja para um aparelho. Para um PC, pede e envia;
+    /// para um celular, marca os arquivos para ele — a pagina aberta la os
+    /// destaca, prontos para baixar. Pastas ficam de fora: so arquivos viajam.
+    /// </summary>
+    private async Task MandarPeloKdrop(AparelhoKdrop aparelho, List<string> caminhos)
+    {
+        if (_kdrop is null) return;
+
+        var arquivos = caminhos.Where(System.IO.File.Exists).ToList();
+        if (arquivos.Count == 0)
+        {
+            Situacao(aparelho.Id, "Bandeja vazia");
+            return;
+        }
+
+        if (!aparelho.EhPc)
+        {
+            _kdrop.AvisarCelular(aparelho.Id, arquivos);
+            Situacao(aparelho.Id, "Mandado");
+            return;
+        }
+
+        if (_estadoDoAparelho.TryGetValue(aparelho.Id, out var atual) &&
+            (atual.StartsWith("Mandando") || atual.StartsWith("Esperando")))
+            return;
+
+        Situacao(aparelho.Id, "Esperando…");
+        var progresso = new Progress<int>(p => Situacao(aparelho.Id, $"Mandando {p}%"));
+        var resultado = await _kdrop.MandarParaPc(aparelho, arquivos, progresso);
+        Situacao(aparelho.Id, resultado);
+    }
+
+    private void Situacao(string id, string texto)
+    {
+        _estadoDoAparelho[id] = texto;
+        MontarAparelhos();
+    }
+
+    private void AlternarQr()
+    {
+        if (QrKdrop.Visibility == Visibility.Visible)
+        {
+            QrKdrop.Visibility = Visibility.Collapsed;
+            MontarAparelhos();
+            return;
+        }
+
+        var endereco = KdropService.Endereco;
+        if (endereco is null)
+        {
+            MotivoKdrop.Text = "Sem rede agora: conecte o PC ao Wi-Fi ou ao cabo da casa.";
+            MotivoKdrop.Visibility = Visibility.Visible;
+            return;
+        }
+
+        if (_qrDe != endereco)
+        {
+            _qr = GerarQr(endereco);
+            _qrDe = endereco;
+        }
+
+        ImagemQrKdrop.Source = _qr;
+        EnderecoKdrop.Text = endereco.Replace("http://", "").TrimEnd('/');
+        QrKdrop.Visibility = Visibility.Visible;
+        MontarAparelhos();
+    }
+
+    private static System.Windows.Media.Imaging.BitmapSource? GerarQr(string texto)
+    {
+        try
+        {
+            using var gerador = new QRCoder.QRCodeGenerator();
+            using var dados = gerador.CreateQrCode(texto, QRCoder.QRCodeGenerator.ECCLevel.M);
+            var png = new QRCoder.PngByteQRCode(dados).GetGraphic(8);
+
+            var imagem = new System.Windows.Media.Imaging.BitmapImage();
+            imagem.BeginInit();
+            imagem.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            imagem.StreamSource = new System.IO.MemoryStream(png);
+            imagem.EndInit();
+            imagem.Freeze();
+            return imagem;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Kdrop: QR Code", ex);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Chegou um pedido: a Kisland abre so na bandeja, com Aceitar e Recusar,
+    /// e nao fecha ate a resposta (ou o prazo). Escondida por tela cheia ou
+    /// com o PC parado, o pedido espera; quem manda ve "esperando".
+    /// </summary>
+    private void MostrarPedido(PedidoKdrop pedido)
+    {
+        _pedidoKdrop = pedido;
+
+        var n = pedido.Arquivos.Count;
+        TituloPedidoKdrop.Text = $"{pedido.OrigemNome} quer colocar {(n == 1 ? "1 arquivo" : $"{n} arquivos")} na sua bandeja";
+
+        var nomes = string.Join(", ", pedido.Arquivos.Take(3).Select(a => a.Nome));
+        if (n > 3) nomes += $" e mais {n - 3}";
+        DetalhePedidoKdrop.Text = $"{nomes} · {Tamanho(pedido.Total)}";
+
+        IconePedidoKdrop.Data = Geometry.Parse(pedido.OrigemEhPc ? DesenhoDesktop : DesenhoCelular);
+        LembrarPedidoKdrop.IsChecked = false;
+        PedidoKdrop.Visibility = Visibility.Visible;
+        _soBandeja = true;
+
+        if (!_ativa || _escondidaPorTelaCheia || _escondidaPorInatividade) return;
+
+        if (_expandida) AplicarMidia(false);
+        else Expandir();
+    }
+
+    private void AceitarKdrop_Click(object sender, RoutedEventArgs e) => ResponderPedido(true);
+    private void RecusarKdrop_Click(object sender, RoutedEventArgs e) => ResponderPedido(false);
+
+    private void ResponderPedido(bool aceitar)
+    {
+        if (_pedidoKdrop is not { } pedido) return;
+
+        _kdrop?.Responder(pedido.Id, aceitar, aceitar && LembrarPedidoKdrop.IsChecked == true);
+        FecharPedido();
+    }
+
+    private void FecharPedido()
+    {
+        _pedidoKdrop = null;
+        _soBandeja = false;
+        PedidoKdrop.Visibility = Visibility.Collapsed;
+        AplicarConfiguracao();
+    }
+
+    /// <summary>Prazo do pedido vencido sem resposta: conta como recusado.</summary>
+    private void ConferirPedidoKdrop()
+    {
+        if (_pedidoKdrop is { } pedido && DateTime.UtcNow - pedido.CriadoEm > KdropService.PrazoDoPedido)
+            ResponderPedido(false);
+    }
+
+    private void PedidoMudou(PedidoKdrop pedido)
+    {
+        // Respondido por outro caminho (prazo no servidor, aparelho confiavel).
+        if (_pedidoKdrop?.Id == pedido.Id && pedido.Estado != EstadoDoPedido.Esperando)
+            FecharPedido();
+
+        if (pedido.Estado == EstadoDoPedido.Aceito) _recebendoKdrop = pedido;
+        else if (_recebendoKdrop?.Id == pedido.Id) _recebendoKdrop = null;
+
+        TituloDaBandeja();
+        AtualizarChipBandeja();
+        AtualizarSemItens();
+        MostrarEstado();
+    }
+
+    /// <summary>Um arquivo chegou inteiro: entra na bandeja, como se tivesse sido arrastado.</summary>
+    private void ReceberDoKdrop(string caminho)
+    {
+        _bandeja.Remove(caminho);
+        _bandeja.Add(caminho);
+        while (_bandeja.Count > MaximoNaBandeja) _bandeja.RemoveAt(0);
+
+        MontarBandeja();
+        AtualizarSemItens();
+        MostrarEstado();
+    }
+
+    private static string Tamanho(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024} KB",
+        < 1024L * 1024 * 1024 => $"{bytes / (1024.0 * 1024):0.#} MB",
+        _ => $"{bytes / (1024.0 * 1024 * 1024):0.#} GB"
+    };
+
+    // Arrastar um arquivo da bandeja ate um aparelho, sem sair da Kisland.
+    // O arrasto do Windows (OLE) nao serve aqui: a Kisland cancelou o
+    // registro dela como destino, para a bandeja receber do Explorer. Entao o
+    // arrasto interno e feito a mao, com o mouse preso ao item.
+
+    private void ArrastarParaAparelho(Button botao, string caminho)
+    {
+        _arrastandoParaAparelho = caminho;
+        botao.CaptureMouse();
+        botao.PreviewMouseMove += ArrastoInterno_Mover;
+        botao.PreviewMouseLeftButtonUp += ArrastoInterno_Soltar;
+        botao.LostMouseCapture += ArrastoInterno_Perdido;
+        Mouse.OverrideCursor = Cursors.Hand;
+    }
+
+    private void ArrastoInterno_Mover(object sender, MouseEventArgs e)
+    {
+        if (_arrastandoParaAparelho is not { } caminho || sender is not Button botao) return;
+
+        // Saiu da Kisland: vira o arrasto normal, para uma pasta ou programa.
+        if (!CursorEmCima())
+        {
+            EncerrarArrastoInterno(botao);
+            ArrastarParaFora(botao, caminho);
+        }
+    }
+
+    private void ArrastoInterno_Soltar(object sender, MouseButtonEventArgs e)
+    {
+        if (_arrastandoParaAparelho is not { } caminho || sender is not Button botao) return;
+
+        var alvo = AparelhoSob(e.GetPosition(Casca));
+        EncerrarArrastoInterno(botao);
+
+        // Sem isso o soltar viraria clique, e o arquivo abriria.
+        e.Handled = true;
+
+        if (alvo is not null) _ = MandarPeloKdrop(alvo, new List<string> { caminho });
+    }
+
+    private void ArrastoInterno_Perdido(object sender, MouseEventArgs e)
+    {
+        if (sender is Button botao) EncerrarArrastoInterno(botao);
+    }
+
+    private void EncerrarArrastoInterno(Button botao)
+    {
+        if (_arrastandoParaAparelho is null) return;
+        _arrastandoParaAparelho = null;
+
+        botao.PreviewMouseMove -= ArrastoInterno_Mover;
+        botao.PreviewMouseLeftButtonUp -= ArrastoInterno_Soltar;
+        botao.LostMouseCapture -= ArrastoInterno_Perdido;
+        Mouse.OverrideCursor = null;
+        if (botao.IsMouseCaptured) botao.ReleaseMouseCapture();
+    }
+
+    /// <summary>O aparelho (circulo) que esta embaixo de um ponto da Kisland, se houver.</summary>
+    private AparelhoKdrop? AparelhoSob(Point ponto)
+    {
+        var no = Casca.InputHitTest(ponto) as DependencyObject;
+        while (no is not null)
+        {
+            if (no is Button { Tag: AparelhoKdrop aparelho }) return aparelho;
+            no = no is Visual ? VisualTreeHelper.GetParent(no) : null;
+        }
+
+        return null;
     }
 
     private void TirarDaBandeja_Click(object sender, RoutedEventArgs e)

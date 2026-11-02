@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15171c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kdrop">
+<title>Kdrop</title>
+<!--
+  A bandeja da Kisland vista do celular. Servida pelo proprio KInfo, na rede
+  de casa: nada de fora, nenhuma fonte ou script baixado. Mesma paleta do
+  painel (tema escuro), e a cor de destaque vem do PC.
+-->
+<style>
+  :root { --acento: #3b82f6; --fundo: #15171c; --cartao: #1a1d23; --chip: #1d2026; --borda: #262a32;
+          --trilho: #2a2e36; --texto: #e6e9ef; --fraco: #9aa3b2; --icone: #c4cad6; --info: #16233d; --infotexto: #8fbaff; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--fundo); color: var(--texto);
+               font-family: "Segoe UI Variable Display", "Segoe UI", -apple-system, system-ui, sans-serif; }
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: calc(22px + env(safe-area-inset-top)) 20px 0; display: flex; flex-direction: column; gap: 14px; }
+  .marca { display: flex; align-items: center; gap: 12px; }
+  .icone { width: 44px; height: 44px; border-radius: 12px; background: var(--chip); display: flex;
+           align-items: center; justify-content: center; flex: none; }
+  .de { font-size: 12px; color: var(--fraco); }
+  h1 { margin: 2px 0 0; font-size: 18px; font-weight: 600; }
+  .pcs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  .pc { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 999px;
+        background: var(--cartao); border: 1px solid var(--borda); color: var(--texto); font-weight: 500; font-size: 13px;
+        font-family: inherit; white-space: nowrap; text-decoration: none; }
+  .pc.eu { border-color: var(--acento); background: var(--info); color: var(--infotexto); }
+  .ponto { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+  main { flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .sec { font-size: 12px; color: var(--fraco); font-weight: 500; margin-top: 4px; }
+  .arq { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px;
+         background: var(--cartao); border: 1px solid var(--borda); }
+  .arq.novo { border-color: var(--acento); background: var(--info); }
+  .arq.escolhido { border-style: dashed; }
+  .tipo { width: 36px; height: 36px; border-radius: 10px; background: #232730; display: flex; align-items: center;
+          justify-content: center; font-size: 10px; font-weight: 600; color: var(--acento); flex: none; }
+  .nome { flex: 1; min-width: 0; }
+  .nome b { display: block; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nome span { display: block; font-size: 12px; color: var(--fraco); margin-top: 2px; }
+  .baixar { height: 40px; padding: 0 14px; border-radius: 12px; background: var(--acento); color: #fff;
+            font-weight: 600; font-size: 13px; line-height: 40px; font-family: inherit; text-decoration: none; flex: none; }
+  .vazio { font-size: 13px; color: var(--fraco); padding: 6px 2px; line-height: 1.5; }
+  .escolher { height: 52px; border-radius: 14px; background: transparent; border: 1.5px dashed #3a3f4a;
+              color: var(--icone); font-weight: 500; font-size: 14px; font-family: inherit; display: flex; align-items: center;
+              justify-content: center; cursor: pointer; }
+  input[type=file] { display: none; }
+  footer { padding: 14px 20px calc(26px + env(safe-area-inset-bottom)); border-top: 1px solid var(--borda);
+           background: var(--fundo); position: sticky; bottom: 0; }
+  .principal { width: 100%; height: 54px; border: 0; border-radius: 14px; background: var(--acento); color: #fff;
+               font-weight: 600; font-size: 15px; font-family: inherit; }
+  .principal:disabled { opacity: .5; }
+  .linha { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .secundario { height: 40px; padding: 0 14px; border-radius: 12px; background: transparent; border: 1px solid var(--trilho);
+                color: var(--icone); font-weight: 500; font-size: 13px; font-family: inherit; }
+  .anel { position: relative; width: 32px; height: 32px; flex: none; animation: respira 1.8s ease-in-out infinite alternate; }
+  .anel::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px solid var(--acento); opacity: .3; }
+  .anel::after { content: ""; position: absolute; left: 6px; top: 6px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--acento); }
+  @keyframes respira { from { transform: scale(.88); } to { transform: scale(1); } }
+  .barra { height: 6px; border-radius: 3px; background: var(--trilho); margin-top: 8px; }
+  .barra div { height: 6px; border-radius: 3px; background: var(--acento); width: 0; transition: width .2s; }
+  .oculto { display: none !important; }
+  .aviso { font-size: 13px; line-height: 1.5; color: var(--fraco); }
+</style>
+</head>
+<body>
+<header>
+  <div class="marca">
+    <span class="icone"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acento)" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M4 13l3-8h10l3 8v5a2 2 0 01-2 2H6a2 2 0 01-2-2zM4 13h5l1 2h4l1-2h5"/></svg></span>
+    <div><div class="de">Kdrop · bandeja do</div><h1 id="titulo">…</h1></div>
+  </div>
+  <nav class="pcs" id="pcs" aria-label="PCs da casa"></nav>
+</header>
+
+<main>
+  <div class="sec">Na bandeja</div>
+  <div id="bandeja"></div>
+
+  <div class="sec" style="margin-top:12px">Colocar na bandeja</div>
+  <div id="escolhidos"></div>
+  <label class="escolher" for="arquivos">+ Escolher fotos e arquivos</label>
+  <input type="file" id="arquivos" multiple>
+</main>
+
+<footer>
+  <button class="principal" id="enviar" disabled>Escolha ao menos um arquivo</button>
+  <div class="linha oculto" id="esperando">
+    <span class="anel" aria-hidden="true"></span>
+    <span style="flex:1">Esperando o PC aceitar…</span>
+  </div>
+  <div class="oculto" id="enviando">
+    <div class="linha" style="justify-content:space-between;font-size:13px"><span>Colocando na bandeja</span><span id="porcentagem" class="de">0%</span></div>
+    <div class="barra"><div id="progresso"></div></div>
+  </div>
+  <div class="linha oculto" id="resultado">
+    <span class="aviso" id="mensagem" style="flex:1"></span>
+    <button class="secundario" id="voltar">Ok</button>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  // Quem e este celular, para o PC mostrar na Kisland e lembrar se a pessoa
+  // marcar "aceitar sozinho". Guardado no navegador; sem isso, um por visita.
+  var cliente;
+  try {
+    cliente = localStorage.getItem("kdrop-cliente");
+    if (!cliente) { cliente = gerarId(); localStorage.setItem("kdrop-cliente", cliente); }
+  } catch (e) { cliente = gerarId(); }
+
+  function gerarId() {
+    var s = "";
+    for (var i = 0; i < 24; i++) s += Math.floor(Math.random() * 16).toString(16);
+    return s;
+  }
+
+  var ua = navigator.userAgent;
+  var nome = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Celular Android" : "Navegador";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var escolhidos = [];
+  var enviando = false;
+  var novosVistos = {};
+
+  function tamanho(b) {
+    if (b < 1024) return b + " B";
+    if (b < 1048576) return Math.round(b / 1024) + " KB";
+    if (b < 1073741824) return (b / 1048576).toFixed(1).replace(".", ",") + " MB";
+    return (b / 1073741824).toFixed(1).replace(".", ",") + " GB";
+  }
+
+  function tipo(n) {
+    var i = n.lastIndexOf(".");
+    return i > 0 ? n.slice(i + 1, i + 5).toUpperCase() : "ARQ";
+  }
+
+  function el(tag, classe, texto) {
+    var e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texto !== undefined) e.textContent = texto;
+    return e;
+  }
+
+  function linhaDeArquivo(nomeArq, detalhe, classe) {
+    var linha = el("div", "arq" + (classe ? " " + classe : ""));
+    linha.appendChild(el("span", "tipo", tipo(nomeArq)));
+    var n = el("span", "nome");
+    n.appendChild(el("b", null, nomeArq));
+    n.appendChild(el("span", null, detalhe));
+    linha.appendChild(n);
+    return linha;
+  }
+
+  // ---- Estado do PC, perguntado a cada 2 s ---------------------------
+
+  function atualizar() {
+    var url = "api/estado?cliente=" + encodeURIComponent(cliente) + "&nome=" + encodeURIComponent(nome);
+    fetch(url, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(desenhar)
+      .catch(function () { $("titulo").textContent = "PC sem resposta"; });
+  }
+
+  function desenhar(e) {
+    if (e.acento) document.documentElement.style.setProperty("--acento", e.acento);
+    $("titulo").textContent = e.nome;
+    document.title = "Kdrop · " + e.nome;
+
+    var pcs = $("pcs");
+    pcs.textContent = "";
+    (e.pcs || []).forEach(function (pc) {
+      var a = el(pc.eu ? "span" : "a", "pc" + (pc.eu ? " eu" : ""));
+      if (!pc.eu) a.href = pc.endereco;
+      a.appendChild(el("span", "ponto"));
+      a.appendChild(document.createTextNode(pc.nome));
+      pcs.appendChild(a);
+    });
+
+    (e.novos || []).forEach(function (id) { novosVistos[id] = true; });
+
+    var lista = $("bandeja");
+    lista.textContent = "";
+    var itens = e.bandeja || [];
+    if (!itens.length) lista.appendChild(el("div", "vazio", "A bandeja deste PC está vazia. No PC, arraste arquivos até a Kisland para eles aparecerem aqui."));
+    itens.forEach(function (a) {
+      var linha = linhaDeArquivo(a.nome, novosVistos[a.id] ? "Mandado para você · " + tamanho(a.tamanho) : tamanho(a.tamanho),
+                                 novosVistos[a.id] ? "novo" : "");
+      var baixar = el("a", "baixar", "Baixar");
+      baixar.href = "api/arquivo/" + a.id;
+      baixar.setAttribute("download", a.nome);
+      linha.appendChild(baixar);
+      lista.appendChild(linha);
+    });
+  }
+
+  // ---- Escolher e mandar ------------------------------------------------
+
+  $("arquivos").addEventListener("change", function () {
+    for (var i = 0; i < this.files.length; i++) escolhidos.push(this.files[i]);
+    this.value = "";
+    desenharEscolhidos();
+  });
+
+  function desenharEscolhidos() {
+    var lista = $("escolhidos");
+    lista.textContent = "";
+    escolhidos.forEach(function (f, i) {
+      var linha = linhaDeArquivo(f.name, tamanho(f.size), "escolhido");
+      var tirar = el("button", "secundario", "Tirar");
+      tirar.onclick = function () { if (!enviando) { escolhidos.splice(i, 1); desenharEscolhidos(); } };
+      linha.appendChild(tirar);
+      lista.appendChild(linha);
+    });
+    var n = escolhidos.length;
+    $("enviar").disabled = n === 0;
+    $("enviar").textContent = n === 0 ? "Escolha ao menos um arquivo"
+                            : "Colocar " + n + (n === 1 ? " arquivo" : " arquivos") + " na bandeja";
+  }
+
+  function mostrar(qual) {
+    ["enviar", "esperando", "enviando", "resultado"].forEach(function (id) {
+      $(id).classList.toggle("oculto", id !== qual);
+    });
+  }
+
+  function terminar(msg) {
+    enviando = false;
+    $("mensagem").textContent = msg;
+    mostrar("resultado");
+  }
+
+  $("voltar").onclick = function () { mostrar("enviar"); desenharEscolhidos(); };
+
+  $("enviar").onclick = function () {
+    if (!escolhidos.length || enviando) return;
+    enviando = true;
+    mostrar("esperando");
+
+    var corpo = { cliente: cliente, nome: nome, pc: false,
+                  arquivos: escolhidos.map(function (f) { return { nome: f.name, tamanho: f.size }; }) };
+
+    fetch("api/pedido", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (p) { esperarAceite(p.pedido, p.estado); })
+      .catch(function () { terminar("Não deu para falar com o PC. Ele está ligado e na mesma rede?"); });
+  };
+
+  function esperarAceite(pedido, estado) {
+    if (estado === "aceito") return mandar(pedido);
+    if (estado === "recusado") return terminar("O PC recusou o envio.");
+    if (estado === "expirado") return terminar("O PC não respondeu a tempo.");
+
+    setTimeout(function () {
+      fetch("api/pedido/" + pedido, { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (p) { esperarAceite(pedido, p.estado); })
+        .catch(function () { esperarAceite(pedido, "esperando"); });
+    }, 1000);
+  }
+
+  function mandar(pedido) {
+    mostrar("enviando");
+    var total = escolhidos.reduce(function (s, f) { return s + f.size; }, 0) || 1;
+    var feito = 0, i = 0;
+
+    (function proximo() {
+      if (i >= escolhidos.length) {
+        var n = escolhidos.length;
+        escolhidos = [];
+        desenharEscolhidos();
+        atualizar();
+        return terminar("Pronto! " + (n === 1 ? "O arquivo está" : "Os " + n + " arquivos estão") + " na bandeja do PC e em Downloads › Kdrop.");
+      }
+
+      var f = escolhidos[i];
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "api/enviar/" + pedido + "?nome=" + encodeURIComponent(f.name));
+      xhr.upload.onprogress = function (ev) {
+        var p = Math.min(100, Math.round((feito + ev.loaded) * 100 / total));
+        $("progresso").style.width = p + "%";
+        $("porcentagem").textContent = p + "%";
+      };
+      xhr.onload = function () {
+        if (xhr.status !== 200) return terminar("O envio de " + f.name + " falhou.");
+        feito += f.size; i++; proximo();
+      };
+      xhr.onerror = function () { terminar("A conexão caiu no meio do envio."); };
+      xhr.send(f);
+    })();
+  }
+
+  atualizar();
+  setInterval(atualizar, 2000);
+})();
+</script>
+</body>
+</html>

@@ -292,6 +292,22 @@ public sealed class AppConfig
     /// </summary>
     public bool IlhaBandeja { get; set; } = true;
 
+    /// <summary>
+    /// Kdrop: a bandeja aberta para o celular e os outros PCs da casa, pela
+    /// rede Wi-Fi. Desligado por padrao: abre uma porta na rede, e isso so
+    /// deve acontecer quando a pessoa pede.
+    /// </summary>
+    public bool Kdrop { get; set; }
+
+    /// <summary>Como este PC aparece no celular e nos outros PCs. Vazio usa o nome do Windows.</summary>
+    public string? KdropNome { get; set; }
+
+    /// <summary>Onde fica o que chega pelo Kdrop. Vazio e Downloads\Kdrop.</summary>
+    public string? KdropPasta { get; set; }
+
+    /// <summary>Aparelhos cujos envios sao aceitos sem perguntar.</summary>
+    public List<AparelhoConfiavel> KdropConfiaveis { get; set; } = new();
+
     /// <summary>A roda do mouse em cima da Kisland muda o volume, e o clique da roda pausa a musica.</summary>
     public bool IlhaRodaMudaVolume { get; set; } = true;
 

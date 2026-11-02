@@ -183,6 +183,9 @@ public partial class PersonalizacaoWindow : Window
         IlhaAbertaAtalhos.IsChecked = _cfg.IlhaAbertaAtalhos;
         IlhaSaidasDeSom.IsChecked = _cfg.IlhaSaidasDeSom;
         IlhaIaApp.IsChecked = _cfg.IlhaIaPreferirApp;
+        KdropLigado.IsChecked = _cfg.Kdrop;
+        KdropNome.Text = _cfg.KdropNome ?? "";
+        AtualizarKdropTela();
         var espera = Array.IndexOf(TemposDeEspera, _cfg.IlhaEsperaParaAbrirMs);
         IlhaEspera.SelectedIndex = espera >= 0 ? espera : Array.IndexOf(TemposDeEspera, 5000);
         IlhaPreta.IsChecked = _cfg.IlhaPreta;
@@ -282,6 +285,7 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaAbertaAtalhos = IlhaAbertaAtalhos.IsChecked == true;
         _cfg.IlhaSaidasDeSom = IlhaSaidasDeSom.IsChecked == true;
         _cfg.IlhaIaPreferirApp = IlhaIaApp.IsChecked == true;
+        _cfg.Kdrop = KdropLigado.IsChecked == true;
         if (IlhaEspera.SelectedIndex >= 0)
             _cfg.IlhaEsperaParaAbrirMs = TemposDeEspera[IlhaEspera.SelectedIndex];
         _cfg.IlhaPreta = IlhaPreta.IsChecked == true;
@@ -318,6 +322,86 @@ public partial class PersonalizacaoWindow : Window
 
         AtualizarEstados();
         Confirmar();
+    }
+
+    // ------------------------------------------------------------------
+    // Kdrop
+
+    /// <summary>Pasta, endereco e aparelhos confiaveis, como estao agora.</summary>
+    private void AtualizarKdropTela()
+    {
+        DicaKdropNome.Text = Environment.MachineName;
+        KdropPasta.Text = KdropService.Pasta(_cfg);
+        KdropPasta.ToolTip = KdropPasta.Text;
+
+        KdropEndereco.Text = !AtualizacaoService.Elevado()
+            ? "O Kdrop precisa do KInfo instalado com acesso completo (rodando como administrador)."
+            : KdropService.Endereco is { } endereco
+                ? $"No celular: {endereco.Replace("http://", "").TrimEnd('/')}, ou o QR Code em \"Celular\", na bandeja. Mesma rede Wi-Fi; se o Windows marcou a rede como Pública, mude para Privada."
+                : "Sem rede agora: conecte o PC ao Wi-Fi ou ao cabo da casa.";
+
+        ListaConfiaveis.Children.Clear();
+        if (_cfg.KdropConfiaveis.Count == 0)
+        {
+            var nenhum = new TextBlock { Text = "Nenhum. Todo envio pede aceite.", FontSize = 11 };
+            nenhum.SetResourceReference(TextBlock.ForegroundProperty, "TextoMuitoFraco");
+            ListaConfiaveis.Children.Add(nenhum);
+            return;
+        }
+
+        foreach (var aparelho in _cfg.KdropConfiaveis.ToList())
+        {
+            var linha = new Grid { Margin = new Thickness(0, 3, 0, 3) };
+            var nome = new TextBlock { Text = aparelho.Nome, FontSize = 13, FontWeight = FontWeights.Medium,
+                                       VerticalAlignment = VerticalAlignment.Center };
+            nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
+            var x = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse("M6,6 L18,18 M18,6 L6,18"),
+                StrokeThickness = 1.8,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+                Width = 10,
+                Height = 10,
+                Stretch = Stretch.Uniform
+            };
+            x.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "Icone");
+            var esquecer = new Button
+            {
+                Style = (Style)FindResource("BotaoIcone"),
+                Width = 28,
+                Height = 28,
+                Content = x,
+                ToolTip = "Voltar a pedir aceite deste aparelho",
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            esquecer.Click += (_, _) =>
+            {
+                _cfg.KdropConfiaveis.RemoveAll(c => c.Id == aparelho.Id);
+                Confirmar();
+                AtualizarKdropTela();
+            };
+
+            linha.Children.Add(nome);
+            linha.Children.Add(esquecer);
+            ListaConfiaveis.Children.Add(linha);
+        }
+    }
+
+    private void KdropPasta_Click(object sender, RoutedEventArgs e)
+    {
+        var dialogo = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Onde guardar o que chegar pelo Kdrop",
+            InitialDirectory = System.IO.Directory.Exists(KdropService.Pasta(_cfg)) ? KdropService.Pasta(_cfg) : null
+        };
+
+        if (dialogo.ShowDialog(this) != true) return;
+
+        _cfg.KdropPasta = dialogo.FolderName;
+        Confirmar();
+        AtualizarKdropTela();
     }
 
     // ------------------------------------------------------------------
@@ -392,6 +476,15 @@ public partial class PersonalizacaoWindow : Window
         if (DicaEnderecoDoSite is not null) DicaEnderecoDoSite.Visibility = Dica(EnderecoDoSite);
         if (DicaNomeDoSite is not null) DicaNomeDoSite.Visibility = Dica(NomeDoSite);
         if (ErroDoSite is not null) ErroDoSite.Visibility = Visibility.Collapsed;
+
+        if (DicaKdropNome is not null) DicaKdropNome.Visibility = Dica(KdropNome);
+
+        if (!_carregando && ReferenceEquals(sender, KdropNome))
+        {
+            _cfg.KdropNome = KdropNome.Text.Trim();
+            Confirmar();
+            return;
+        }
 
         if (_carregando || !ReferenceEquals(sender, IlhaIaEndereco)) return;
 
@@ -672,6 +765,15 @@ public partial class PersonalizacaoWindow : Window
             ? "Quando o jogo está em tela cheia no mesmo monitor que a Kisland. O FPS aparece sempre."
             : "Ligue \"FPS em jogos\" acima para a Kisland saber quando você está jogando.";
         LinhaFpsTelaCheia.Opacity = excecaoValida ? 1 : 0.5;
+
+        // O Kdrop e parte da bandeja: so com ela ligada. As opcoes dele, so
+        // com ele ligado.
+        var comBandeja = IlhaBandeja.IsChecked == true;
+        CartaoKdrop.IsEnabled = comBandeja;
+        CartaoKdrop.Opacity = comBandeja ? 1 : 0.5;
+        var comKdrop = KdropLigado.IsChecked == true;
+        LinhasKdrop.IsEnabled = comKdrop;
+        LinhasKdrop.Opacity = comKdrop ? 1 : 0.5;
 
         // A espera so vale abrindo ao passar o mouse.
         var aoPassar = IlhaAoPassar.IsChecked == true;
