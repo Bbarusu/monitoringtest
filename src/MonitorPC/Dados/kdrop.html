@@ -170,18 +170,49 @@
 
   // ---- Estado do PC, perguntado a cada 2 s ---------------------------
 
+  // Com a escolha de fotos aberta, a pagina fica quieta: nada de perguntar
+  // ao PC nem redesenhar. O iPhone prepara as fotos escolhidas (baixa do
+  // iCloud, converte HEIC para JPG) na hora do ✓, e uma pagina mexendo em si
+  // mesma a cada 2 s so disputa com isso. Volta ao fechar a escolha.
+  var escolhendo = false;
+  var fimDaEscolha = 0;
+
+  function comecarEscolha() {
+    escolhendo = true;
+    clearTimeout(fimDaEscolha);
+    // Por garantia, se nenhum aviso de "fechou" chegar.
+    fimDaEscolha = setTimeout(terminarEscolha, 10 * 60000);
+  }
+
+  function terminarEscolha() {
+    if (!escolhendo) return;
+    escolhendo = false;
+    clearTimeout(fimDaEscolha);
+    atualizar();
+  }
+
+  // So redesenha quando algo mudou (e a cada 30 s, para o "Acabou de chegar"
+  // sumir na hora certa).
+  var ultimoDesenho = "";
+
   function atualizar() {
+    if (escolhendo) return;
     var url = "api/estado?cliente=" + encodeURIComponent(cliente) + "&nome=" + encodeURIComponent(nome);
     fetch(url, { cache: "no-store" })
       .then(function (r) { return r.json(); })
-      .then(desenhar)
+      .then(function (e) {
+        var chave = JSON.stringify(e) + Math.floor(Date.now() / 30000);
+        if (chave === ultimoDesenho) return;
+        ultimoDesenho = chave;
+        desenhar(e);
+      })
       .catch(function () { $("titulo").textContent = "PC sem resposta"; });
   }
 
   function desenhar(e) {
     if (e.acento) document.documentElement.style.setProperty("--acento", e.acento);
     $("titulo").textContent = e.nome;
-    document.title = "Kdrop · " + e.nome;
+    if (document.title !== "Kdrop · " + e.nome) document.title = "Kdrop · " + e.nome;
 
     var pcs = $("pcs");
     pcs.textContent = "";
@@ -235,6 +266,7 @@
 
   function ligarCampo(campo) {
     campo.addEventListener("change", function () {
+      terminarEscolha();
       var arquivos = Array.prototype.slice.call(this.files || []);
       if (!arquivos.length) return;
 
@@ -253,6 +285,14 @@
     });
   }
   ligarCampo($("arquivos"));
+
+  document.querySelector(".escolher").addEventListener("click", comecarEscolha);
+  // Escolha cancelada (X) nao dispara "change": a pagina sabe que ela fechou
+  // quando volta a ter o foco.
+  window.addEventListener("focus", function () { setTimeout(terminarEscolha, 500); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") setTimeout(terminarEscolha, 500);
+  });
 
   // O iPhone chama toda foto de "image.jpg". Com nomes repetidos, cada uma
   // ganha um nome com a data e a hora, e um numero.

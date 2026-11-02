@@ -3,6 +3,7 @@ Corrigido: o Kdrop não completava envios do celular para o PC.
 - Fotos da galeria do iPhone não iam, só arquivos: a página apagava, sem querer, a cópia que o Safari faz de cada foto escolhida. Agora as fotos são preparadas na hora da escolha e vão inteiras. E como o iPhone chama toda foto de "image.jpg", cada uma ganha um nome com a data e a hora.
 - O PC recusava arquivos cujo nome mudava no caminho, como fotos que o iPhone renomeia ao enviar ou nomes com acento.
 - No iPhone, o botão de escolher arquivos podia não abrir em algumas versões do Safari.
+- Com a escolha de fotos do iPhone aberta, a página do celular fica parada (não pergunta ao PC nem se redesenha), para não disputar com o iPhone enquanto ele prepara as fotos.
 - Quando algo falha, a página do celular agora diz em que passo e com qual código, e o KInfo registra cada pedido no log.
 
 Corrigido: arrastar arquivos até a bandeja da Kisland.
