@@ -2846,7 +2846,7 @@ public partial class IlhaWindow : Window
         if (!aparelho.EhPc)
         {
             _kdrop.AvisarCelular(aparelho.Id, arquivos);
-            Situacao(aparelho.Id, "Mandado");
+            Situacao(aparelho.Id, "Enviado");
             return;
         }
 
@@ -2878,7 +2878,7 @@ public partial class IlhaWindow : Window
         var endereco = KdropService.Endereco;
         if (endereco is null)
         {
-            MotivoKdrop.Text = "Sem rede agora: conecte o PC ao Wi-Fi ou ao cabo da casa.";
+            MotivoKdrop.Text = "Sem rede agora: verifique a conexão com a internet.";
             MotivoKdrop.Visibility = Visibility.Visible;
             return;
         }
@@ -3109,7 +3109,7 @@ public partial class IlhaWindow : Window
             lista.AddRange(_bandeja.ToArray());
             Clipboard.SetFileDropList(lista);
 
-            TituloBandeja.Text = "Copiado! Cole com Ctrl+V numa pasta";
+            TituloBandeja.Text = "Copiado! Cole com Ctrl+V";
             _fimDoRecado?.Stop();
             _fimDoRecado = Temporizador(TimeSpan.FromSeconds(2.5), () =>
             {

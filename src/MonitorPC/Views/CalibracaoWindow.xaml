@@ -80,7 +80,7 @@
             <TextBlock x:Name="Rodape" FontSize="11" Margin="0,8,0,0"
                        TextAlignment="Center" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextoMuitoFraco}"
-                       Text="Precisa do driver de sensores ativo. Feche o app e as ventoinhas voltam ao normal de qualquer jeito." />
+                       Text="Precisa do driver de sensores ativo." />
 
         </StackPanel>
     </Border>

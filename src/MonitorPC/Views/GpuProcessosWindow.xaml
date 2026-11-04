@@ -47,19 +47,12 @@
                 </ScrollViewer>
             </Border>
 
-            <!-- Como ler os números -->
-            <Border Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource Cartao}"
-                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
-                <StackPanel>
-                    <TextBlock Text="Como ler" FontSize="12" FontWeight="Medium"
-                               Foreground="{DynamicResource Texto}" />
-                    <TextBlock Margin="0,6,0,0" FontSize="11" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextoFraco}"
-                               Text="A porcentagem é da parte mais ocupada da placa por aquele programa, e não a soma de todas — é assim que o Gerenciador de Tarefas também conta. 3D é desenho e jogo; Compute é cálculo, o que um minerador usaria; VideoDecode e VideoEncode são vídeo e chamadas." />
-                    <TextBlock x:Name="Aviso" Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
-                               Visibility="Collapsed"
-                               Foreground="{DynamicResource AlertaTexto}" />
-                </StackPanel>
+            <!-- Aviso quando os contadores de GPU não respondem; fora isso, some. -->
+            <Border x:Name="CartaoAviso" Visibility="Collapsed" Margin="0,16,0,0" CornerRadius="12"
+                    Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}"
+                    BorderThickness="1" Padding="12">
+                <TextBlock x:Name="Aviso" FontSize="11" TextWrapping="Wrap"
+                           Foreground="{DynamicResource AlertaTexto}" />
             </Border>
 
             <!-- Risco de fechar -->
@@ -77,7 +70,7 @@
                           Margin="0,2,10,0" />
                     <TextBlock Grid.Column="1" FontSize="11" TextWrapping="Wrap"
                                Foreground="{DynamicResource AlertaTexto}"
-                               Text="O X pede para o programa fechar, como o X da janela dele — nada é forçado, e trabalho não salvo ainda pode se perder. Um jogo em tela cheia costuma ignorar o pedido. Faça por sua conta e risco." />
+                               Text="Fecha o programa. Jogos em tela cheia podem ignorar o pedido." />
                 </Grid>
             </Border>
 
@@ -86,7 +79,7 @@
 
             <TextBlock x:Name="Rodape" FontSize="11" Margin="0,8,0,0" TextAlignment="Center"
                        TextWrapping="Wrap" Foreground="{DynamicResource TextoMuitoFraco}"
-                       Text="Os números vêm dos contadores do Windows, não de um sensor da placa: é o agendador gráfico que sabe repartir o uso por programa." />
+                       Text="Números obtidos dos contadores do Windows." />
 
         </StackPanel>
     </Border>

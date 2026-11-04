@@ -166,7 +166,7 @@
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="Oi, essa é a Kisland" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Sabe aquela barrinha no topo dos iPhones mais novos? A Kisland é a versão do KInfo para o seu PC: mostra o que está tocando, a temperatura e o volume, sem tirar você do que está fazendo." />
+                               Text="Sabe aquela barrinha no topo dos novos iOS? A Kisland é a versão para o seu PC: mostra o que está tocando, as temperaturas, o controle de volume, entre outras opções personalizáveis, sem te tirar do que você está fazendo." />
                     <Border Style="{StaticResource LinhaItem}" Margin="0,16,0,0" Padding="12,10">
                         <Grid>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
@@ -223,7 +223,7 @@
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="Passou o mouse, ela abre" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Passa o mouse por cima e pronto: aparecem o player, as temperaturas, o volume e os modos de energia. Tirou o mouse, ela se recolhe de novo." />
+                               Text="Passa o mouse por cima e pronto, ela se abre com diversas opções." />
                     <Border CornerRadius="14" Margin="0,16,0,0" Padding="4" Background="{DynamicResource Cartao}"
                             BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                         <UniformGrid Columns="2">
@@ -316,18 +316,18 @@
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="O mês inteiro à vista" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Aberta, a Kisland mostra o calendário do mês com o dia de hoje marcado, igualzinho ao widget do iPhone. Fechada, ela pode mostrar a data do lado da hora." />
+                               Text="Aberta, a Kisland mostra o calendário do mês com o dia de hoje marcado. Fechada, ela pode mostrar a data ao lado da hora." />
                     <UniformGrid Columns="2" Margin="0,16,0,0">
                         <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,0">
                             <Grid>
-                                <TextBlock Text="Data na Kisland fechada" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="Data com a Kisland fechada" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
                                 <CheckBox x:Name="ItemData" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                           Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
                             </Grid>
                         </Border>
                         <Border Style="{StaticResource LinhaItem}" Margin="4,0,0,0">
                             <Grid>
-                                <TextBlock Text="Calendário na aberta" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
+                                <TextBlock Text="Calendário com ela aberta" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,30,0" TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
                                 <CheckBox x:Name="ItemCalendario" Style="{StaticResource CaixaDeSelecao}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                           Checked="Opcao_Alterada" Unchecked="Opcao_Alterada" />
                             </Grid>
@@ -347,12 +347,12 @@
                             </StackPanel>
                         </Grid>
                     </Border>
-                    <TextBlock Style="{StaticResource TituloPasso}" Text="O circulozinho virou atalho" />
+                    <TextBlock Style="{StaticResource TituloPasso}" Text="Um pequeno círculo inspirado no design da Cortana" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Escolhe um chat de IA e o anel que pulsa na Kisland passa a abrir ele com um clique. Aberta, ela ainda guarda até 6 apps ou sites seus: é só colocar na Personalização, aba Kisland." />
+                               Text="Escolhe um chat de IA e o anel passa a abrir ele com um clique. Aberta, ela pode guardar até 6 apps ou sites para acesso rápido." />
                     <Border Style="{StaticResource LinhaItem}" Margin="0,16,0,0" Padding="12,10">
                         <Grid>
-                            <TextBlock Text="Chat de IA no anel" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"
+                            <TextBlock Text="Chat através do anel" FontSize="13" FontWeight="Medium" VerticalAlignment="Center"
                                        Foreground="{DynamicResource Texto}" />
                             <ComboBox x:Name="EscolhaIa" Style="{StaticResource Seletor}" MinWidth="130"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -387,7 +387,7 @@
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="Som e arquivos na ponta do mouse" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Gira a roda do mouse em cima da Kisland para mudar o volume, e clica com a roda para pausar a música. Aberta, ela passa o som para o fone, a caixa ou o monitor num clique. E dá para arrastar arquivos até ela: eles ficam ali, à mão, até você usar." />
+                               Text="Gira a roda do mouse em cima da Kisland para mudar o volume, e clica com a roda para pausar a música. Aberta, ela passa o som para o fone, a caixa ou o monitor num clique. Além disso, tem uma bandeja que guarda arquivos temporariamente, até o app ser fechado." />
                     <UniformGrid Columns="3" Margin="0,14,0,0">
                         <Border Style="{StaticResource LinhaItem}" Margin="0,0,4,0">
                             <Grid>
@@ -461,7 +461,7 @@
                     </Border>
                     <TextBlock Style="{StaticResource TituloPasso}" Text="Tá jogando? Ela conta o FPS" />
                     <TextBlock Style="{StaticResource TextoPasso}"
-                               Text="Liga o contador e a Kisland percebe sozinha quando tem um jogo aberto, em qualquer monitor, e mostra o FPS dele. Se o jogo estiver na mesma tela, ela fica enxuta, só com o FPS e o que você escolher para o modo jogo na Personalização." />
+                               Text="Liga o contador e a Kisland percebe sozinha quando tem um jogo aberto, em qualquer monitor, e te mostra um contador com apenas o que você personalizou para o “modo jogo”." />
                     <Border Style="{StaticResource LinhaItem}" Margin="0,16,0,0" Padding="12,10">
                         <Grid>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
@@ -469,7 +469,7 @@
                                            Foreground="{DynamicResource Texto}" />
                                 <TextBlock x:Name="DetalheFps" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextoFraco}"
-                                           Text="Funciona com jogos em DirectX, que são quase todos." />
+                                           Text="Funciona com todos os jogos em DirectX." />
                             </StackPanel>
                             <CheckBox x:Name="ItemFps" Style="{StaticResource Interruptor}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"

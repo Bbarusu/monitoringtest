@@ -129,7 +129,7 @@ public partial class LogDiscoWindow : Window
 
         Vazio.Visibility = lista.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         Vazio.Text = _log.Eventos.Count == 0
-            ? "Nada registrado ainda. Use o PC normalmente e os picos de disco aparecem aqui."
+            ? "Sem registros por agora"
             : "Nenhum evento com este filtro.";
 
     }

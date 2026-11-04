@@ -73,15 +73,13 @@ public partial class CalibracaoWindow : Window
         if (canais.Count == 0)
         {
             CaixaEstado.Visibility = Visibility.Visible;
-            Estado.Text = "Nenhuma ventoinha reporta rotação. Sem o driver de sensores " +
-                          "ativo, a placa-mãe não aparece.";
+            Estado.Text = "Nenhuma ventoinha reporta rotação.";
         }
 
         BotaoCalibrar.IsEnabled = !_calibracao.Rodando && canais.Any(c => c.Comandavel);
 
         if (!_calibracao.Rodando && canais.Count > 0 && !canais.Any(c => c.Comandavel))
-            Rodape.Text = "Nenhuma destas ventoinhas aceita comando pelo app. " +
-                          "Elas costumam estar numa controladora externa ou travadas pela BIOS.";
+            Rodape.Text = "Nenhuma destas ventoinhas aceita comando por aqui.";
 
         Reposicionar();
     }
@@ -186,7 +184,7 @@ public partial class CalibracaoWindow : Window
         _sensores.Especificacoes.Esquecer();
 
         CaixaEstado.Visibility = Visibility.Visible;
-        Estado.Text = "Medições apagadas. O app recomeça a aprender pelas leituras.";
+        Estado.Text = "Medições apagadas. Começaremos a aprender pelas leituras.";
 
         Montar();
     }

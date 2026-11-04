@@ -60,7 +60,7 @@
                           Margin="0,2,10,0" />
                     <TextBlock Grid.Column="1" FontSize="11" TextWrapping="Wrap"
                                Foreground="{DynamicResource AlertaTexto}"
-                               Text="Fechar um programa pode perder trabalho não salvo. O pedido é o mesmo do botão X da janela, mas confira antes o que está aberto. Faça por sua conta e risco." />
+                               Text="Fechar um programa pode perder trabalho não salvo." />
                 </Grid>
             </Border>
 

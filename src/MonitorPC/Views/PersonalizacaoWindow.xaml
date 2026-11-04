@@ -72,7 +72,7 @@
                     <RadioButton x:Name="TemaEscuro" Style="{StaticResource Aba}" Content="Escuro"
                                  Checked="Tema_Alterado" />
                     <RadioButton x:Name="TemaPreto" Style="{StaticResource Aba}" Content="Preto"
-                                 ToolTip="Preto de verdade no fundo: feito para telas AMOLED"
+                                 ToolTip="Preto AMOLED/OLED"
                                  Checked="Tema_Alterado" />
                     <RadioButton x:Name="TemaClaro" Style="{StaticResource Aba}" Content="Claro"
                                  Checked="Tema_Alterado" />
@@ -91,7 +91,7 @@
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Acompanhar a cor do sistema" FontSize="13" FontWeight="Medium"
                                    Foreground="{DynamicResource Texto}" />
-                        <TextBlock Text="Usa a cor de destaque do Windows, e o tema junto" FontSize="11" Margin="0,2,0,0"
+                        <TextBlock Text="Usa a cor de destaque do Windows" FontSize="11" Margin="0,2,0,0"
                                    Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
                     <CheckBox x:Name="SeguirSistema" Style="{StaticResource Interruptor}"
@@ -104,7 +104,7 @@
 
             <TextBlock x:Name="DicaCor" Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
                        Foreground="{DynamicResource TextoMuitoFraco}"
-                       Text="Desligue o acompanhamento para escolher uma cor." />
+                       Text="Desligar o acompanhamento" />
 
             <!-- Transparencia -->
             <TextBlock Text="Transparência" FontSize="11" Margin="0,20,0,8"
@@ -140,9 +140,9 @@
                             Foreground="{DynamicResource Acento}"
                             ValueChanged="Opacidade_Alterada" />
                     <Grid Margin="0,4,0,0">
-                        <TextBlock Text="15% · quase invisível" FontSize="11"
+                        <TextBlock Text="15%" FontSize="11"
                                    Foreground="{DynamicResource TextoMuitoFraco}" HorizontalAlignment="Left" />
-                        <TextBlock Text="100% · sólido" FontSize="11"
+                        <TextBlock Text="100%" FontSize="11"
                                    Foreground="{DynamicResource TextoMuitoFraco}" HorizontalAlignment="Right" />
                     </Grid>
                 </StackPanel>
@@ -169,7 +169,7 @@
                     <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
                         <TextBlock Text="Mostrar a Kisland" FontSize="13" FontWeight="Medium"
                                    Foreground="{DynamicResource Texto}" />
-                        <TextBlock Text="Inspirada nos iPhones mais novos: música, temperatura e volume no topo da tela. Passe o mouse para abrir; arraste para levar a outro monitor."
+                        <TextBlock Text="Inspirada na ilha flutuante dos novos iOS: visualização em tempo real de temperaturas, consumo, player de música e controle de volume, entre outras opções, tudo no topo da tela com acesso fácil e rápido. Vamos conhecer?"
                                    FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextoFraco}" />
                     </StackPanel>
@@ -240,7 +240,7 @@
                         <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
                             <TextBlock Text="Kisland preta" FontSize="13" FontWeight="Medium"
                                        Foreground="{DynamicResource Texto}" />
-                            <TextBlock Text="Fundo preto, sem borda nem sombra. Num AMOLED com fundo escuro, ela se funde com o topo da tela."
+                            <TextBlock Text="Fundo preto, sem borda nem sombra. Num AMOLED/OLED com fundo escuro, ela se funde com o topo da tela."
                                        FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextoFraco}" />
                         </StackPanel>
@@ -271,9 +271,9 @@
                         <StackPanel x:Name="LinhasProtecao" Margin="12,0,0,0">
                             <Grid Margin="0,4">
                                 <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
-                                    <TextBlock Text="Mexer alguns pixels" FontSize="13" FontWeight="Medium"
+                                    <TextBlock Text="Proteção OLED" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource Texto}" />
-                                    <TextBlock Text="A cada 3 min ela anda 1 ou 2 px, sem dar para perceber."
+                                    <TextBlock Text="A cada 3 min ela anda 1 ou 2 px, de forma imperceptível."
                                                FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                                Foreground="{DynamicResource TextoFraco}" />
                                 </StackPanel>
@@ -285,25 +285,10 @@
                                 <StackPanel VerticalAlignment="Center" Margin="0,0,100,0">
                                     <TextBlock Text="Escurecer sem uso" FontSize="13" FontWeight="Medium"
                                                Foreground="{DynamicResource Texto}" />
-                                    <TextBlock Text="Fica mais apagada até o mouse chegar perto."
-                                               FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
-                                               Foreground="{DynamicResource TextoFraco}" />
                                 </StackPanel>
                                 <ComboBox x:Name="IlhaEscurecer" Style="{StaticResource Seletor}" MinWidth="88"
                                           HorizontalAlignment="Right" VerticalAlignment="Center"
                                           SelectionChanged="Ilha_Alterada" />
-                            </Grid>
-                            <Grid Margin="0,4">
-                                <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
-                                    <TextBlock Text="Esconder com o PC parado" FontSize="13" FontWeight="Medium"
-                                               Foreground="{DynamicResource Texto}" />
-                                    <TextBlock Text="Some depois de 10 min sem ninguém mexer no PC, e volta ao mexer."
-                                               FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
-                                               Foreground="{DynamicResource TextoFraco}" />
-                                </StackPanel>
-                                <CheckBox x:Name="IlhaEsconderParado" Style="{StaticResource CaixaDeSelecao}"
-                                          HorizontalAlignment="Right" VerticalAlignment="Center"
-                                          Checked="Ilha_Alterada" Unchecked="Ilha_Alterada" />
                             </Grid>
                         </StackPanel>
                     </StackPanel>
@@ -312,11 +297,8 @@
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">
                     <StackPanel>
-                        <TextBlock Text="Fechada, ela mostra" FontSize="11" Margin="0,2,0,2"
+                        <TextBlock Text="Minimizada" FontSize="11" Margin="0,2,0,2"
                                    Foreground="{DynamicResource TextoFraco}" />
-                        <TextBlock Text="Sem nada marcado e nada tocando, ela vira um círculo."
-                                   FontSize="11" Margin="0,0,0,6" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextoMuitoFraco}" />
                         <Grid Margin="0,4">
                             <TextBlock Text="Música tocando" FontSize="13" FontWeight="Medium"
                                        VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
@@ -400,7 +382,7 @@
                                            Foreground="{DynamicResource Texto}" />
                                 <TextBlock x:Name="DetalheFps" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextoFraco}"
-                                           Text="Aparece quando um jogo está rodando, em qualquer monitor. Com o jogo em tela cheia no mesmo monitor, a Kisland entra no modo jogo e mostra o que você escolher para ele." />
+                                           Text="Exibição em jogos" />
                             </StackPanel>
                             <CheckBox x:Name="IlhaFps" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -424,7 +406,7 @@
                 <Border x:Name="CartaoModoJogo" CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">
                     <StackPanel>
-                        <TextBlock Text="No modo jogo, ela mostra" FontSize="11" Margin="0,2,0,2"
+                        <TextBlock Text="Exibição em jogos" FontSize="11" Margin="0,2,0,2"
                                    Foreground="{DynamicResource TextoFraco}" />
                         <TextBlock x:Name="DicaModoJogo" FontSize="11" Margin="0,0,0,6" TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextoMuitoFraco}"
@@ -555,7 +537,7 @@
                             <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
                                 <TextBlock Text="Trocar a saída de som" FontSize="13" FontWeight="Medium"
                                            Foreground="{DynamicResource Texto}" />
-                                <TextBlock Text="Fone, caixa ou monitor, junto do volume. Aparece com mais de uma saída ligada." FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                <TextBlock Text="Saídas de áudio disponíveis" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextoFraco}" />
                             </StackPanel>
                             <CheckBox x:Name="IlhaSaidasDeSom" Style="{StaticResource CaixaDeSelecao}"
@@ -566,7 +548,7 @@
                             <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
                                 <TextBlock Text="Mixer de volume" FontSize="13" FontWeight="Medium"
                                            Foreground="{DynamicResource Texto}" />
-                                <TextBlock Text="Um botão ao lado do volume abre o volume de cada app, como o mixer do Windows." FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
+                                <TextBlock Text="Volumes" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextoFraco}" />
                             </StackPanel>
                             <CheckBox x:Name="IlhaMixer" Style="{StaticResource CaixaDeSelecao}"
@@ -619,7 +601,7 @@
                     <StackPanel>
                         <Grid>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
-                                <TextBlock Text="A bandeja na rede de casa" FontSize="13" FontWeight="Medium"
+                                <TextBlock Text="Compartilhamento de arquivos em rede local" FontSize="13" FontWeight="Medium"
                                            Foreground="{DynamicResource Texto}" />
                                 <TextBlock Text="Celulares e outros PCs com KInfo, no mesmo Wi-Fi, mandam e pegam arquivos da bandeja. Todo envio pede o seu aceite."
                                            FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
@@ -794,7 +776,7 @@
                         <StackPanel VerticalAlignment="Center" Margin="0,0,100,0">
                             <TextBlock Text="Esperar antes de abrir" FontSize="13" FontWeight="Medium"
                                        Foreground="{DynamicResource Texto}" />
-                            <TextBlock Text="Com o mouse parado em cima. Dá tempo de clicar no anel ou num item sem ela abrir por cima."
+                            <TextBlock Text="Tempo até abertura da Kisland"
                                        FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextoFraco}" />
                         </StackPanel>
@@ -833,7 +815,7 @@
                                            Foreground="{DynamicResource Texto}" />
                                 <TextBlock x:Name="DetalheTelaCheia" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextoFraco}"
-                                           Text="Com o contador ligado, o FPS fica por cima de jogos sem borda. Marcando, ela tenta também na tela cheia exclusiva: experimental, pode não aparecer, e em alguns jogos a tela pisca." />
+                                           Text="Com o contador ligado, o FPS fica por cima de jogos sem borda. Marcando, ela tenta também na tela cheia exclusiva: experimental." />
                             </StackPanel>
                             <CheckBox x:Name="IlhaFicarEmTelaCheia" Style="{StaticResource CaixaDeSelecao}"
                                       HorizontalAlignment="Right" VerticalAlignment="Center"

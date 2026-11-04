@@ -55,7 +55,7 @@
                         <TextBlock x:Name="Subtitulo" FontSize="12" Margin="0,3,0,0"
                                    TextWrapping="Wrap" MaxWidth="320" HorizontalAlignment="Left"
                                    Foreground="{DynamicResource TextoFraco}"
-                                   Text="Monitoramento de hardware na bandeja do Windows." />
+                                   Text="Monitoramento de hardware" />
                     </StackPanel>
                 </StackPanel>
 

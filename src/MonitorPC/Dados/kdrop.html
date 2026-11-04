@@ -229,7 +229,7 @@
     var lista = $("bandeja");
     lista.textContent = "";
     var itens = e.bandeja || [];
-    if (!itens.length) lista.appendChild(el("div", "vazio", "A bandeja deste PC está vazia. No PC, arraste arquivos até a Kisland para eles aparecerem aqui."));
+    if (!itens.length) lista.appendChild(el("div", "vazio", "A bandeja deste PC está vazia. Arraste os arquivos até a Kisland para aparecerem aqui."));
     var agora = Date.now();
     if (conhecidos === null) {
       conhecidos = {};

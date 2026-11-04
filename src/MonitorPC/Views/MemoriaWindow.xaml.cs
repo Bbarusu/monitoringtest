@@ -41,8 +41,9 @@ public partial class MemoriaWindow : Window
             x.Nome.Equals("explorer", StringComparison.OrdinalIgnoreCase));
 
         DetalheExplorer.Text = explorer is null
-            ? "Fecha as janelas de pastas abertas e recria a barra de tarefas"
+            ? ""
             : $"Ocupa {explorer.MemoriaMb:N0} MB · fecha as janelas de pastas abertas";
+        DetalheExplorer.Visibility = explorer is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private UIElement MontarLinha(ProcessoMemoria p)

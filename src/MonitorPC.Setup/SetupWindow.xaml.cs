@@ -129,15 +129,8 @@ public partial class SetupWindow : Window
             // sensores". Era falso: a biblioteca não embute driver nenhum desde
             // que trocou a família WinRing0 pelo PawnIO, e foi essa frase errada
             // que sustentou a ideia de que bastava elevar.
-            ? "Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só " +
-              "carrega com privilégio elevado. O instalador registra uma tarefa do Windows " +
-              "para o app subir elevado sem pedir confirmação toda vez. O driver em si é o " +
-              "PawnIO, instalado no sistema pela opção abaixo — privilégio sem ele não lê " +
-              "nada, e ele sem privilégio também não."
-            : "Sem privilégio elevado o driver de sensores não carrega. O app abre e " +
-              "funciona, mas temperatura de CPU, tensões, rotação de ventoinhas e tudo que " +
-              "vem do chip da placa-mãe ficam indisponíveis. GPU, discos, memória e uso de " +
-              "CPU continuam normais. Dá para mudar reinstalando.";
+            ? "Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só carrega em modo administrador. O instalador registra uma tarefa do Windows para o app subir como admin sem pedir confirmação toda vez. O driver em si é o PawnIO, instalado no sistema pela opção abaixo."
+            : "Sem modo admin o driver de sensores não carrega. O app abre e funciona, mas temperatura de CPU, tensões, rotação de ventoinhas e tudo que vem do chip da placa-mãe ficam indisponíveis. GPU, discos, memória e uso de CPU continuam normais. Dá para mudar reinstalando.";
     }
 
     private void PrepararDesinstalacao()

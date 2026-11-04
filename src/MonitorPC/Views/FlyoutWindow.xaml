@@ -111,7 +111,7 @@
                     <Button x:Name="BotaoDiagnostico" Visibility="Collapsed"
                             Style="{StaticResource BotaoLargo}" Margin="0,10,0,0"
                             Content="Salvar relatório do problema"
-                            ToolTip="Grava um arquivo com o que o app encontrou e abre a pasta"
+                            ToolTip="Gera um relatório com o que foi encontrado pelo app"
                             Click="Diagnostico_Click" />
                 </StackPanel>
             </Border>
@@ -151,7 +151,7 @@
                                        Foreground="{DynamicResource Texto}" />
                             <TextBlock FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap" LineHeight="17"
                                        Foreground="{DynamicResource Icone}"
-                                       Text="Inspirada nos iPhones mais novos: música, temperatura e volume ali no topo da tela, sem atrapalhar nada. Bora dar uma olhada?" />
+                                       Text="Inspirada na ilha flutuante dos novos iOS: visualização em tempo real de temperaturas, consumo, player de música e controle de volume, entre outras opções, tudo no topo da tela com acesso fácil e rápido. Vamos conhecer?" />
                         </StackPanel>
                     </Grid>
                     <UniformGrid Columns="2" Margin="0,12,0,0">
@@ -161,7 +161,7 @@
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="bg" CornerRadius="12" Background="{DynamicResource Acento}">
-                                        <TextBlock Text="Bora ver" FontSize="13" FontWeight="SemiBold" Foreground="White"
+                                        <TextBlock Text="Vamos lá" FontSize="13" FontWeight="SemiBold" Foreground="White"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -310,7 +310,7 @@
                 <Button x:Name="BotaoProcessador" Margin="0,16,0,0"
                         HorizontalAlignment="Center" Cursor="Hand"
                         Template="{StaticResource AnelClicavel}"
-                        ToolTip="Ver o que está usando a CPU"
+                        ToolTip="Utilização da CPU"
                         Click="Processador_Click">
                 <Grid Width="220" Height="220">
                     <Ellipse Width="200" Height="200" Stroke="{DynamicResource Trilho}" StrokeThickness="10" />
@@ -696,7 +696,7 @@
             <StackPanel x:Name="BaseGeral">
                 <UniformGrid Columns="2" Margin="0,16,0,0">
                     <Button Margin="0,0,6,0" Cursor="Hand" Click="CardGpu_Click"
-                            ToolTip="Ver os programas que mais usam a placa de vídeo">
+                            ToolTip="Utilização da GPU">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="bg" CornerRadius="12" Height="56" Padding="12,0"
@@ -728,7 +728,7 @@
                     <!-- O conteudo fica fora do template: x:Name dentro de um
                          ControlTemplate nao vira campo no codigo. -->
                     <Button Margin="6,0,0,0" Cursor="Hand" Click="CardRam_Click"
-                            ToolTip="Ver os programas que mais usam memória">
+                            ToolTip="Utilização da RAM">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="bg" CornerRadius="12" Height="56" Padding="12,0"
@@ -843,7 +843,7 @@
                 <StackPanel x:Name="BarrasDisco" />
 
                 <Grid Margin="0,6,0,10">
-                    <TextBlock x:Name="RotuloListaDisco" Text="Consumindo o disco agora" FontSize="11"
+                    <TextBlock x:Name="RotuloListaDisco" Text="Consumo de disco" FontSize="11"
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
                     <Border CornerRadius="10" Background="{DynamicResource Cartao}" Width="168"
                             BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="3"
@@ -876,7 +876,7 @@
                 <Grid Margin="0,16,0,10">
                     <TextBlock Text="Para onde vai a energia" FontSize="11"
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
-                    <TextBlock Text="agora" FontSize="11"
+                    <TextBlock Text="Agora" FontSize="11"
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
 

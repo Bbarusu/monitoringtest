@@ -43,7 +43,7 @@ public partial class GpuProcessosWindow : Window
         if (!_gpu.Disponivel)
         {
             Subtitulo.Text = "Não disponível neste Windows.";
-            Aviso.Visibility = Visibility.Visible;
+            CartaoAviso.Visibility = Visibility.Visible;
             Aviso.Text = _gpu.Motivo ?? "Os contadores de GPU não responderam.";
 
             Linha(0).Vazia("Sem leitura");
@@ -53,7 +53,7 @@ public partial class GpuProcessosWindow : Window
             return;
         }
 
-        Subtitulo.Text = "Quem está ocupando a placa agora, atualizado a cada segundo.";
+        Subtitulo.Text = "Consumo de GPU";
         Linha(0).Vazia("Medindo…");
 
         // Um segundo: a ocupação é medida por tempo, e um intervalo mais curto

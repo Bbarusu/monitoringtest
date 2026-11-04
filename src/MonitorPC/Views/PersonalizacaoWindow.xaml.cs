@@ -192,7 +192,6 @@ public partial class PersonalizacaoWindow : Window
         IlhaPreta.IsChecked = _cfg.IlhaPreta;
         IlhaProteger.IsChecked = _cfg.IlhaProtegerTela;
         IlhaMexer.IsChecked = _cfg.IlhaMexerPixels;
-        IlhaEsconderParado.IsChecked = _cfg.IlhaEsconderParado;
         var tempo = Array.IndexOf(TemposDeEscurecer, _cfg.IlhaEscurecerMinutos);
         IlhaEscurecer.SelectedIndex = tempo >= 0 ? tempo : 1;
         IlhaJogoCpu.IsChecked = _cfg.IlhaJogoCpu;
@@ -293,7 +292,6 @@ public partial class PersonalizacaoWindow : Window
         _cfg.IlhaPreta = IlhaPreta.IsChecked == true;
         _cfg.IlhaProtegerTela = IlhaProteger.IsChecked == true;
         _cfg.IlhaMexerPixels = IlhaMexer.IsChecked == true;
-        _cfg.IlhaEsconderParado = IlhaEsconderParado.IsChecked == true;
         if (IlhaEscurecer.SelectedIndex >= 0)
             _cfg.IlhaEscurecerMinutos = TemposDeEscurecer[IlhaEscurecer.SelectedIndex];
         _cfg.IlhaJogoCpu = IlhaJogoCpu.IsChecked == true;

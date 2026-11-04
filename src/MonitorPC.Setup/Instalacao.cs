@@ -83,7 +83,7 @@ public static class Instalacao
 
         await Task.Run(() =>
         {
-            aviso.Report("Fechando o app, se estiver aberto…");
+            aviso.Report("Fechando o app…");
             FecharAppAberto();
 
             aviso.Report("Limpando a instalação antiga, se houver…");
@@ -93,20 +93,16 @@ public static class Instalacao
             Directory.CreateDirectory(pasta);
             ExtrairPayload(pasta);
 
-            aviso.Report("Preparando a desinstalação…");
+            aviso.Report("Desinstalando…");
             if (!InstalarDesinstalador(pasta))
-                ressalvas.Add("Não foi possível copiar o desinstalador. " +
-                              "Para remover o app depois, rode este instalador de novo " +
-                              "com o argumento --desinstalar.");
+                ressalvas.Add("Não foi possível copiar o desinstalador. Para remover o app depois, rode este instalador de novo.");
 
             if (opcoes.ExcluirDoDefender)
             {
                 aviso.Report("Pedindo exceção ao Windows Defender…");
 
                 if (!ExcluirDoDefender(pasta))
-                    ressalvas.Add("O Windows Defender não aceitou a exceção. Se o app " +
-                                  "parar de abrir, procure a biblioteca de sensores no " +
-                                  "Histórico de Proteção.");
+                    ressalvas.Add("O Windows Defender não aceitou a exceção. Se o app parar de abrir, procure a biblioteca de sensores na Quarentena.");
             }
 
             if (opcoes.InstalarPawnIo)
@@ -124,7 +120,7 @@ public static class Instalacao
             {
                 // Sem tarefa, o app nao tenta se elevar: ele verifica que ela
                 // nao existe e segue como usuario comum.
-                aviso.Report("Pulando o acesso elevado, como você escolheu…");
+                aviso.Report("Pulando a execução como administrador, como você escolheu…");
                 Executar("schtasks.exe", $"/Delete /TN \"{NomeDaTarefa}\" /F");
             }
 
@@ -676,10 +672,7 @@ public static class Instalacao
     private static string? InstalarPawnIo(IProgress<string> aviso)
     {
         const string ComoResolver =
-            "O app abre e funciona sem ele — placa de vídeo, discos, memória e " +
-            "uso de CPU continuam normais —, mas temperatura de CPU e ventoinhas " +
-            "da placa-mãe ficam de fora até o PawnIO ser instalado. Baixe em " +
-            "pawnio.eu e reabra o app.";
+            "O app abre e funciona sem ele: placa de vídeo, discos, memória e uso de CPU continuam normais, mas temperatura de CPU e ventoinhas da placa-mãe ficam de fora até o PawnIO ser instalado. Baixe em pawnio.eu e reabra o app.";
 
         if (PawnIoInstalado())
         {
@@ -691,7 +684,7 @@ public static class Instalacao
 
         try
         {
-            aviso.Report("Baixando o PawnIO, o driver dos sensores…");
+            aviso.Report("Baixando o PawnIO…");
 
             using (var http = new HttpClient { Timeout = TimeSpan.FromMinutes(3) })
             {

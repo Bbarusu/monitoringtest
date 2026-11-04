@@ -587,7 +587,7 @@
                     <StackPanel>
                         <Grid>
                             <StackPanel Orientation="Horizontal">
-                                <Button Style="{StaticResource BotaoRedondoPequeno}" ToolTip="Silenciar ou voltar o som"
+                                <Button Style="{StaticResource BotaoRedondoPequeno}" ToolTip="Silenciar"
                                         Click="Mudo_Click">
                                     <Path x:Name="IconeMudo" Stroke="{DynamicResource Icone}" StrokeThickness="1.6"
                                           StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
@@ -598,7 +598,7 @@
                                 <!-- Mixer: o volume de cada app, como o do Windows. -->
                                 <Button x:Name="BotaoMixer" Style="{StaticResource BotaoRedondoPequeno}" Width="28" Height="28"
                                         Margin="8,0,0,0" VerticalAlignment="Center"
-                                        ToolTip="Mixer: o volume de cada app" Click="Mixer_Click">
+                                        ToolTip="Mixer" Click="Mixer_Click">
                                     <Path x:Name="IconeMixer"
                                           Data="M6,4 L6,20 M12,4 L12,20 M18,4 L18,20 M4,14 L8,14 M10,8 L14,8 M16,16 L20,16"
                                           Stroke="{DynamicResource Icone}" StrokeThickness="1.8"

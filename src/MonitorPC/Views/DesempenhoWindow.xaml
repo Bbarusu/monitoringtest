@@ -104,7 +104,7 @@
                 <StackPanel x:Name="ListaProcessos" />
                 <TextBlock FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
                            Foreground="{DynamicResource TextoMuitoFraco}"
-                           Text="Cada programa recebe o mesmo pedido de fechar que o botão X da janela, então ainda dá para salvar o que estiver aberto. Antivírus, drivers e processos do Windows nunca aparecem aqui." />
+                           Text="Encerra o programa. Vale a ressalva: antivírus, drivers essenciais e processos do Windows não são exibidos aqui." />
             </StackPanel>
 
             <!-- Acao -->
@@ -115,7 +115,7 @@
 
             <TextBlock x:Name="Resultado" FontSize="11" Margin="0,8,0,0" TextAlignment="Center"
                        TextWrapping="Wrap" Foreground="{DynamicResource TextoMuitoFraco}"
-                       Text="O plano de energia volta ao normal pelo painel. Programas fechados não são reabertos." />
+                       Text="O plano de energia volta ao equilibrado." />
 
         </StackPanel>
         </ScrollViewer>

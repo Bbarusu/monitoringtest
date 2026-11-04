@@ -68,9 +68,7 @@ public partial class EstresseWindow : Window
             : $"{Threads.Value:F0} de {total} · o resto fica livre";
 
         TextoAviso.Text =
-            $"A CPU vai esquentar e o PC pode ficar lento durante o teste. Ele para sozinho " +
-            $"ao chegar perto de {_cfg.LimiteCpu:F0} °C, o limite que você configurou, " +
-            "ou ao fim do tempo. Feche o que estiver com trabalho não salvo.";
+            $"A CPU vai ao seu limite, e o PC pode ficar lento durante o teste. Ele para sozinho ao chegar perto de {_cfg.LimiteCpu:F0} °C, o limite que você configurou, ou ao fim do tempo. Recomendamos salvar e fechar o que estiver fazendo.";
     }
 
     private void Ajuste_Alterado(object sender, RoutedPropertyChangedEventArgs<double> e)

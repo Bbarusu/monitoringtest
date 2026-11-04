@@ -95,12 +95,12 @@ A Kisland preta pendura `ThemeService.PaletaPreta()` nos recursos da própria
 janela, por cima dos do app: tudo nela usa `DynamicResource`, então ela fica
 preta em qualquer tema, sem borda nem sombra.
 
-A proteção contra marca (`IlhaProtegerTela`, ligada por padrão) faz três
+A proteção contra marca (`IlhaProtegerTela`, ligada por padrão) faz duas
 coisas: a cada 3 minutos a Kisland anda 1 ou 2 px num ciclo de oito posições;
-sem o mouse a 60 px dela por `IlhaEscurecerMinutos`, a casca vai a 35% de
-opacidade e volta ao chegar perto, ao abrir ou num aviso; e com 10 minutos sem
-entrada no PC (`GetLastInputInfo`) ela se esconde e volta no primeiro
-movimento. O Windows não informa se a tela é OLED, então nada disso depende de
+e sem o mouse a 60 px dela por `IlhaEscurecerMinutos`, a casca vai a 35% de
+opacidade e volta ao chegar perto, ao abrir ou num aviso. Esconder com o PC
+parado saiu da Personalização e ficou desligado (`IlhaEsconderParado` é sempre
+falso); o código de esconder e voltar continua lá, sem uso. O Windows não informa se a tela é OLED, então nada disso depende de
 detectar a tela.
 
 ### Kdrop

@@ -517,8 +517,7 @@ public partial class FlyoutWindow : Window
         AvisoHotSpot.Visibility = preocupante ? Visibility.Visible : Visibility.Collapsed;
         if (preocupante)
             TextoHotSpot.Text = hot >= 100
-                ? $"Hot spot em {hot:F0} °C. Perto do teto de 110 °C: vale olhar o " +
-                  "fluxo de ar do gabinete."
+                ? $"Hot spot em {hot:F0} °C. Perto do teto de 110 °C: vale uma verificada nos fans e uma limpeza do gabinete."
                 : $"Hot spot {delta:F0} °C acima da borda sob carga. Acima de 30 °C de " +
                   "diferença, costuma ser contato irregular do dissipador.";
     }
@@ -987,9 +986,7 @@ public partial class FlyoutWindow : Window
         EnergiaHojeTexto.Text = Energia(s.WhDeHoje);
 
         LegendaDoConsumo.Text =
-            "Estimativa, e só com o app aberto: CPU e placa de vídeo vêm de sensor, " +
-            "o resto é a conta montada em Componentes. O tempo com o app fechado não " +
-            "entra. O registro por dia fica guardado em arquivo.";
+            "Estimativa, e só com o app aberto: CPU e GPU são obtidos através de sensores, o resto é estimado. O registro diário fica salvo.";
         EnergiaMediaTexto.Text = $"{s.WattsMedia:F0} W";
         EnergiaPicoTexto.Text = $"{s.WattsPico:F0} W";
         EnergiaTomadaTexto.Text = _cfg.EficienciaFonte > 0
