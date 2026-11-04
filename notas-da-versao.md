@@ -11,3 +11,7 @@ Textos revisados em todo o app.
 Kisland: player.
 - Música pausada ou sem som sai da Kisland depois de 1 minuto (antes, 3).
 - Quando o que toca não tem capa, como uma guia anônima do navegador ou um vídeo sem arte, aparece o ícone do app que está tocando no lugar de uma imagem borrada.
+
+Guia da Kisland.
+- O guia abre sozinho de novo, uma vez, para todos, logo depois de atualizar.
+- Ganhou um passo sobre o Kdrop, com a chave para ligar ali mesmo (a bandeja liga junto).

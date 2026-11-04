@@ -7,7 +7,8 @@ using MonitorPC.Services;
 namespace MonitorPC.Views;
 
 /// <summary>
-/// O guia da Kisland. Aparece sozinho uma vez, pelo convite do painel, e fica
+/// O guia da Kisland. Abre sozinho uma vez por versao do guia (veja
+/// App.VersaoDoGuia), e fica
 /// na Personalizacao para quem quiser rever.
 ///
 /// Os controles sao de verdade: ligar, escolher o que aparece, como abrir e a
@@ -16,7 +17,7 @@ namespace MonitorPC.Views;
 /// </summary>
 public partial class GuiaKislandWindow : Window
 {
-    private const int Passos = 9;
+    private const int Passos = 10;
 
     /// <summary>A mesma paleta da Personalizacao.</summary>
     private static readonly (string Nome, string Hex)[] Paleta =
@@ -66,6 +67,15 @@ public partial class GuiaKislandWindow : Window
         ItemRoda.IsChecked = _cfg.IlhaRodaMudaVolume;
         ItemSaidas.IsChecked = _cfg.IlhaSaidasDeSom;
         ItemBandeja.IsChecked = _cfg.IlhaBandeja;
+        ItemKdrop.IsChecked = _cfg.Kdrop && _cfg.IlhaBandeja;
+
+        // O Kdrop abre uma porta na rede, e o Windows so deixa com o app
+        // elevado: sem isso, a chave fica apagada e diz por que.
+        if (!AtualizacaoService.Elevado())
+        {
+            ItemKdrop.IsEnabled = false;
+            DetalheKdrop.Text = "Precisa do KInfo instalado com acesso completo (rodando como administrador).";
+        }
 
         var agora = DateTime.Now;
         var hora = agora.ToString("HH:mm");
@@ -127,9 +137,10 @@ public partial class GuiaKislandWindow : Window
         PassoCalendario.Visibility = Visivel(_passo == 3);
         PassoAtalhos.Visibility = Visivel(_passo == 4);
         PassoSom.Visibility = Visivel(_passo == 5);
-        Passo4.Visibility = Visivel(_passo == 6);
-        PassoFps.Visibility = Visivel(_passo == 7);
-        Passo5.Visibility = Visivel(_passo == 8);
+        PassoKdrop.Visibility = Visivel(_passo == 6);
+        Passo4.Visibility = Visivel(_passo == 7);
+        PassoFps.Visibility = Visivel(_passo == 8);
+        Passo5.Visibility = Visivel(_passo == 9);
 
         Contagem.Text = $"Conhecendo a Kisland · {_passo + 1} de {Passos}";
         BotaoVoltar.Visibility = _passo == 0 ? Visibility.Hidden : Visibility.Visible;
@@ -190,6 +201,20 @@ public partial class GuiaKislandWindow : Window
         AtualizarPrevia();
         if (_carregando) return;
 
+        // O Kdrop e a bandeja aberta para a casa: ligar um liga a outra, e
+        // desligar a bandeja desliga ele. A troca dispara esta mesma funcao,
+        // que entao grava tudo.
+        if (ReferenceEquals(sender, ItemKdrop) && ItemKdrop.IsChecked == true && ItemBandeja.IsChecked != true)
+        {
+            ItemBandeja.IsChecked = true;
+            return;
+        }
+        if (ReferenceEquals(sender, ItemBandeja) && ItemBandeja.IsChecked != true && ItemKdrop.IsChecked == true)
+        {
+            ItemKdrop.IsChecked = false;
+            return;
+        }
+
         _cfg.IlhaAtiva = Ligar.IsChecked == true;
         _cfg.IlhaAbrirAoPassarMouse = AbrirPassando.IsChecked == true;
         _cfg.IlhaMusica = ItemMusica.IsChecked == true;
@@ -204,6 +229,7 @@ public partial class GuiaKislandWindow : Window
         _cfg.IlhaRodaMudaVolume = ItemRoda.IsChecked == true;
         _cfg.IlhaSaidasDeSom = ItemSaidas.IsChecked == true;
         _cfg.IlhaBandeja = ItemBandeja.IsChecked == true;
+        _cfg.Kdrop = ItemKdrop.IsChecked == true;
 
         Confirmar();
     }

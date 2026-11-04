@@ -196,11 +196,13 @@ ela está.
 
 ### Guia
 
-`GuiaKislandWindow` são nove passos com prévia desenhada e o controle de
-verdade: o que se mexe ali grava na configuração na hora. Aparece uma vez só,
-pelo convite que o painel mostra na primeira abertura de uma versão que tem o
-guia (`GuiaKislandVisto`), para quem instalou agora e para quem atualizou. Fica
-marcado como visto no momento em que aparece: ignorar também é resposta. Para
+`GuiaKislandWindow` são dez passos com prévia desenhada e o controle de
+verdade: o que se mexe ali grava na configuração na hora — inclusive ligar o
+Kdrop, que liga a bandeja junto. Abre sozinho uma vez por versão do guia
+(`App.VersaoDoGuia`, hoje 2, contra `GuiaKislandVersaoVista` no config), para
+quem instalou agora e para quem atualizou; subir o número faz todos verem de
+novo. Fica marcado como visto no momento em que aparece: pular também é
+resposta. Para
 rever, Personalização → Ver o guia da Kisland.
 
 ### Funcionamento

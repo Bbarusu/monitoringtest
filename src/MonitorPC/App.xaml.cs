@@ -432,23 +432,34 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Uma vez só, na primeira abertura de uma versão que tem o guia: o painel
-    /// abre com o convite para conhecer a Kisland. Vale para quem instalou
-    /// agora — depois da configuração inicial, que vem antes — e para quem
-    /// atualizou. Fica marcado como visto no momento em que aparece: ignorar
-    /// também é resposta, e um convite que volta a cada abertura vira cobrança.
+    /// A versao atual do guia da Kisland. Subir este numero faz o guia abrir
+    /// de novo, uma vez, para todos — instalacao nova e atualizacao. 2: o guia
+    /// ganhou o passo do Kdrop.
+    /// </summary>
+    private const int VersaoDoGuia = 2;
+
+    /// <summary>
+    /// Uma vez por versao do guia, na primeira abertura: o guia da Kisland abre
+    /// sozinho, para todos. Para quem instalou agora, depois da configuracao
+    /// inicial, que vem antes. Fica marcado como visto no momento em que
+    /// aparece: pular tambem e resposta, e um guia que volta a cada abertura
+    /// vira cobranca. Depois, ele fica na Personalizacao.
     /// </summary>
     private void ConvidarParaAKisland()
     {
-        if (_cfg.GuiaKislandVisto) return;
+        if (_cfg.GuiaKislandVersaoVista >= VersaoDoGuia) return;
 
         try
         {
+            _cfg.GuiaKislandVersaoVista = VersaoDoGuia;
             _cfg.GuiaKislandVisto = true;
             _cfg.Salvar();
 
+            // Abre quando o app terminar de subir: o guia e uma janela modal,
+            // e aberto aqui seguraria o resto da inicializacao.
             _painel.Mostrar();
-            _painel.MostrarConviteKisland();
+            Dispatcher.BeginInvoke(() => _painel.AbrirGuiaKisland(),
+                                   System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         }
         catch (Exception ex)
         {

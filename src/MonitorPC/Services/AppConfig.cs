@@ -193,11 +193,18 @@ public sealed class AppConfig
     public List<AtalhoDaIlha> IlhaAtalhos { get; set; } = new();
 
     /// <summary>
-    /// O convite para conhecer a Kisland ja apareceu. Aparece uma vez so, na
-    /// primeira abertura de uma versao que tem o guia — para quem instalou
-    /// agora e para quem atualizou. Depois, o guia fica na Personalizacao.
+    /// O convite para conhecer a Kisland ja apareceu (o da primeira versao do
+    /// guia). Fica so para ler configs antigos; quem decide agora e
+    /// <see cref="GuiaKislandVersaoVista"/>.
     /// </summary>
     public bool GuiaKislandVisto { get; set; }
+
+    /// <summary>
+    /// A versao do guia da Kisland que ja apareceu para esta pessoa. Quando o
+    /// guia ganha passos novos (o Kdrop, por exemplo), o numero da versao do
+    /// guia sobe no App, e ele abre de novo, uma vez, para todo mundo.
+    /// </summary>
+    public int GuiaKislandVersaoVista { get; set; }
 
     /// <summary>
     /// Contador de FPS na Kisland quando um jogo esta rodando, em qualquer
