@@ -249,9 +249,13 @@
                             Margin="0,0,4,0" Visibility="Collapsed">
                     <Border x:Name="CapaPequena" Width="32" Height="32" CornerRadius="16"
                             Background="{DynamicResource Chip}">
-                        <Path x:Name="NotaPequena" Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16"
-                              Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
-                              Width="15" Height="15" Stretch="Uniform" />
+                        <Grid>
+                            <Path x:Name="NotaPequena" Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16"
+                                  Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                                  Width="15" Height="15" Stretch="Uniform" />
+                            <Image x:Name="AppPequeno" Width="18" Height="18" Visibility="Collapsed"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Grid>
                     </Border>
                     <Grid Height="16" Margin="10,0,0,0" VerticalAlignment="Center">
                         <StackPanel x:Name="Equalizador" Orientation="Horizontal">
@@ -392,9 +396,13 @@
                         Visibility="Collapsed">
                 <Border x:Name="CapaAviso" Width="44" Height="44" CornerRadius="22"
                         Background="{DynamicResource Chip}">
-                    <Path x:Name="NotaAviso" Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16"
-                          Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
-                          Width="18" Height="18" Stretch="Uniform" />
+                    <Grid>
+                        <Path x:Name="NotaAviso" Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16"
+                              Stroke="{DynamicResource Icone}" StrokeThickness="1.8"
+                              Width="18" Height="18" Stretch="Uniform" />
+                        <Image x:Name="AppAviso" Width="22" Height="22" Visibility="Collapsed"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Grid>
                 </Border>
                 <StackPanel Margin="12,0,0,0" VerticalAlignment="Center" MaxWidth="240">
                     <TextBlock x:Name="TituloAviso" FontSize="13" FontWeight="SemiBold"
@@ -417,9 +425,13 @@
 
                     <Border x:Name="CapaGrande" Width="72" Height="72" CornerRadius="12"
                             Background="{DynamicResource Chip}">
-                        <Path x:Name="NotaGrande" Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16"
-                              Stroke="{DynamicResource Icone}" StrokeThickness="1.6"
-                              Width="28" Height="28" Stretch="Uniform" />
+                        <Grid>
+                            <Path x:Name="NotaGrande" Data="M9,18 L9,5 L21,3 L21,16 M9,18 A3,3 0 1,1 3,18 A3,3 0 1,1 9,18 M21,16 A3,3 0 1,1 15,16 A3,3 0 1,1 21,16"
+                                  Stroke="{DynamicResource Icone}" StrokeThickness="1.6"
+                                  Width="28" Height="28" Stretch="Uniform" />
+                            <Image x:Name="AppGrande" Width="34" Height="34" Visibility="Collapsed"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Grid>
                     </Border>
 
                     <StackPanel Grid.Column="1" Margin="14,0,12,0" VerticalAlignment="Center">

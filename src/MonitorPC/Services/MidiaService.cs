@@ -15,6 +15,7 @@ public sealed record EstadoDeMidia(
     string App,
     bool Tocando,
     ImageSource? Capa,
+    ImageSource? IconeDoApp,
     TimeSpan Posicao,
     TimeSpan Duracao,
     DateTimeOffset PosicaoLidaEm)
@@ -44,12 +45,12 @@ public sealed record EstadoDeMidia(
 /// uma mensagem de audio parada no WhatsApp continuava sendo "o que esta
 /// tocando" por horas, com a mesma foto, enquanto o som vinha de outro app.
 /// Agora a escolha e de quem toca de fato; ninguem tocando, de quem tocou por
-/// ultimo — e so ate tres minutos depois de parar.
+/// ultimo — e so ate um minuto depois de parar.
 /// </summary>
 public sealed class MidiaService : IDisposable
 {
     /// <summary>Parado ha mais que isto, o player deixa de ser "o que esta tocando".</summary>
-    public static readonly TimeSpan Validade = TimeSpan.FromMinutes(3);
+    public static readonly TimeSpan Validade = TimeSpan.FromMinutes(1);
 
     /// <summary>O que se sabe de cada sessao, pelo id do app.</summary>
     private sealed class Registro
@@ -96,7 +97,7 @@ public sealed class MidiaService : IDisposable
 
     /// <summary>
     /// Chamada a cada segundo pela ilha. E o que tira da tela um player que
-    /// parou ha mais de tres minutos: nenhum aviso do Windows chega nessa
+    /// parou ha mais de um minuto: nenhum aviso do Windows chega nessa
     /// hora, porque nada mudou — so o tempo passou.
     /// </summary>
     public void Conferir() => Escolher();
@@ -200,7 +201,7 @@ public sealed class MidiaService : IDisposable
 
     /// <summary>
     /// Quem aparece: entre as que tocam, a que comecou por ultimo; nenhuma
-    /// tocando, a que tocou por ultimo, se faz menos de tres minutos.
+    /// tocando, a que tocou por ultimo, se faz menos de um minuto.
     /// Devolve verdadeiro quando a escolha mudou (e ja mandou ler).
     /// </summary>
     private bool Escolher()
@@ -312,6 +313,7 @@ public sealed class MidiaService : IDisposable
                 NomeDoApp(origem),
                 tocando,
                 capa,
+                capa is null ? IconeDoAppDe(origem) : null,
                 posicao < TimeSpan.Zero ? TimeSpan.Zero : posicao,
                 duracao < TimeSpan.Zero ? TimeSpan.Zero : duracao,
                 lidaEm));
@@ -344,6 +346,14 @@ public sealed class MidiaService : IDisposable
             await origem.CopyToAsync(copia);
             copia.Position = 0;
 
+            // Miniatura pequena nao e capa: e o icone do site (o navegador
+            // manda o favicon quando a pagina nao tem arte, e numa guia
+            // anonima ele nao repassa a arte da pagina). Esticada para 72 px,
+            // virava um borrao qualquer; sem capa, entra o icone do app.
+            var quadro = BitmapDecoder.Create(copia, BitmapCreateOptions.None, BitmapCacheOption.OnLoad).Frames[0];
+            if (quadro.PixelWidth < 64 || quadro.PixelHeight < 64) return null;
+            copia.Position = 0;
+
             var imagem = new BitmapImage();
             imagem.BeginInit();
             imagem.CacheOption = BitmapCacheOption.OnLoad;
@@ -364,6 +374,60 @@ public sealed class MidiaService : IDisposable
             Log.Erro("Mídia: capa", ex);
             return null;
         }
+    }
+
+    private static readonly Dictionary<string, ImageSource?> Icones = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// O icone do app que esta tocando, para quando nao ha capa: o Chrome numa
+    /// guia anonima, um video sem arte. Pela lista de apps do Windows (a do
+    /// menu Iniciar), que conhece tanto os apps da loja quanto os instalados
+    /// pelo jeito antigo; sem ele la, pelo .exe do processo. Guardado por id.
+    /// </summary>
+    private static ImageSource? IconeDoAppDe(string origem)
+    {
+        if (string.IsNullOrWhiteSpace(origem)) return null;
+
+        lock (Icones)
+            if (Icones.TryGetValue(origem, out var guardado)) return guardado;
+
+        var icone = IconeDoWindows.DoApp(origem) ?? IconeDoProcesso(origem);
+        lock (Icones) Icones[origem] = icone;
+        return icone;
+    }
+
+    /// <summary>"chrome.exe" ou "Spotify": o icone do .exe de um processo aberto com esse nome.</summary>
+    private static ImageSource? IconeDoProcesso(string origem)
+    {
+        try
+        {
+            var nome = origem;
+            var exclamacao = nome.IndexOf('!');
+            if (exclamacao > 0) nome = nome[..exclamacao];
+            nome = Path.GetFileNameWithoutExtension(nome);
+            if (nome.Length == 0) return null;
+
+            foreach (var processo in System.Diagnostics.Process.GetProcessesByName(nome))
+            {
+                using (processo)
+                {
+                    try
+                    {
+                        if (processo.MainModule?.FileName is { } caminho) return AtalhoService.Icone(caminho);
+                    }
+                    catch
+                    {
+                        // Processo protegido: tenta o proximo.
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Mídia: ícone do processo", ex);
+        }
+
+        return null;
     }
 
     /// <summary>

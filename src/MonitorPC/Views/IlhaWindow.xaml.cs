@@ -34,7 +34,7 @@ public partial class IlhaWindow : Window
     private static readonly TimeSpan EsperaParaFechar = TimeSpan.FromMilliseconds(450);
 
     /// <summary>Pausado ha tanto tempo, o player some da ilha.</summary>
-    private static readonly TimeSpan SilencioQueLimpa = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan SilencioQueLimpa = TimeSpan.FromMinutes(1);
 
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
@@ -1000,7 +1000,7 @@ public partial class IlhaWindow : Window
             Posicionar();
         }
 
-        // Quem parou ha mais de tres minutos sai daqui: o servico so fica
+        // Quem parou ha mais de um minuto sai daqui: o servico so fica
         // sabendo que o tempo passou se alguem perguntar.
         _midia.Conferir();
         OuvirSaida();
@@ -1394,7 +1394,7 @@ public partial class IlhaWindow : Window
     private const float LimiarDeSom = 0.001f;
 
     /// <summary>
-    /// Tres minutos sem som, o player sai da ilha: musica calada ha tanto tempo
+    /// Um minuto sem som, o player sai da ilha: musica calada ha tanto tempo
     /// deixou de ser "tocando agora". Volta quando o player muda de estado
     /// (pausa vira play, ou o contrario) ou anuncia outra faixa.
     /// </summary>
@@ -1539,7 +1539,7 @@ public partial class IlhaWindow : Window
         var bruto = _midia.Atual;
 
         // Faixa nova, ou o player mudou de estado depois de dispensado: volta
-        // a aparecer, com mais tres minutos de prazo. Aviso repetido do mesmo
+        // a aparecer, com mais um minuto de prazo. Aviso repetido do mesmo
         // estado nao conta — e eles chegam a toda hora.
         if (bruto is null)
         {
@@ -1565,8 +1565,8 @@ public partial class IlhaWindow : Window
         PausadoPequeno.Visibility = Visivel(estado is { Tocando: false });
         Equalizador.Visibility = Visivel(estado is not { Tocando: false });
 
-        PorCapa(CapaPequena, NotaPequena, estado?.Capa);
-        PorCapa(CapaGrande, NotaGrande, estado?.Capa);
+        PorCapa(CapaPequena, NotaPequena, AppPequeno, estado);
+        PorCapa(CapaGrande, NotaGrande, AppGrande, estado);
 
         var player = _cfg.IlhaAbertaPlayer;
         BlocoMidia.Visibility = Visivel(player && estado is not null);
@@ -1595,7 +1595,7 @@ public partial class IlhaWindow : Window
         {
             TituloAviso.Text = estado.Titulo;
             ArtistaAviso.Text = estado.Artista;
-            PorCapa(CapaAviso, NotaAviso, estado.Capa);
+            PorCapa(CapaAviso, NotaAviso, AppAviso, estado);
             MostrarAviso(Aviso.Faixa, TimeSpan.FromSeconds(3));
         }
 
@@ -1610,17 +1610,25 @@ public partial class IlhaWindow : Window
     /// Capa no fundo do quadro, pelo pincel: assim o canto arredondado do
     /// quadro recorta a imagem, o que um Image dentro dele nao faria.
     /// </summary>
-    private static void PorCapa(Border quadro, System.Windows.Shapes.Path nota, ImageSource? capa)
+    /// <summary>
+    /// A capa ocupa o quadro inteiro. Sem capa (guia anonima, video sem arte),
+    /// o icone do app que esta tocando, menor, no meio do quadro; sem nenhum
+    /// dos dois, a nota musical.
+    /// </summary>
+    private static void PorCapa(Border quadro, System.Windows.Shapes.Path nota, Image app, EstadoDeMidia? estado)
     {
-        if (capa is null)
+        if (estado?.Capa is { } capa)
         {
-            quadro.SetResourceReference(Border.BackgroundProperty, "Chip");
-            nota.Visibility = Visibility.Visible;
+            quadro.Background = new ImageBrush(capa) { Stretch = Stretch.UniformToFill };
+            nota.Visibility = Visibility.Collapsed;
+            app.Visibility = Visibility.Collapsed;
             return;
         }
 
-        quadro.Background = new ImageBrush(capa) { Stretch = Stretch.UniformToFill };
-        nota.Visibility = Visibility.Collapsed;
+        quadro.SetResourceReference(Border.BackgroundProperty, "Chip");
+        app.Source = estado?.IconeDoApp;
+        app.Visibility = Visivel(estado?.IconeDoApp is not null);
+        nota.Visibility = Visivel(estado?.IconeDoApp is null);
     }
 
     private void AtualizarProgresso()

@@ -7,3 +7,7 @@ Textos revisados em todo o app.
 - Legendas, dicas e mensagens mais curtas e diretas: no instalador, no painel, na Kisland, na Personalização, no guia da Kisland e nas janelas de processos, ventoinhas e teste de estresse.
 - Saíram da Personalização as explicações embaixo de "Escurecer sem uso" e "Esconder com o PC parado", e a dica embaixo de "Minimizada". As opções continuam.
 - Saíram também a explicação de como ler os números em "GPU por programa" e a legenda do Explorer em "Memória" quando ele não aparece na lista.
+
+Kisland: player.
+- Música pausada ou sem som sai da Kisland depois de 1 minuto (antes, 3).
+- Quando o que toca não tem capa, como uma guia anônima do navegador ou um vídeo sem arte, aparece o ícone do app que está tocando no lugar de uma imagem borrada.

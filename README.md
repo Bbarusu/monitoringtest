@@ -228,8 +228,11 @@ por segundo e só com a ilha visível. Por `MouseEnter`/`MouseLeave` não
 funcionava: a ilha nunca é a janela ativa, e ao mudar de tamanho o WPF dá o
 cursor como fora até ele se mexer — ela abria e fechava em seguida.
 
-Música pausada por três minutos sai da ilha; volta ao tocar ou quando o player
-anuncia outra faixa. Sem nada para mostrar, a pílula vira um círculo com um anel
+Música pausada (ou sem som saindo) por um minuto sai da ilha; volta ao tocar ou
+quando o player anuncia outra faixa. Sem capa — miniatura menor que 64 px é o
+favicon do site, e o navegador não repassa a arte de guias anônimas —, entra o
+ícone do app que está tocando (`IconeDoWindows`, pelo `IShellItemImageFactory`
+em `shell:AppsFolder\<id do app>`, com o .exe do processo como reserva). Sem nada para mostrar, a pílula vira um círculo com um anel
 que respira devagar, a doze quadros por segundo.
 
 Não tem aparência própria: segue a cor de destaque, o tema e a transparência do
