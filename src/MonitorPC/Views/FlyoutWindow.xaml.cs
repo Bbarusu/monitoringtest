@@ -1667,14 +1667,17 @@ public partial class FlyoutWindow : Window
         if (IsVisible) Posicionar();
     }
 
-    /// <summary>O guia muda a configuracao na hora, como a Personalizacao.</summary>
-    public void AbrirGuiaKisland()
+    /// <summary>
+    /// O guia muda a configuracao na hora, como a Personalizacao. Obrigatorio:
+    /// aberto sozinho pelo App, sem o "Pular".
+    /// </summary>
+    public void AbrirGuiaKisland(bool obrigatorio = false)
     {
         new GuiaKislandWindow(_cfg, () =>
         {
             (Application.Current as App)?.AplicarAparencia();
             AplicarTransparencia();
-        })
+        }, obrigatorio)
         { Owner = this }.ShowDialog();
     }
 

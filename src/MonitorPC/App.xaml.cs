@@ -458,7 +458,7 @@ public partial class App : Application
             // Abre quando o app terminar de subir: o guia e uma janela modal,
             // e aberto aqui seguraria o resto da inicializacao.
             _painel.Mostrar();
-            Dispatcher.BeginInvoke(() => _painel.AbrirGuiaKisland(),
+            Dispatcher.BeginInvoke(() => _painel.AbrirGuiaKisland(obrigatorio: true),
                                    System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         }
         catch (Exception ex)

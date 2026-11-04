@@ -35,9 +35,20 @@ public partial class GuiaKislandWindow : Window
     private bool _carregando = true;
     private int _passo;
 
-    public GuiaKislandWindow(AppConfig cfg, Action aoMudar)
+    /// <param name="obrigatorio">
+    /// Aberto sozinho para todos (versao nova do guia): o "Pular" fica apagado,
+    /// e o guia so fecha passando pelos passos. Aberto pela Personalizacao,
+    /// para rever, o "Pular" funciona.
+    /// </param>
+    public GuiaKislandWindow(AppConfig cfg, Action aoMudar, bool obrigatorio = false)
     {
         InitializeComponent();
+
+        if (obrigatorio)
+        {
+            BotaoPular.IsEnabled = false;
+            BotaoPular.ToolTip = "Conheça a Kisland e o Kdrop até o fim para fechar";
+        }
         // Abre no centro, mas com o mesmo cuidado das outras: numa tela baixa
         // (notebook com escala de 125%), o guia passava do fim da tela.
         Janelas.CaberNaTela(this);
@@ -170,7 +181,10 @@ public partial class GuiaKislandWindow : Window
         MostrarPasso(_passo + 1);
     }
 
-    private void Pular_Click(object sender, RoutedEventArgs e) => Close();
+    private void Pular_Click(object sender, RoutedEventArgs e)
+    {
+        if (BotaoPular.IsEnabled) Close();
+    }
 
     private void Painel_Arrastar(object sender, MouseButtonEventArgs e)
     {

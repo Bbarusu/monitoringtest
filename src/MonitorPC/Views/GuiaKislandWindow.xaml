@@ -131,7 +131,8 @@
             <Grid>
                 <TextBlock x:Name="Contagem" Text="Conhecendo a Kisland · 1 de 10" FontSize="12" FontWeight="Medium"
                            VerticalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
-                <Button HorizontalAlignment="Right" Cursor="Hand" Click="Pular_Click" ToolTip="Fechar o guia">
+                <Button x:Name="BotaoPular" HorizontalAlignment="Right" Cursor="Hand" Click="Pular_Click" ToolTip="Fechar o guia"
+                        ToolTipService.ShowOnDisabled="True">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="bg" CornerRadius="10" Padding="12,7" Background="Transparent">
@@ -141,6 +142,12 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="bg" Property="Background" Value="{DynamicResource Cartao}" />
+                                </Trigger>
+                                <!-- Guia obrigatório: o "Pular" fica apagado e não responde. -->
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="bg" Property="Background" Value="Transparent" />
+                                    <Setter TargetName="bg" Property="Opacity" Value="0.35" />
+                                    <Setter Property="Cursor" Value="Arrow" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
