@@ -5,5 +5,5 @@ Novo: mixer de volume na Kisland.
 
 Textos revisados em todo o app.
 - Legendas, dicas e mensagens mais curtas e diretas: no instalador, no painel, na Kisland, na Personalização, no guia da Kisland e nas janelas de processos, ventoinhas e teste de estresse.
-- Saíram da Personalização a explicação embaixo de "Escurecer sem uso", a dica embaixo de "Minimizada" e a opção "Esconder com o PC parado". Sem a opção, a Kisland não some mais quando o PC fica parado.
+- Saíram da Personalização as explicações embaixo de "Escurecer sem uso" e "Esconder com o PC parado", e a dica embaixo de "Minimizada". As opções continuam.
 - Saíram também a explicação de como ler os números em "GPU por programa" e a legenda do Explorer em "Memória" quando ele não aparece na lista.

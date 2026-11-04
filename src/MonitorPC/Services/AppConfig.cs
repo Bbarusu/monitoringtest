@@ -250,13 +250,8 @@ public sealed class AppConfig
     /// <summary>Minutos sem o mouse por perto ate ela ficar mais apagada. Zero, nunca.</summary>
     public int IlhaEscurecerMinutos { get; set; } = 5;
 
-    /// <summary>
-    /// Sumir depois de 10 minutos sem ninguem mexer no PC. A opcao saiu da
-    /// Personalizacao, e o comportamento ficou desligado para todos — inclusive
-    /// para quem tinha marcado, que nao teria mais como desmarcar. O valor
-    /// salvo no config antigo e ignorado.
-    /// </summary>
-    [JsonIgnore] public bool IlhaEsconderParado => false;
+    /// <summary>Some depois de 10 minutos sem ninguem mexer no PC, e volta ao mexer.</summary>
+    public bool IlhaEsconderParado { get; set; } = true;
 
     /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;

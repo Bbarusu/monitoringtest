@@ -161,7 +161,8 @@ desenhado sempre no mesmo tamanho, com ou sem as ondas.
 
 Tema Preto: fundo #000000, bordas #16181C, cartões #0A0A0B, chips #111214, trilhos #1C1E22; o resto
 igual ao escuro, sem transparência. Kisland preta com a mesma paleta, sem borda nem sombra. Proteção
-contra marca: deslocamento de 1–2 px a cada 3 min, e opacidade 35% sem o mouse por perto.
+contra marca: deslocamento de 1–2 px a cada 3 min, opacidade 35% sem o mouse por perto, e esconder com
+o PC parado.
 
 Mixer: botão redondo pequeno (28) ao lado do título "Volume", com o desenho de três controles; aberto,
 o desenho fica na cor de destaque. Abaixo do controle geral, separado por uma linha, uma linha por
