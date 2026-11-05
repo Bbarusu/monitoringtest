@@ -35,6 +35,8 @@ public partial class GpuProcessosWindow : Window
     {
         InitializeComponent();
         Janelas.Acompanhar(this);
+        _rodape = new RodapeComPrazo(Rodape);
+        _rodape.Venceu += () => _forcarPendente = null;
 
         _gpu = new GpuProcessService();
 
@@ -159,9 +161,9 @@ public partial class GpuProcessosWindow : Window
         {
             _forcarPendente = null;
 
-            Rodape.Text = PerformanceService.Forcar(new[] { p.Pid }) > 0
+            _rodape.Mostrar(PerformanceService.Forcar(new[] { p.Pid }) > 0
                 ? $"{p.Nome} foi encerrado à força."
-                : $"Não foi possível encerrar {p.Nome}. O motivo ficou no erro.log.";
+                : $"Não foi possível encerrar {p.Nome}. O motivo ficou no erro.log.");
 
             return;
         }
@@ -172,18 +174,18 @@ public partial class GpuProcessosWindow : Window
 
         if (fechados > 0)
         {
-            Rodape.Text = $"{p.Nome}: pedido de fechar enviado.";
+            _rodape.Mostrar($"{p.Nome}: pedido de fechar enviado.");
             return;
         }
 
         _forcarPendente = p.Pid;
-        _forcarAte = DateTime.UtcNow.AddSeconds(10);
+        _forcarAte = DateTime.UtcNow + RodapeComPrazo.Prazo;
 
-        Rodape.Text = semJanela > 0
+        _rodape.Perguntar(semJanela > 0
             ? $"{p.Nome} não tem janela para receber o pedido. Encerrar à força pode " +
               "perder o que não foi salvo. Clique de novo para confirmar."
             : $"{p.Nome} não aceitou fechar — pode estar em tela cheia ou perguntando " +
-              "algo. Clique de novo para forçar.";
+              "algo. Clique de novo para forçar.");
     }
 
     /// <summary>
@@ -193,6 +195,7 @@ public partial class GpuProcessosWindow : Window
     /// </summary>
     private int? _forcarPendente;
     private DateTime _forcarAte;
+    private readonly RodapeComPrazo _rodape;
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 }

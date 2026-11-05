@@ -160,11 +160,11 @@ public partial class CalibracaoWindow : Window
             .Select(r => $"{r.Nome}: {r.RpmMaximo:F0} rpm")
             .ToList();
 
-        var texto = $"Pronto. {medidas.Count} ventoinha(s) medida(s):\n" +
+        var texto = (medidas.Count == 1 ? "Pronto. 1 ventoinha medida:\n" : $"Pronto. {medidas.Count} ventoinhas medidas:\n") +
                     string.Join("\n", linhas);
 
         if (falhas.Count > 0)
-            texto += $"\n\n{falhas.Count} não respondeu(ram): " +
+            texto += (falhas.Count == 1 ? "\n\n1 não respondeu: " : $"\n\n{falhas.Count} não responderam: ") +
                      string.Join("; ", falhas.Select(f => f.Nome).Distinct());
 
         Estado.Text = texto;

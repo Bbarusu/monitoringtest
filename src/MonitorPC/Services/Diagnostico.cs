@@ -354,7 +354,7 @@ public static class Diagnostico
 
                 var arquivos = Directory.GetFiles(dir, "PawnIO*");
                 achados.Add(arquivos.Length > 0
-                    ? $"{dir} ({arquivos.Length} arquivo(s))"
+                    ? $"{dir} ({arquivos.Length} {(arquivos.Length == 1 ? "arquivo" : "arquivos")})"
                     : $"{dir} (pasta vazia)");
             }
             catch

@@ -13,6 +13,8 @@ public partial class MemoriaWindow : Window
     public MemoriaWindow(SensorService sensores)
     {
         InitializeComponent();
+        _rodape = new RodapeComPrazo(Rodape);
+        _rodape.Venceu += () => _forcarPendente = null;
         Janelas.Acompanhar(this);
         _sensores = sensores;
 
@@ -161,9 +163,10 @@ public partial class MemoriaWindow : Window
 
             var encerrados = PerformanceService.ForcarPorNome(nome);
 
-            Rodape.Text = encerrados > 0
-                ? $"{nome}: {encerrados} processo(s) encerrado(s) à força."
-                : $"Não foi possível encerrar {nome}. O motivo ficou no erro.log.";
+            _rodape.Mostrar(encerrados > 0
+                ? RodapeComPrazo.Plural(encerrados, $"{nome}: processo encerrado à força.",
+                                         $"{nome}: {encerrados} processos encerrados à força.")
+                : $"Não foi possível encerrar {nome}. O motivo ficou no erro.log.");
 
             Recarregar();
             return;
@@ -175,30 +178,31 @@ public partial class MemoriaWindow : Window
 
         if (r.Pedidos > 0)
         {
-            Rodape.Text = $"{nome}: {r.Pedidos} pedido(s) de fechar enviados.";
+            _rodape.Mostrar(RodapeComPrazo.Plural(r.Pedidos, $"{nome}: pedido de fechar enviado.",
+                                                $"{nome}: {r.Pedidos} pedidos de fechar enviados."));
         }
         else if (r.SemJanela > 0)
         {
             // Sem janela não existe pedido gentil: ou força, ou nada acontece.
             // Era este o caso que não fazia nada e não explicava nada.
             _forcarPendente = nome;
-            _forcarAte = DateTime.UtcNow.AddSeconds(10);
+            _forcarAte = DateTime.UtcNow + RodapeComPrazo.Prazo;
 
-            Rodape.Text = $"{nome} está em segundo plano e não tem janela para " +
-                          "receber o pedido. Encerrar à força pode perder o que não " +
-                          "foi salvo. Clique no X de novo para confirmar.";
+            _rodape.Perguntar($"{nome} está em segundo plano e não tem janela para " +
+                              "receber o pedido. Encerrar à força pode perder o que não " +
+                              "foi salvo. Clique no X de novo para confirmar.");
         }
         else if (r.Recusados > 0)
         {
             _forcarPendente = nome;
-            _forcarAte = DateTime.UtcNow.AddSeconds(10);
+            _forcarAte = DateTime.UtcNow + RodapeComPrazo.Prazo;
 
-            Rodape.Text = $"{nome} recebeu o pedido e não fechou — pode estar " +
-                          "perguntando algo. Clique no X de novo para forçar.";
+            _rodape.Perguntar($"{nome} recebeu o pedido e não fechou — pode estar " +
+                              "perguntando algo. Clique no X de novo para forçar.");
         }
         else
         {
-            Rodape.Text = $"{nome} já não está em execução.";
+            _rodape.Mostrar($"{nome} já não está em execução.");
         }
 
         Recarregar();
@@ -214,6 +218,7 @@ public partial class MemoriaWindow : Window
     /// </summary>
     private string? _forcarPendente;
     private DateTime _forcarAte;
+    private readonly RodapeComPrazo _rodape;
 
     /// <summary>
     /// Remonta a lista depois de um fechamento. Fechar leva tempo: a lista só
@@ -233,7 +238,8 @@ public partial class MemoriaWindow : Window
     private async void Explorer_Click(object sender, RoutedEventArgs e)
     {
         BotaoExplorer.IsEnabled = false;
-        Rodape.Text = "Reiniciando o Explorer…";
+        _forcarPendente = null;
+        _rodape.Mostrar("Reiniciando o Explorer…");
 
         var deuCerto = await Task.Run(PerformanceService.ReiniciarExplorer);
 
@@ -241,9 +247,9 @@ public partial class MemoriaWindow : Window
         // precisa ser reinstalado, senao o app fica sem porta de entrada.
         (Application.Current as App)?.RecriarIconeDaBandeja();
 
-        Rodape.Text = deuCerto
+        _rodape.Mostrar(deuCerto
             ? "Explorer reiniciado. Janelas de pastas que estavam abertas foram fechadas."
-            : "Não foi possível reiniciar o Explorer.";
+            : "Não foi possível reiniciar o Explorer.");
 
         await Task.Delay(1500);
         Montar();

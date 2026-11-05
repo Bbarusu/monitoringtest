@@ -97,7 +97,7 @@ public sealed class CalibracaoService
         }
 
         // 1. Acelerar todas.
-        aviso.Report($"Acelerando {alvos.Count} ventoinha(s) a 100%…");
+        aviso.Report(alvos.Count == 1 ? "Acelerando a ventoinha a 100%…" : $"Acelerando {alvos.Count} ventoinhas a 100%…");
 
         foreach (var c in alvos)
         {

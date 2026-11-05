@@ -32,6 +32,8 @@ public partial class ProcessadorWindow : Window
         InitializeComponent();
         Janelas.Acompanhar(this);
         _sensores = sensores;
+        _rodape = new RodapeComPrazo(Rodape);
+        _rodape.Venceu += () => _forcarPendente = null;
 
         // Primeira leitura sem numero: ela existe para a proxima ter de onde
         // tirar a diferenca. Dizer isso e melhor que mostrar uma lista inteira
@@ -94,6 +96,7 @@ public partial class ProcessadorWindow : Window
     /// </summary>
     private string? _forcarPendente;
     private DateTime _forcarAte;
+    private readonly RodapeComPrazo _rodape;
 
     internal void Fechar(string nome)
     {
@@ -103,9 +106,10 @@ public partial class ProcessadorWindow : Window
 
             var encerrados = PerformanceService.ForcarPorNome(nome);
 
-            Rodape.Text = encerrados > 0
-                ? $"{nome}: {encerrados} processo(s) encerrado(s) à força."
-                : $"Não foi possível encerrar {nome}. O motivo ficou no erro.log.";
+            _rodape.Mostrar(encerrados > 0
+                ? RodapeComPrazo.Plural(encerrados, $"{nome}: processo encerrado à força.",
+                                         $"{nome}: {encerrados} processos encerrados à força.")
+                : $"Não foi possível encerrar {nome}. O motivo ficou no erro.log.");
 
             return;
         }
@@ -116,26 +120,27 @@ public partial class ProcessadorWindow : Window
 
         if (r.Pedidos > 0)
         {
-            Rodape.Text = $"{nome}: {r.Pedidos} pedido(s) de fechar enviados.";
+            _rodape.Mostrar(RodapeComPrazo.Plural(r.Pedidos, $"{nome}: pedido de fechar enviado.",
+                                                $"{nome}: {r.Pedidos} pedidos de fechar enviados."));
             return;
         }
 
         if (r.SemJanela > 0 || r.Recusados > 0)
         {
             _forcarPendente = nome;
-            _forcarAte = DateTime.UtcNow.AddSeconds(10);
+            _forcarAte = DateTime.UtcNow + RodapeComPrazo.Prazo;
 
-            Rodape.Text = r.SemJanela > 0
+            _rodape.Perguntar(r.SemJanela > 0
                 ? $"{nome} está em segundo plano e não tem janela para receber o " +
                   "pedido. Encerrar à força pode perder o que não foi salvo. " +
                   "Clique no X de novo para confirmar."
                 : $"{nome} recebeu o pedido e não fechou — pode estar perguntando " +
-                  "algo. Clique no X de novo para forçar.";
+                  "algo. Clique no X de novo para forçar.");
 
             return;
         }
 
-        Rodape.Text = $"{nome} já não está em execução.";
+        _rodape.Mostrar($"{nome} já não está em execução.");
     }
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
