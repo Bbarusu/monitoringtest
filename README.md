@@ -244,6 +244,12 @@ por segundo e só com a ilha visível. Por `MouseEnter`/`MouseLeave` não
 funcionava: a ilha nunca é a janela ativa, e ao mudar de tamanho o WPF dá o
 cursor como fora até ele se mexer — ela abria e fechava em seguida.
 
+A Kisland aberta fica dentro de uma rolagem com teto na altura útil do
+monitor (`LimitarAltura`, chamado em `Posicionar`): com tudo ligado ela passava
+da tela e o fim era cortado. A barra entra na margem direita, então a largura
+não muda. Havendo o que rolar, a roda do mouse rola a Kisland, menos em cima do
+bloco de volume e das linhas do mixer, onde continua mudando o volume.
+
 Música pausada (ou sem som saindo) por um minuto sai da ilha; volta ao tocar ou
 quando o player anuncia outra faixa. Sem capa — miniatura menor que 64 px é o
 favicon do site, e o navegador não repassa a arte de guias anônimas —, entra o

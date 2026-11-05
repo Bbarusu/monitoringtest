@@ -413,7 +413,19 @@
             </StackPanel>
 
             <!-- ======================= ILHA ABERTA ====================== -->
-            <StackPanel x:Name="Expandida" Width="480" Margin="20" Visibility="Collapsed">
+            <!--
+                Com muitos blocos ligados (calendário, cartões, mixer, bandeja,
+                QR do Kdrop), a Kisland aberta passava da altura da tela e o fim
+                era cortado. A altura agora tem teto (a área útil do monitor,
+                no código), e o que não cabe rola. As margens somam as mesmas
+                20 px de antes; a barra, quando aparece, ocupa parte da margem
+                direita, para a largura não mudar.
+            -->
+            <ScrollViewer x:Name="RolagemExpandida" Visibility="Collapsed" Margin="0,14,4,14"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Focusable="False" PanningMode="VerticalOnly"
+                          ScrollChanged="RolagemExpandida_Mudou">
+            <StackPanel x:Name="Expandida" Width="480" Margin="20,6,16,6" Visibility="Collapsed">
 
                 <!-- Tocando agora -->
                 <Grid x:Name="BlocoMidia">
@@ -825,6 +837,7 @@
                     </StackPanel>
                 </Grid>
             </StackPanel>
+            </ScrollViewer>
 
         </Grid>
     </Border>

@@ -603,6 +603,8 @@ public partial class IlhaWindow : Window
             var escala = VisualTreeHelper.GetDpi(this).DpiScaleX;
             if (escala <= 0) escala = 1;
 
+            LimitarAltura(area.Height / escala);
+
             var largura = (int)Math.Round(ActualWidth * escala);
             var x = area.Left + (area.Width - largura) / 2;
             var y = area.Top;
@@ -621,6 +623,47 @@ public partial class IlhaWindow : Window
         {
             Log.Erro("Ilha: posicionar", ex);
         }
+    }
+
+    /// <summary>
+    /// Teto da Kisland aberta: a altura util do monitor, menos a sombra e as
+    /// margens da casca e da rolagem. So muda quando precisa — mudar a altura
+    /// redimensiona a janela, que chama Posicionar de novo.
+    /// </summary>
+    private void LimitarAltura(double alturaUtil)
+    {
+        // Casca (6 em cima, 28 de sombra embaixo, 2 de borda), rolagem (14 +
+        // 14) e uma folga, para nao encostar na barra de tarefas.
+        var teto = Math.Max(200, alturaUtil - 6 - 28 - 2 - 28 - 12);
+        if (Math.Abs(RolagemExpandida.MaxHeight - teto) > 0.5) RolagemExpandida.MaxHeight = teto;
+    }
+
+    /// <summary>
+    /// A barra de rolagem (8 px) entra na margem direita do conteudo, e nao
+    /// ao lado dele: com ou sem barra, a Kisland tem a mesma largura.
+    /// </summary>
+    private void RolagemExpandida_Mudou(object sender, ScrollChangedEventArgs e)
+    {
+        var comBarra = RolagemExpandida.ComputedVerticalScrollBarVisibility == Visibility.Visible;
+        var direita = comBarra ? 8 : 16;
+        if (Math.Abs(Expandida.Margin.Right - direita) > 0.1)
+            Expandida.Margin = new Thickness(20, 6, direita, 6);
+    }
+
+    /// <summary>O cursor esta em cima do bloco de volume (onde a roda muda o volume)?</summary>
+    private bool CursorNoVolume()
+    {
+        DependencyObject? atual = Mouse.DirectlyOver as DependencyObject;
+        while (atual is not null)
+        {
+            if (ReferenceEquals(atual, BlocoVolume)) return true;
+            if (ReferenceEquals(atual, RolagemExpandida)) return false;
+            atual = atual is Visual or System.Windows.Media.Media3D.Visual3D
+                ? VisualTreeHelper.GetParent(atual)
+                : LogicalTreeHelper.GetParent(atual);
+        }
+
+        return false;
     }
 
     private WF.Screen MonitorDaIlha()
@@ -1418,6 +1461,8 @@ public partial class IlhaWindow : Window
         var aviso = _expandida ? Aviso.Nenhum : _aviso;
 
         Expandida.Visibility = Visivel(_expandida);
+        RolagemExpandida.Visibility = Expandida.Visibility;
+        if (!_expandida) RolagemExpandida.ScrollToTop();
         AvisoVolume.Visibility = Visivel(aviso == Aviso.Volume);
         AvisoFaixa.Visibility = Visivel(aviso == Aviso.Faixa);
         Compacta.Visibility = Visivel(!_expandida && aviso == Aviso.Nenhum);
@@ -1841,6 +1886,15 @@ public partial class IlhaWindow : Window
     /// </summary>
     private bool GirarRoda(int giro)
     {
+        // Aberta e mais alta que a tela, a roda rola — menos em cima do bloco
+        // de volume e das linhas do mixer, onde continua mudando o volume. Sem
+        // nada para rolar, vale o de sempre: volume em qualquer lugar.
+        if (_expandida && RolagemExpandida.ScrollableHeight > 0 && !CursorNoVolume() && LinhaSobOCursor() is null)
+        {
+            RolagemExpandida.ScrollToVerticalOffset(RolagemExpandida.VerticalOffset - giro * 48.0 / 120);
+            return true;
+        }
+
         if (!_cfg.IlhaRodaMudaVolume || _modoJogo || !_volume.Disponivel) return false;
 
         _rodaAcumulada += giro;
@@ -1854,6 +1908,7 @@ public partial class IlhaWindow : Window
             linha.Controle.Value = Math.Clamp(linha.Controle.Value + passos * PassoDaRoda, 0, 100);
             return true;
         }
+
 
         var nivel = Math.Clamp(_volume.Nivel + passos * PassoDaRoda, 0, 100);
 
