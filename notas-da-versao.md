@@ -15,3 +15,6 @@ Kisland: player.
 Guia da Kisland.
 - O guia abre sozinho de novo, uma vez, para todos, logo depois de atualizar, e só fecha passando por todos os passos: o "Pular" fica apagado. Aberto pela Personalização, para rever, o "Pular" funciona.
 - Ganhou um passo sobre o Kdrop, com a chave para ligar ali mesmo (a bandeja liga junto).
+
+Kdrop.
+- Com a escolha de fotos do iPhone aberta, a página do Kdrop no celular fica parada (não pergunta ao PC nem se redesenha), para não disputar com o iPhone enquanto ele prepara as fotos.
