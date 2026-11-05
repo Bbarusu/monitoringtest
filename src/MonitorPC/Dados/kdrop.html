@@ -359,8 +359,26 @@
 
   function terminar(msg) {
     enviando = false;
+    soltarTela();
     $("mensagem").textContent = msg;
     mostrar("resultado");
+  }
+
+  // Durante o envio a tela do celular fica acesa (Wake Lock, onde o navegador
+  // deixa): com a tela apagada o iPhone congela a página e o envio para.
+  var telaAcesa = null;
+  function manterTela() {
+    try {
+      if (navigator.wakeLock && !telaAcesa)
+        navigator.wakeLock.request("screen").then(function (l) {
+          telaAcesa = l;
+          l.addEventListener("release", function () { telaAcesa = null; });
+        }, function () {});
+    } catch (e) {}
+  }
+  function soltarTela() {
+    try { if (telaAcesa) telaAcesa.release(); } catch (e) {}
+    telaAcesa = null;
   }
 
   $("voltar").onclick = function () { mostrar("enviar"); desenharEscolhidos(); };
@@ -395,12 +413,30 @@
     }, 1000);
   }
 
+  // ---- Envio em partes ---------------------------------------------------
+  //
+  // Cada arquivo vai em partes de 8 MB. Se a conexão cai (Wi-Fi oscilando,
+  // tela apagando), a página pergunta ao PC quanto já chegou e continua dali,
+  // tentando por alguns minutos antes de desistir. Um vídeo de 2 GB não
+  // recomeça do zero por causa de um soluço da rede.
+
+  var PARTE = 8 * 1048576;
+  var TENTATIVAS = 40;
+  var retomarAgora = null; // espera de reconexão em andamento, para a volta da tela
+
   function mandar(pedido) {
     mostrar("enviando");
+    manterTela();
     var total = escolhidos.reduce(function (s, e) { return s + e.tamanho; }, 0) || 1;
     var feito = 0, i = 0;
 
-    (function proximo() {
+    function progresso(bytes) {
+      var p = Math.min(100, Math.round(bytes * 100 / total));
+      $("progresso").style.width = p + "%";
+      $("porcentagem").textContent = p + "%";
+    }
+
+    function proximoArquivo() {
       if (i >= escolhidos.length) {
         var n = escolhidos.length;
         escolhidos = [];
@@ -408,23 +444,79 @@
         atualizar();
         return terminar("Pronto! " + (n === 1 ? "O arquivo está" : "Os " + n + " arquivos estão") + " na bandeja do PC e em Downloads › Kdrop.");
       }
+      enviarParte(escolhidos[i], 0, 0);
+    }
 
-      var f = escolhidos[i];
+    function enviarParte(f, pos, tentativas) {
+      var ate = Math.min(pos + PARTE, f.tamanho);
+      var ultima = ate >= f.tamanho;
       var xhr = new XMLHttpRequest();
-      xhr.open("POST", "api/enviar/" + pedido + "?nome=" + encodeURIComponent(f.nome));
-      xhr.upload.onprogress = function (ev) {
-        var p = Math.min(100, Math.round((feito + ev.loaded) * 100 / total));
-        $("progresso").style.width = p + "%";
-        $("porcentagem").textContent = p + "%";
-      };
+      xhr.open("POST", "api/enviar/" + pedido + "?arquivo=" + i + "&pos=" + pos + "&fim=" + (ultima ? 1 : 0) +
+                       "&nome=" + encodeURIComponent(f.nome));
+      xhr.timeout = 120000;
+      xhr.upload.onprogress = function (ev) { progresso(feito + pos + ev.loaded); };
       xhr.onload = function () {
-        if (xhr.status !== 200) return terminar("O envio de " + f.nome + " falhou (" + xhr.status + ").");
-        feito += f.tamanho; i++; proximo();
+        var r = {};
+        try { r = JSON.parse(xhr.responseText || "{}"); } catch (e) {}
+
+        if (xhr.status === 200 && r.pronto) {
+          feito += f.tamanho; i++;
+          progresso(feito);
+          return proximoArquivo();
+        }
+        if (xhr.status === 200) return enviarParte(f, r.gravados, 0);
+
+        // Fora de ordem: o PC diz quanto já tem, e a próxima parte sai dali.
+        if (xhr.status === 409 && typeof r.gravados === "number")
+          return setTimeout(function () { enviarParte(f, r.gravados, tentativas + 1); }, 400);
+
+        if (xhr.status === 403) return terminar("O PC encerrou este envio (" + (r.estado || "403") + "). Escolha os arquivos e mande de novo.");
+        if (xhr.status === 413) return terminar(f.nome + " ficou maior do que o combinado com o PC. Escolha de novo e mande.");
+        falhou(f, tentativas, "o PC respondeu " + xhr.status);
       };
-      xhr.onerror = function () { terminar("A conexão caiu no meio do envio de " + f.nome + "."); };
-      xhr.send(f.arquivo);
-    })();
+      xhr.onerror = function () { falhou(f, tentativas, "a conexão caiu"); };
+      xhr.ontimeout = function () { falhou(f, tentativas, "o PC demorou demais"); };
+      xhr.send(f.arquivo.slice(pos, ate));
+    }
+
+    // Caiu: espera um pouco (cada vez mais, até 10 s), pergunta ao PC quanto
+    // já chegou e continua dali.
+    function falhou(f, tentativas, motivo) {
+      if (tentativas + 1 > TENTATIVAS)
+        return terminar("O envio de " + f.nome + " parou: " + motivo + ". Confira se o celular e o PC estão no mesmo Wi-Fi e mande de novo.");
+
+      $("porcentagem").textContent = "Reconectando…";
+      var espera = Math.min(10000, 1000 * Math.pow(2, Math.min(tentativas, 4)));
+      var timer = setTimeout(sincronizar, espera);
+      retomarAgora = function () { clearTimeout(timer); sincronizar(); };
+
+      function sincronizar() {
+        retomarAgora = null;
+        fetch("api/enviar/" + pedido, { cache: "no-store" })
+          .then(function (r) { if (r.status === 404) throw { fim: true }; return r.json(); })
+          .then(function (e) {
+            if (e.estado !== "aceito") return terminar("O PC encerrou este envio (" + e.estado + "). Escolha os arquivos e mande de novo.");
+            var a = (e.arquivos || [])[i] || { gravados: 0 };
+            if (a.pronto) { feito += f.tamanho; i++; return proximoArquivo(); }
+            enviarParte(f, a.gravados || 0, tentativas + 1);
+          })
+          .catch(function (erro) {
+            if (erro && erro.fim) return terminar("O PC não tem mais este envio. Escolha os arquivos e mande de novo.");
+            falhou(f, tentativas + 1, "o PC não respondeu");
+          });
+      }
+    }
+
+    proximoArquivo();
   }
+
+  // Voltou para a página (tela acesa de novo, ou saiu de outro app): se um
+  // envio estava esperando para reconectar, tenta já, e reacende a tela.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible" || !enviando) return;
+    manterTela();
+    if (retomarAgora) retomarAgora();
+  });
 
   atualizar();
   setInterval(atualizar, 2000);

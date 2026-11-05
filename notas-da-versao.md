@@ -17,4 +17,6 @@ Guia da Kisland.
 - Ganhou um passo sobre o Kdrop, com a chave para ligar ali mesmo (a bandeja liga junto).
 
 Kdrop.
+- Vídeos e arquivos grandes do celular vão em partes: se o Wi-Fi oscilar ou a tela apagar no meio, o envio continua de onde parou em vez de recomeçar ou falhar. Enquanto envia, a página pede para a tela do celular ficar acesa.
+- Um envio aceito que ficar 30 minutos parado é cancelado, e o pedaço que chegou é apagado da pasta do Kdrop.
 - Com a escolha de fotos do iPhone aberta, a página do Kdrop no celular fica parada (não pergunta ao PC nem se redesenha), para não disputar com o iPhone enquanto ele prepara as fotos.

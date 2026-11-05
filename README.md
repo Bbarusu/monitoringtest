@@ -113,7 +113,8 @@ de fora:
   da casa, os arquivos para baixar e o envio do celular para o PC.
   `GET /api/estado` (o celular pergunta a cada 2 s e assim aparece na Kisland),
   `GET /api/arquivo/{id}`, `POST /api/pedido`, `GET /api/pedido/{id}` e
-  `POST /api/enviar/{pedido}?nome=`.
+  `POST /api/enviar/{pedido}?arquivo=&pos=&fim=&nome=` (em partes) e
+  `GET /api/enviar/{pedido}` (quanto de cada arquivo já chegou).
 - Anúncio UDP na porta 48621, a cada 5 s, para os KInfo da rede se acharem.
 - O envio para outro PC é o mesmo caminho do celular: pede, espera o aceite,
   envia arquivo por arquivo.
@@ -125,6 +126,19 @@ de fora:
   já deixou o item à vista. O celular vê pela pergunta de 2 s e destaca o que
   chegou depois de a página abrir. Pasta vai como .zip montado enquanto sai
   (chunked, sem arquivo temporário) e, buscada por outro PC, chega aberta.
+
+O celular manda cada arquivo em partes de 8 MB. Cada parte diz o índice do
+arquivo no pedido e a posição onde começa; o PC escolhe o nome no disco uma vez
+por arquivo (`ArquivoChegando`) e só aceita a parte que começa exatamente onde
+o arquivo parou — fora disso responde 409 com quanto já tem. Caiu a conexão, a
+página pergunta `GET /api/enviar/{pedido}` e continua dali, com espera
+crescente até 10 s e 40 tentativas; com a tela de volta, tenta na hora, e pede
+para a tela ficar acesa (Wake Lock) enquanto envia. O progresso vem do que está
+gravado, não do que passou pela rede, então parte repetida não conta duas
+vezes. Um pedido aceito só é esquecido depois de 30 min sem nenhuma parte
+(`EnvioParado`), e aí os pedaços incompletos são apagados. Sem `arquivo` na
+URL, o envio é o antigo, inteiro num POST — é o que os outros PCs ainda usam
+(`MandarParaPc`) e o que KInfo mais velho entende.
 
 Todo pedido passa pelo aceite na Kisland (prazo de 60 s), a não ser de aparelho
 em `KdropConfiaveis`. Só entra arquivo que estava no pedido aceito, com o nome

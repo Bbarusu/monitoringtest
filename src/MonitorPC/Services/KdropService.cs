@@ -51,6 +51,16 @@ public sealed class PedidoKdrop
     public long Recebidos { get; set; }
     public List<string> Salvos { get; } = new();
 
+    /// <summary>
+    /// Ultimo sinal de vida do envio: o aceite ou a ultima parte que chegou.
+    /// Um pedido aceito so e esquecido depois de 30 minutos parado — um video
+    /// grande pode levar mais que isso, mas nunca 30 minutos sem mandar nada.
+    /// </summary>
+    public DateTime AtividadeEm { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Cada arquivo do pedido, na ordem declarada: nulo ate a primeira parte chegar.</summary>
+    internal ArquivoChegando?[] Chegando { get; set; } = Array.Empty<ArquivoChegando?>();
+
     public long Total => Arquivos.Sum(a => Math.Max(0, a.Tamanho));
 
     public int Porcentagem => Total <= 0 ? 0 : (int)Math.Clamp(Recebidos * 100 / Total, 0, 100);
@@ -60,6 +70,24 @@ public sealed class ArquivoDoPedido
 {
     public string Nome { get; set; } = "";
     public long Tamanho { get; set; }
+}
+
+/// <summary>
+/// Um arquivo do pedido sendo gravado. O nome no disco e escolhido uma vez,
+/// na primeira parte, e as seguintes continuam o mesmo arquivo — escolher a
+/// cada parte criava "video (2).mp4", "video (3).mp4"...
+/// </summary>
+internal sealed class ArquivoChegando
+{
+    public string Caminho { get; init; } = "";
+
+    /// <summary>Bytes ja gravados, do inicio: e de onde a proxima parte continua.</summary>
+    public long Gravados { get; set; }
+
+    public bool Pronto { get; set; }
+
+    /// <summary>Uma parte esta sendo gravada agora: outra para o mesmo arquivo espera.</summary>
+    public bool Ocupado { get; set; }
 }
 
 /// <summary>
@@ -471,6 +499,7 @@ public sealed class KdropService : IDisposable
         {
             if (pedido.Estado != EstadoDoPedido.Esperando) return;
             pedido.Estado = aceitar ? EstadoDoPedido.Aceito : EstadoDoPedido.Recusado;
+            pedido.AtividadeEm = DateTime.UtcNow;
         }
 
         Log.Nota($"Kdrop: pedido {pedido.Id} {(aceitar ? "aceito" : "recusado")}");
@@ -484,12 +513,16 @@ public sealed class KdropService : IDisposable
         PedidoMudou?.Invoke(pedido);
     }
 
+    /// <summary>Aceito e sem nenhuma parte chegando ha tanto tempo, o envio foi abandonado.</summary>
+    public static readonly TimeSpan EnvioParado = TimeSpan.FromMinutes(30);
+
     private void ExpirarPedidos()
     {
         var agora = DateTime.UtcNow;
         foreach (var (id, pedido) in _pedidos)
         {
             var mudou = false;
+            var incompletos = new List<string>();
             lock (pedido)
             {
                 if (pedido.Estado == EstadoDoPedido.Esperando && agora - pedido.CriadoEm > PrazoDoPedido)
@@ -497,12 +530,35 @@ public sealed class KdropService : IDisposable
                     pedido.Estado = EstadoDoPedido.Expirado;
                     mudou = true;
                 }
+                else if (pedido.Estado == EstadoDoPedido.Aceito && agora - pedido.AtividadeEm > EnvioParado &&
+                         !pedido.Chegando.Any(c => c is { Ocupado: true }))
+                {
+                    // Abandonado no meio (o celular saiu da pagina, a rede
+                    // caiu de vez): os pedacos gravados nao servem para nada.
+                    pedido.Estado = EstadoDoPedido.Expirado;
+                    incompletos.AddRange(pedido.Chegando.Where(c => c is { Pronto: false }).Select(c => c!.Caminho));
+                    mudou = true;
+                }
             }
 
-            if (mudou) PedidoMudou?.Invoke(pedido);
+            foreach (var caminho in incompletos)
+            {
+                try { File.Delete(caminho); }
+                catch (Exception ex) { Log.Erro("Kdrop: apagar envio incompleto", ex); }
+            }
 
-            // Pedido velho, terminado ou nao, sai da memoria.
-            if (agora - pedido.CriadoEm > TimeSpan.FromHours(2)) _pedidos.TryRemove(id, out _);
+            if (mudou)
+            {
+                Log.Nota($"Kdrop: pedido {pedido.Id} expirado{(incompletos.Count > 0 ? $", {incompletos.Count} arquivo(s) incompleto(s) apagado(s)" : "")}");
+                PedidoMudou?.Invoke(pedido);
+            }
+
+            // Terminado (ou recusado, ou expirado) ha mais de 2 h, sai da
+            // memoria. Aceito e ainda recebendo, nunca: quem decide e o prazo
+            // de parado, acima.
+            if (pedido.Estado != EstadoDoPedido.Aceito &&
+                agora - (pedido.AtividadeEm > pedido.CriadoEm ? pedido.AtividadeEm : pedido.CriadoEm) > TimeSpan.FromHours(2))
+                _pedidos.TryRemove(id, out _);
         }
     }
 
@@ -680,6 +736,8 @@ public sealed class KdropService : IDisposable
                 await EstadoDoPedidoJson(caminho["/api/pedido/".Length..], res);
             else if (metodo == "POST" && caminho.StartsWith("/api/enviar/"))
                 await Receber(caminho["/api/enviar/".Length..], req, res);
+            else if (metodo == "GET" && caminho.StartsWith("/api/enviar/"))
+                await EstadoDoEnvio(caminho["/api/enviar/".Length..], res);
             else
                 res.StatusCode = 404;
         }
@@ -935,6 +993,7 @@ public sealed class KdropService : IDisposable
             OrigemEhPc = dados.Pc,
             Arquivos = dados.Arquivos.Select(a => new ArquivoDoPedido { Nome = NomeSeguro(a.Nome), Tamanho = a.Tamanho }).ToList()
         };
+        pedido.Chegando = new ArquivoChegando?[pedido.Arquivos.Count];
 
         // Aparelho confiavel nao precisa de aceite.
         var confiavel = _cfg.KdropConfiaveis.Any(c => c.Id == pedido.OrigemId);
@@ -971,43 +1030,134 @@ public sealed class KdropService : IDisposable
         _ => "concluido"
     };
 
+    /// <summary>
+    /// Recebe um arquivo do pedido aceito, inteiro ou em partes.
+    ///
+    /// Em partes (a pagina do celular, desde a 0.1.29): <c>?arquivo=</c> e o
+    /// indice do arquivo no pedido, <c>pos=</c> e de onde a parte comeca e
+    /// <c>fim=1</c> marca a ultima. A parte tem de comecar exatamente onde o
+    /// arquivo parou; se nao, a resposta e 409 com quanto ja foi gravado, e o
+    /// celular continua dali. E isso que deixa um video grande sobreviver a
+    /// uma queda de Wi-Fi ou a tela do celular apagando no meio.
+    ///
+    /// Inteiro (sem <c>arquivo</c>): o jeito antigo, que outros PCs com KInfo
+    /// mais velho ainda usam. Vai para o primeiro arquivo do pedido ainda nao
+    /// comecado, e termina quando o corpo termina.
+    /// </summary>
     private async Task Receber(string id, HttpListenerRequest req, HttpListenerResponse res)
     {
         if (!_pedidos.TryGetValue(id, out var pedido) || pedido.Estado != EstadoDoPedido.Aceito)
         {
             Log.Nota($"Kdrop: envio para pedido {id} {(pedido is null ? "desconhecido" : pedido.Estado.ToString())}, recusado");
             res.StatusCode = 403;
+            await Escrever(res, JsonSerializer.Serialize(new { estado = pedido is null ? "desconhecido" : Texto(pedido.Estado) }, Json),
+                           "application/json; charset=utf-8");
             return;
         }
 
-        // Cabem tantos arquivos quantos o pedido aceito declarou, e nada
-        // alem. Nao confere o nome com o do pedido: o iPhone renomeia fotos
-        // ao enviar ("image.jpg"), e acentos podem chegar codificados de
-        // outro jeito — conferir o nome recusava envios legitimos.
-        bool cabe;
-        lock (pedido) cabe = pedido.Salvos.Count < pedido.Arquivos.Count;
-        if (!cabe)
-        {
-            Log.Nota($"Kdrop: envio a mais no pedido {id}, recusado");
-            res.StatusCode = 403;
-            return;
-        }
-
+        var emPartes = req.QueryString["arquivo"] is not null;
         var nome = NomeSeguro(req.QueryString["nome"] ?? "");
+        int indice;
+        long pos = 0;
+        var ultima = true;
 
-        var pasta = Pasta(_cfg);
-        Directory.CreateDirectory(pasta);
-        var destino = CaminhoLivre(pasta, nome);
-
-        var buffer = new byte[81920];
-        await using (var arquivo = File.Create(destino))
+        if (emPartes)
         {
+            if (!int.TryParse(req.QueryString["arquivo"], out indice) ||
+                !long.TryParse(req.QueryString["pos"] ?? "0", out pos) || pos < 0)
+            {
+                res.StatusCode = 400;
+                return;
+            }
+
+            ultima = req.QueryString["fim"] == "1";
+        }
+        else
+        {
+            // Cabem tantos arquivos quantos o pedido aceito declarou, e nada
+            // alem. Nao confere o nome com o do pedido: o iPhone renomeia
+            // fotos ao enviar ("image.jpg"), e acentos podem chegar
+            // codificados de outro jeito.
+            lock (pedido) indice = Array.FindIndex(pedido.Chegando, c => c is null);
+        }
+
+        ArquivoChegando estado = null!;
+        int? recusa = null;
+        lock (pedido)
+        {
+            if (indice < 0 || indice >= pedido.Chegando.Length)
+            {
+                Log.Nota($"Kdrop: envio a mais no pedido {id}, recusado");
+                res.StatusCode = 403;
+                return;
+            }
+
+            if (pedido.Chegando[indice] is null)
+            {
+                // O nome no disco e escolhido uma vez so, e o arquivo ja nasce
+                // vazio, para dois arquivos de mesmo nome nao pegarem o mesmo
+                // lugar.
+                var pasta = Pasta(_cfg);
+                Directory.CreateDirectory(pasta);
+                var caminho = CaminhoLivre(pasta, nome);
+                File.Create(caminho).Dispose();
+                pedido.Chegando[indice] = new ArquivoChegando { Caminho = caminho };
+            }
+
+            estado = pedido.Chegando[indice]!;
+
+            // Ja terminado: uma ultima parte repetida (a resposta se perdeu
+            // no caminho) so ouve que esta tudo certo. Fora de ordem, ou com
+            // outra parte do mesmo arquivo ainda sendo gravada: 409, com
+            // quanto ja chegou, para o celular continuar dali.
+            if (estado.Pronto) recusa = 200;
+            else if (estado.Ocupado || (emPartes && pos != estado.Gravados)) recusa = 409;
+            else
+            {
+                estado.Ocupado = true;
+                pedido.AtividadeEm = DateTime.UtcNow;
+            }
+        }
+
+        if (recusa is { } codigo)
+        {
+            res.StatusCode = codigo;
+            await Escrever(res, JsonSerializer.Serialize(new { gravados = estado.Gravados, pronto = estado.Pronto }, Json),
+                           "application/json; charset=utf-8");
+            return;
+        }
+
+        var limite = pedido.Arquivos[indice].Tamanho;
+        try
+        {
+            var buffer = new byte[81920];
+            await using var arquivo = new FileStream(estado.Caminho, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+
+            // Continua de onde parou, e corta o que uma parte interrompida
+            // tenha deixado alem disso.
+            arquivo.SetLength(estado.Gravados);
+            arquivo.Seek(estado.Gravados, SeekOrigin.Begin);
+
             int n;
             var ultimoAviso = DateTime.MinValue;
             while ((n = await req.InputStream.ReadAsync(buffer)) > 0)
             {
+                // Mais do que o pedido declarou nao entra: o aceite foi para
+                // aquele tamanho. (Tamanho zero ou desconhecido nao limita.)
+                if (limite > 0 && estado.Gravados + n > limite)
+                {
+                    Log.Nota($"Kdrop: envio maior que o declarado no pedido {id}, recusado");
+                    res.StatusCode = 413;
+                    return;
+                }
+
                 await arquivo.WriteAsync(buffer.AsMemory(0, n));
-                lock (pedido) pedido.Recebidos += n;
+                lock (pedido)
+                {
+                    estado.Gravados += n;
+                    pedido.Recebidos = pedido.Chegando.Sum(c => c?.Gravados ?? 0);
+                    pedido.AtividadeEm = DateTime.UtcNow;
+                }
 
                 // Progresso para a Kisland, no maximo quatro vezes por segundo.
                 if (DateTime.UtcNow - ultimoAviso > TimeSpan.FromMilliseconds(250))
@@ -1017,21 +1167,66 @@ public sealed class KdropService : IDisposable
                 }
             }
         }
+        catch (Exception ex) when (ex is IOException or HttpListenerException)
+        {
+            // A conexao caiu no meio da parte. O que chegou fica gravado, e a
+            // proxima tentativa continua dali.
+            Log.Nota($"Kdrop: parte interrompida no pedido {id}, arquivo {indice}, em {estado.Gravados} bytes");
+            return;
+        }
+        finally
+        {
+            lock (pedido) estado.Ocupado = false;
+        }
 
-        Log.Nota($"Kdrop: recebido {Path.GetFileName(destino)} ({new FileInfo(destino).Length} bytes)");
+        if (!ultima)
+        {
+            await Escrever(res, JsonSerializer.Serialize(new { gravados = estado.Gravados, pronto = false }, Json),
+                           "application/json; charset=utf-8");
+            return;
+        }
+
+        Log.Nota($"Kdrop: recebido {Path.GetFileName(estado.Caminho)} ({estado.Gravados} bytes)");
 
         bool terminou;
         lock (pedido)
         {
-            pedido.Salvos.Add(destino);
-            terminou = pedido.Salvos.Count >= pedido.Arquivos.Count;
+            estado.Pronto = true;
+            pedido.Salvos.Add(estado.Caminho);
+            terminou = pedido.Chegando.All(c => c is { Pronto: true });
             if (terminou) pedido.Estado = EstadoDoPedido.Concluido;
         }
 
-        ArquivoRecebido?.Invoke(destino);
+        ArquivoRecebido?.Invoke(estado.Caminho);
         PedidoMudou?.Invoke(pedido);
 
-        await Escrever(res, "{\"ok\":true}", "application/json; charset=utf-8");
+        await Escrever(res, JsonSerializer.Serialize(new { gravados = estado.Gravados, pronto = true }, Json),
+                       "application/json; charset=utf-8");
+    }
+
+    /// <summary>
+    /// Quanto de cada arquivo do pedido ja chegou: o celular pergunta isto
+    /// depois de uma queda, para continuar de onde parou.
+    /// </summary>
+    private async Task EstadoDoEnvio(string id, HttpListenerResponse res)
+    {
+        if (!_pedidos.TryGetValue(id, out var pedido))
+        {
+            res.StatusCode = 404;
+            return;
+        }
+
+        object corpo;
+        lock (pedido)
+        {
+            corpo = new
+            {
+                estado = Texto(pedido.Estado),
+                arquivos = pedido.Chegando.Select(c => new { gravados = c?.Gravados ?? 0, pronto = c?.Pronto ?? false }).ToList()
+            };
+        }
+
+        await Escrever(res, JsonSerializer.Serialize(corpo, Json), "application/json; charset=utf-8");
     }
 
     private static async Task Escrever(HttpListenerResponse res, string texto, string tipo)
