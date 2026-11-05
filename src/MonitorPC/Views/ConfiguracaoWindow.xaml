@@ -215,6 +215,25 @@
                 </StackPanel>
             </Border>
 
+            <!-- Atualizações: a busca sozinha, ao abrir o app. Desligada, ainda
+                 dá para procurar pelo menu do ícone da bandeja. -->
+            <TextBlock Text="Atualizações" FontSize="11" Margin="0,20,0,8"
+                       Foreground="{DynamicResource TextoFraco}" />
+
+            <Border CornerRadius="12" Background="{DynamicResource Cartao}"
+                    BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
+                <Grid>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,52,0">
+                        <TextBlock Text="Procurar atualizações ao abrir" FontSize="13" FontWeight="Medium"
+                                   Foreground="{DynamicResource Texto}" />
+                        <TextBlock Text="Desligado, procure pelo menu do ícone da bandeja" FontSize="11" Margin="0,2,0,0"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}" />
+                    </StackPanel>
+                    <CheckBox x:Name="VerificarAtualizacoes" Style="{StaticResource Interruptor}"
+                              HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
               </StackPanel>
             </ScrollViewer>
 

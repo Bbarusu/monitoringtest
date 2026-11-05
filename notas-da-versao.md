@@ -20,3 +20,8 @@ Kdrop.
 - Vídeos e arquivos grandes do celular vão em partes: se o Wi-Fi oscilar ou a tela apagar no meio, o envio continua de onde parou em vez de recomeçar ou falhar. Enquanto envia, a página pede para a tela do celular ficar acesa.
 - Um envio aceito que ficar 30 minutos parado é cancelado, e o pedaço que chegou é apagado da pasta do Kdrop.
 - Com a escolha de fotos do iPhone aberta, a página do Kdrop no celular fica parada (não pergunta ao PC nem se redesenha), para não disputar com o iPhone enquanto ele prepara as fotos.
+
+Ajustes gerais.
+- Nas telas de Processamento, Memória e GPU por programa, a pergunta "clique no X de novo para forçar" aparece em laranja, como o aviso da tela, e some sozinha depois dos 10 segundos em que vale. Os resultados perderam o "(s)": "pedido de fechar enviado", "3 processos encerrados à força".
+- O catálogo de peças volta a se atualizar pela internet (antes a busca falhava para todo mundo, e valia sempre o catálogo que vem com o app).
+- Nova opção na Configuração: procurar atualizações ao abrir o app. Desligada, dá para procurar pelo menu do ícone da bandeja.

@@ -45,6 +45,7 @@ public partial class ConfiguracaoWindow : Window
         Notificar.IsChecked = _cfg.NotificarNoWindows;
         SugerirEconomico.IsChecked = _cfg.SugerirEconomico;
         MostrarVentoinhas.IsChecked = _cfg.MostrarVentoinhasNaCpu;
+        VerificarAtualizacoes.IsChecked = _cfg.VerificarAtualizacoes;
         BlocoVentoinhas.Visibility = _cfg.MostrarVentoinhasNaCpu
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -157,6 +158,7 @@ public partial class ConfiguracaoWindow : Window
         _cfg.NotificarNoWindows = Notificar.IsChecked == true;
         _cfg.SugerirEconomico = SugerirEconomico.IsChecked == true;
         _cfg.MostrarVentoinhasNaCpu = MostrarVentoinhas.IsChecked == true;
+        _cfg.VerificarAtualizacoes = VerificarAtualizacoes.IsChecked == true;
 
         // Só sobrescreve a escolha se a lista chegou a ser montada: numa tela
         // aberta e fechada antes da primeira leitura, a lista vazia apagaria o

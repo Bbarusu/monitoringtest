@@ -614,8 +614,10 @@ quadrado é estreito demais para `253 / 253 W` sem atropelar.
 
 `Dados/catalogo.json` viaja embutido no executável e guarda potência máxima,
 limite térmico e clock de boost por modelo. Ele é atualizável pela internet — um
-GET de poucos kilobytes no próprio repositório, no máximo uma vez por semana,
-com cache local e falha silenciosa. Desligado nas configurações, vale a cópia
+GET de poucos kilobytes em `releases/latest/download/catalogo.json` do
+repositório público de releases (o `publicar-release.ps1` sobe o arquivo junto
+com cada release; o repositório do código é privado e dava 404), no máximo uma
+vez por semana, com cache local e falha silenciosa. Desligado nas configurações, vale a cópia
 embutida. Não existe API pública gratuita de especificações de hardware: a
 TechPowerUp licencia a dela, então o catálogo é mantido à mão aqui.
 
