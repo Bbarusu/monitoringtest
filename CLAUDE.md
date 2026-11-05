@@ -9,6 +9,13 @@
 - **Notas acumulam.** Cada mudança que alguém vá perceber entra no
   `notas-da-versao.md`, somada às que já estão lá, e não no lugar delas. Quando
   a versão for pedida, as notas já estão completas.
+- **Notas em duas partes.** `## Novidades` é o que aparece no app, na tela "O
+  que mudou" da atualização: só o que muda de verdade para quem usa, uma linha
+  por item, em linguagem de usuário, sem termo técnico nem explicação de como
+  foi feito — poucas linhas, as mais impactantes. Correção pequena entra numa
+  linha genérica ("Correções e melhorias de estabilidade"), não item a item.
+  `## Detalhes` é o resto (o técnico, o porquê, as miudezas): vai só para a
+  página da release no GitHub, não para o app.
 - **Ao fechar uma versão (só quando pedido):** confira se o número ainda não foi
   publicado, se as notas cobrem tudo o que mudou desde a última publicada, e
   deixe pronto para ele rodar `publicar.cmd` e `publicar-release.cmd`. O

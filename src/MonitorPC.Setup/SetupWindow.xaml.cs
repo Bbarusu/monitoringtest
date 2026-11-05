@@ -94,8 +94,10 @@ public partial class SetupWindow : Window
     }
 
     /// <summary>
-    /// As notas da versão, embutidas pelo projeto. O lembrete em branco que o
-    /// arquivo tem entre uma versão e outra não conta como nota.
+    /// As notas da versão, embutidas pelo projeto: só a seção "## Novidades",
+    /// a parte para quem usa. "## Detalhes" é técnica e fica na página da
+    /// release. O lembrete em branco que o arquivo tem entre uma versão e outra
+    /// não conta como nota.
     /// </summary>
     private static string? Notas()
     {
@@ -105,7 +107,12 @@ public partial class SetupWindow : Window
             if (fluxo is null) return null;
 
             using var leitor = new StreamReader(fluxo, Encoding.UTF8);
-            var texto = leitor.ReadToEnd().Trim();
+            var texto = leitor.ReadToEnd().Replace("\r\n", "\n");
+
+            var detalhes = System.Text.RegularExpressions.Regex.Match(texto, @"(?im)^##\s*Detalhes");
+            if (detalhes.Success) texto = texto[..detalhes.Index];
+
+            texto = string.Join("\n", texto.Split('\n').Where(l => !l.TrimStart().StartsWith('#'))).Trim();
 
             return texto.Length == 0 || texto.StartsWith('(') ? null : texto;
         }

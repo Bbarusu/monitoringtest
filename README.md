@@ -333,6 +333,13 @@ tela de opções, já começando, com as notas da versão (embutidas pelo projet
 reabrindo o app no fim. Rodado à mão, ele continua mostrando as opções — é o
 jeito de mudar alguma.
 
+As notas da versão (`notas-da-versao.md`) têm duas seções. `## Novidades` é a
+que aparece para quem usa — na tela "O que mudou" do painel (pelo
+`atualizacao.json`, que o `gerar-manifesto.ps1` monta só com ela) e no painel
+de atualização do instalador. `## Detalhes`, o técnico, vai só para a página da
+release no GitHub. O app e o instalador também cortam "Detalhes" e os títulos
+por conta própria, para um manifesto antigo ou escrito à mão.
+
 As opções de cada instalação ficam gravadas na chave de desinstalação do
 registro. Instalações anteriores a isso não gravaram nada, e aí o instalador
 deduz pelo que a máquina mostra: a tarefa, o gatilho de logon, o atalho, a

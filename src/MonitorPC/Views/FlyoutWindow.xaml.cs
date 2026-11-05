@@ -1201,11 +1201,18 @@ public partial class FlyoutWindow : Window
     {
         ListaDeNovidades.Children.Clear();
 
-        var linhas = (notas ?? "")
-            .Replace("\r\n", "\n")
+        // Só a parte para quem usa: a seção "## Detalhes" das notas é técnica
+        // e fica na página da release. O manifesto já chega cortado (o
+        // gerar-manifesto.ps1 corta), mas um manifesto antigo ou escrito à mão
+        // pode trazer tudo — então corta aqui também, e tira os títulos.
+        var texto = (notas ?? "").Replace("\r\n", "\n");
+        var detalhes = System.Text.RegularExpressions.Regex.Match(texto, @"(?im)^##\s*Detalhes");
+        if (detalhes.Success) texto = texto[..detalhes.Index];
+
+        var linhas = texto
             .Split('\n')
             .Select(l => l.Trim())
-            .Where(l => l.Length > 0)
+            .Where(l => l.Length > 0 && !l.StartsWith('#'))
             .ToList();
 
         if (linhas.Count == 0)

@@ -37,11 +37,24 @@ $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash
 
 # As notas da versão, se existirem. Opcional de propósito: faltar nota não
 # pode impedir de publicar uma correção.
+#
+# O app mostra estas notas na tela "O que mudou" da atualização, para quem usa.
+# Por isso vai para o manifesto só a seção "## Novidades" — o que muda para a
+# pessoa, em poucas linhas. A seção "## Detalhes", com o que é técnico, fica
+# só na página da release no GitHub (o publicar-release.ps1 manda o arquivo
+# inteiro para lá). Arquivo sem as seções vai inteiro, como antes.
 $arquivoDeNotas = Join-Path $PSScriptRoot 'notas-da-versao.md'
-$notas = if (Test-Path $arquivoDeNotas) {
-    (Get-Content $arquivoDeNotas -Raw -Encoding UTF8).Trim()
-} else {
-    ''
+$notas = ''
+if (Test-Path $arquivoDeNotas) {
+    $texto = (Get-Content $arquivoDeNotas -Raw -Encoding UTF8) -replace "`r`n", "`n"
+
+    # Corta no começo da seção de detalhes, onde quer que ela esteja.
+    $corte = [regex]::Match($texto, '(?im)^##\s*Detalhes')
+    if ($corte.Success) { $texto = $texto.Substring(0, $corte.Index) }
+
+    # Títulos de seção ("## Novidades") não são novidade: ficam de fora.
+    $notas = (($texto -split "`n") | Where-Object { $_ -notmatch '^\s*#' }) -join "`n"
+    $notas = $notas.Trim()
 }
 
 $manifesto = [ordered]@{
