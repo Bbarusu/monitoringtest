@@ -43,8 +43,15 @@ public sealed class Especificacao
 /// </summary>
 public sealed class CatalogoService
 {
+    /// <summary>
+    /// O catalogo publicado junto com cada release, no repositorio publico de
+    /// releases. Antes apontava para o arquivo no repositorio do codigo, que e
+    /// privado: dava 404 para todo mundo, e o catalogo nunca atualizava.
+    /// "latest" segue a release mais nova; release sem o arquivo da 404, que e
+    /// silencioso (fica o embutido).
+    /// </summary>
     private const string Url =
-        "https://raw.githubusercontent.com/Bbarusu/monitoringtest/main/src/MonitorPC/Dados/catalogo.json";
+        "https://github.com/Bbarusu/kinfo-releases/releases/latest/download/catalogo.json";
 
     private static readonly TimeSpan Validade = TimeSpan.FromDays(7);
 

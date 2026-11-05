@@ -32,6 +32,9 @@ try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::
 $repo      = 'Bbarusu/kinfo-releases'
 $exe       = Join-Path $PSScriptRoot 'dist\instalador\KInfo-Setup.exe'
 $manifesto = Join-Path $PSScriptRoot 'dist\instalador\atualizacao.json'
+# O catálogo de peças vai junto em toda release: o app o busca em
+# releases/latest/download/catalogo.json (o repositório do código é privado).
+$catalogo  = Join-Path $PSScriptRoot 'src\MonitorPC\Dados\catalogo.json'
 $notas     = Join-Path $PSScriptRoot 'notas-da-versao.md'
 
 function Parar($mensagem) {
@@ -152,6 +155,9 @@ $argumentos = @(
     '--repo', $repo,
     '--title', "KInfo $versao"
 )
+
+if (Test-Path $catalogo) { $argumentos += @($catalogo) }
+else { Write-Host "Aviso: não encontrei $catalogo; a release sai sem o catálogo de peças." -ForegroundColor Yellow }
 
 if (Test-Path $notas) { $argumentos += @('--notes-file', $notas) }
 else                  { $argumentos += @('--notes', "Versão $versao.") }
