@@ -64,6 +64,7 @@
 
     <!-- A pagina que o celular abre no Kdrop: a bandeja vista de fora. -->
     <EmbeddedResource Include="Dados\kdrop.html" LogicalName="kdrop.html" />
+    <EmbeddedResource Include="Dados\kdrop-teste.html" LogicalName="kdrop-teste.html" />
   </ItemGroup>
 
 </Project>

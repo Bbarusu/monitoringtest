@@ -726,6 +726,8 @@ public sealed class KdropService : IDisposable
 
             if (metodo == "GET" && caminho is "" or "/index.html")
                 await Pagina(res);
+            else if (metodo == "GET" && caminho == "/teste")
+                await PaginaDeTeste(res);
             else if (metodo == "GET" && caminho == "/api/estado")
                 await Estado(req, res);
             else if (metodo == "GET" && caminho.StartsWith("/api/arquivo/"))
@@ -765,6 +767,22 @@ public sealed class KdropService : IDisposable
         }
 
         await Escrever(res, _pagina, "text/html; charset=utf-8");
+    }
+
+    /// <summary>
+    /// Pagina de diagnostico (/teste): cinco jeitos de escolher fotos, sem
+    /// enviar nada. Existe para descobrir por que a galeria do iPhone (iOS 26)
+    /// trava no botao de confirmar na pagina do Kdrop: os mesmos cinco jeitos
+    /// funcionam numa pagina com HTTPS, e aqui rodam pelo mesmo HTTP do Kdrop.
+    /// Se travarem aqui, o problema e o HTTP; se nao, e algo da pagina do
+    /// Kdrop.
+    /// </summary>
+    private static async Task PaginaDeTeste(HttpListenerResponse res)
+    {
+        using var recurso = Assembly.GetExecutingAssembly().GetManifestResourceStream("kdrop-teste.html");
+        if (recurso is null) { res.StatusCode = 500; return; }
+        using var leitor = new StreamReader(recurso, Encoding.UTF8);
+        await Escrever(res, await leitor.ReadToEndAsync(), "text/html; charset=utf-8");
     }
 
     private async Task Estado(HttpListenerRequest req, HttpListenerResponse res)
