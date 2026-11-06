@@ -926,11 +926,11 @@
                             <Border x:Name="RedePublicaKdrop" Visibility="Collapsed" Margin="0,8,0,0" CornerRadius="12" Padding="12"
                                     Background="{DynamicResource AvisoFundo}" BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1">
                                 <StackPanel>
-                                    <TextBlock Text="O celular não vai conseguir abrir" FontSize="13" FontWeight="SemiBold"
+                                    <TextBlock Text="A página pode não abrir no celular" FontSize="13" FontWeight="SemiBold"
                                                Foreground="{DynamicResource Texto}" />
                                     <TextBlock x:Name="TextoRedePublicaKdrop" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"
                                                Foreground="{DynamicResource AlertaTexto}"
-                                               Text="O Windows marcou esta rede como Pública e, nela, bloqueia o acesso de outros aparelhos. Se é a rede da sua casa, deixe-a como Privada." />
+                                               Text="O Windows marcou esta rede como Pública, e nela bloqueia o acesso de outros aparelhos. Esse costuma ser o motivo de a página ficar carregando. Se é a rede da sua casa, deixe-a como Privada." />
                                     <Button x:Name="BotaoRedePrivada" Style="{StaticResource BotaoPrincipalIlha}" Height="36" Margin="0,10,0,0"
                                             Content="Tornar a rede Privada" Click="TornarRedePrivada_Click" />
                                 </StackPanel>
