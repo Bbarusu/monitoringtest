@@ -619,30 +619,45 @@ public sealed class KdropService : IDisposable
                                                      !g.Address.Equals(IPAddress.Any)))
                     continue;
 
-                // Endereco automatico (169.254.x, sem DHCP) so se nao houver outro na placa.
-                var ip = props.UnicastAddresses
-                    .Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork)
-                    .Select(u => u.Address)
-                    .OrderBy(a => a.GetAddressBytes() is [169, 254, ..] ? 1 : 0)
-                    .FirstOrDefault();
-                if (ip is null) continue;
+                var gateways = props.GatewayAddresses
+                    .Select(g => g.Address)
+                    .Where(g => g.AddressFamily == AddressFamily.InterNetwork && !g.Equals(IPAddress.Any))
+                    .ToList();
 
-                var nota = 0;
+                var notaDaPlaca = 0;
                 var descricao = (placa.Name + " " + placa.Description).ToLowerInvariant();
-                if (PlacasVirtuais.Any(descricao.Contains)) nota -= 100;
-                if (placa.NetworkInterfaceType is NetworkInterfaceType.Wireless80211) nota += 20;
-                else if (placa.NetworkInterfaceType is NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet) nota += 15;
-                if (IpDeCasa(ip)) nota += 30;
-                if (ip.GetAddressBytes() is [169, 254, ..]) nota -= 200;
-
-                if (nota <= melhorNota) continue;
+                if (PlacasVirtuais.Any(descricao.Contains)) notaDaPlaca -= 100;
+                if (placa.NetworkInterfaceType is NetworkInterfaceType.Wireless80211) notaDaPlaca += 20;
+                else if (placa.NetworkInterfaceType is NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet) notaDaPlaca += 15;
 
                 int indice;
                 try { indice = props.GetIPv4Properties()?.Index ?? -1; }
                 catch { indice = -1; }
 
-                melhor = new PlacaDeRede(ip.ToString(), indice, placa.Name);
-                melhorNota = nota;
+                // Uma placa pode ter varios IPs (um principal e outros fixos,
+                // de outra faixa). O certo e o da mesma faixa do gateway: e por
+                // ele que o roteador alcanca o PC. Antes ia o primeiro da
+                // lista, que podia ser um secundario de outra faixa (0.118 no
+                // lugar de 1.118), e o celular nao chegava.
+                foreach (var endereco in props.UnicastAddresses)
+                {
+                    var ip = endereco.Address;
+                    if (ip.AddressFamily != AddressFamily.InterNetwork) continue;
+
+                    var nota = notaDaPlaca;
+                    IPAddress? mascara;
+                    try { mascara = endereco.IPv4Mask; }
+                    catch { mascara = null; }
+                    if (gateways.Any(g => MesmaFaixa(ip, g, mascara))) nota += 60;
+                    if (endereco.PrefixOrigin == PrefixOrigin.Dhcp) nota += 10;
+                    if (IpDeCasa(ip)) nota += 30;
+                    if (ip.GetAddressBytes() is [169, 254, ..]) nota -= 200;
+
+                    if (nota <= melhorNota) continue;
+
+                    melhor = new PlacaDeRede(ip.ToString(), indice, placa.Name);
+                    melhorNota = nota;
+                }
             }
 
             // Fica no log qual placa foi escolhida (so quando muda), para
@@ -661,6 +676,21 @@ public sealed class KdropService : IDisposable
             Log.Erro("Kdrop: endereço", ex);
             return null;
         }
+    }
+
+    /// <summary>O IP e o gateway estao na mesma faixa (mesma rede, pela mascara do IP)?</summary>
+    private static bool MesmaFaixa(IPAddress ip, IPAddress gateway, IPAddress? mascara)
+    {
+        if (mascara is null) return false;
+
+        var m = mascara.GetAddressBytes();
+        var a = ip.GetAddressBytes();
+        var b = gateway.GetAddressBytes();
+        if (m.Length != 4 || a.Length != 4 || b.Length != 4 || m.All(x => x == 0)) return false;
+
+        for (var i = 0; i < 4; i++)
+            if ((a[i] & m[i]) != (b[i] & m[i])) return false;
+        return true;
     }
 
     private static bool IpDeCasa(IPAddress ip) => ip.GetAddressBytes() switch
