@@ -27,28 +27,45 @@ public static class IconeDoWindows
     {
         if (string.IsNullOrWhiteSpace(idDoApp)) return null;
 
-        ImageSource? resultado = null;
-        var thread = new Thread(() => resultado = Ler(idDoApp, tamanho)) { IsBackground = true };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        return thread.Join(TimeSpan.FromSeconds(3)) ? resultado : null;
+        return NumaThreadSta(() => Ler(@"shell:AppsFolder\" + idDoApp, tamanho, SoIcone | MaiorServe), TimeSpan.FromSeconds(3));
     }
 
-    private static ImageSource? Ler(string idDoApp, int tamanho)
+    /// <summary>
+    /// A miniatura de uma foto ou video, como o Explorer mostra (o mesmo
+    /// cache do Windows). Nulo se o Windows nao sabe fazer miniatura do tipo
+    /// (HEIC sem a extensao da loja, por exemplo) — quem chama fica com o icone.
+    /// </summary>
+    public static ImageSource? Miniatura(string caminho, int tamanho = 96)
     {
+        if (string.IsNullOrWhiteSpace(caminho) || !System.IO.File.Exists(caminho)) return null;
 
+        // Video grande pode levar alguns segundos na primeira vez.
+        return NumaThreadSta(() => Ler(caminho, tamanho, SoMiniatura | MaiorServe), TimeSpan.FromSeconds(8));
+    }
+
+    private static ImageSource? NumaThreadSta(Func<ImageSource?> ler, TimeSpan prazo)
+    {
+        ImageSource? resultado = null;
+        var thread = new Thread(() => resultado = ler()) { IsBackground = true };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        return thread.Join(prazo) ? resultado : null;
+    }
+
+    private static ImageSource? Ler(string nome, int tamanho, int opcoes)
+    {
         IntPtr bitmap = IntPtr.Zero;
         try
         {
             var iid = typeof(IShellItemImageFactory).GUID;
-            if (SHCreateItemFromParsingName(@"shell:AppsFolder\" + idDoApp, IntPtr.Zero, ref iid, out var fabrica) != 0 ||
+            if (SHCreateItemFromParsingName(nome, IntPtr.Zero, ref iid, out var fabrica) != 0 ||
                 fabrica is null)
                 return null;
 
             try
             {
                 if (fabrica.GetImage(new Tamanho { Largura = tamanho, Altura = tamanho },
-                                     SoIcone | MaiorServe, out bitmap) != 0 || bitmap == IntPtr.Zero)
+                                     opcoes, out bitmap) != 0 || bitmap == IntPtr.Zero)
                     return null;
             }
             finally
@@ -97,6 +114,21 @@ public static class IconeDoWindows
             ReleaseDC(IntPtr.Zero, tela);
         }
 
+        // Miniatura de foto costuma vir sem transparencia, com o canal alfa
+        // todo zerado: lida como transparente, sumiria. Sem nenhum pixel com
+        // alfa, a imagem e opaca.
+        var temAlfa = false;
+        for (var i = 3; i < pixels.Length; i += 4)
+        {
+            if (pixels[i] == 0) continue;
+            temAlfa = true;
+            break;
+        }
+
+        if (!temAlfa)
+            for (var i = 3; i < pixels.Length; i += 4)
+                pixels[i] = 255;
+
         var imagem = BitmapSource.Create(largura, altura, 96, 96, PixelFormats.Pbgra32, null, pixels, largura * 4);
         imagem.Freeze();
         return imagem;
@@ -104,6 +136,7 @@ public static class IconeDoWindows
 
     private const int MaiorServe = 0x1; // SIIGBF_BIGGERSIZEOK
     private const int SoIcone = 0x4;    // SIIGBF_ICONONLY
+    private const int SoMiniatura = 0x8; // SIIGBF_THUMBNAILONLY
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Tamanho

@@ -2455,6 +2455,10 @@ public partial class IlhaWindow : Window
             RenderOptions.SetBitmapScalingMode(imagem, BitmapScalingMode.HighQuality);
             circulo.Child = imagem;
         }
+
+        // Foto ou video: a miniatura no lugar do icone, como no Explorer.
+        // Vem depois, sem segurar a bandeja; ate la fica o icone.
+        if (!pasta && EhFotoOuVideo(caminho)) _ = PorMiniatura(circulo, caminho);
         else
         {
             var desenho = new System.Windows.Shapes.Path
@@ -2654,6 +2658,60 @@ public partial class IlhaWindow : Window
         grade.Children.Add(botao);
         grade.Children.Add(tirar);
         return grade;
+    }
+
+    private static readonly HashSet<string> FotosEVideos = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".heif", ".tif", ".tiff", ".avif",
+        ".mp4", ".mov", ".m4v", ".avi", ".mkv", ".wmv", ".webm", ".3gp"
+    };
+
+    private static bool EhFotoOuVideo(string caminho) => FotosEVideos.Contains(System.IO.Path.GetExtension(caminho));
+
+    /// <summary>Miniaturas ja feitas, por caminho e data do arquivo (trocado o arquivo, refaz).</summary>
+    private readonly Dictionary<string, (DateTime Data, ImageSource? Imagem)> _miniaturas = new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task PorMiniatura(Border quadrado, string caminho)
+    {
+        DateTime data;
+        try { data = System.IO.File.GetLastWriteTimeUtc(caminho); }
+        catch { return; }
+
+        if (!_miniaturas.TryGetValue(caminho, out var guardada) || guardada.Data != data)
+        {
+            var imagem = await Task.Run(() => IconeDoWindows.Miniatura(caminho) ?? MiniaturaPeloWpf(caminho));
+            guardada = (data, imagem);
+            _miniaturas[caminho] = guardada;
+            while (_miniaturas.Count > 64) _miniaturas.Remove(_miniaturas.Keys.First());
+        }
+
+        if (guardada.Imagem is null) return;
+
+        // Preenche o quadrado inteiro, cortada no centro, com os cantos
+        // arredondados do proprio quadrado.
+        quadrado.Child = null;
+        quadrado.Background = new ImageBrush(guardada.Imagem) { Stretch = Stretch.UniformToFill };
+    }
+
+    /// <summary>Sem miniatura do Windows: le a imagem direto (JPG, PNG, GIF, BMP, TIFF), pequena.</summary>
+    private static ImageSource? MiniaturaPeloWpf(string caminho)
+    {
+        try
+        {
+            var imagem = new System.Windows.Media.Imaging.BitmapImage();
+            imagem.BeginInit();
+            imagem.UriSource = new Uri(caminho);
+            imagem.DecodePixelWidth = 96;
+            imagem.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            imagem.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreColorProfile;
+            imagem.EndInit();
+            imagem.Freeze();
+            return imagem;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>Copia um texto; a area de transferencia pode estar presa por outro app.</summary>
