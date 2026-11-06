@@ -420,6 +420,7 @@ public partial class IlhaWindow : Window
 
         if (parado && !_escondidaPorInatividade)
         {
+            Log.Nota("Kisland: escondida com o PC parado há 10 min");
             _escondidaPorInatividade = true;
             _expandida = false;
             _aviso = Aviso.Nenhum;
@@ -1354,6 +1355,9 @@ public partial class IlhaWindow : Window
 
         if (esconder && IsVisible)
         {
+            // Cada sumico vai para o log com o que o Windows disse e quem estava
+            // na frente: sem isso, um sumico sem motivo nao tem como ser achado.
+            Log.Nota($"Kisland: escondida por tela cheia ({TelaCheia.Descrever(_handle, estado)})");
             _escondidaPorTelaCheia = true;
             _expandida = false;
             _aviso = Aviso.Nenhum;

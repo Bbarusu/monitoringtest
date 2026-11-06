@@ -48,12 +48,17 @@ public static class TelaCheia
 
             var frente = GetForegroundWindow();
 
-            // "Ocupado" e qualquer app em tela cheia: sem janela que a geometria
-            // confirme, vale como exclusiva, que e o lado seguro.
+            // "Ocupado" quer dizer que o Windows acha que ha algum app em tela
+            // cheia, em algum monitor — mas nao diz qual nem onde, e acha
+            // demais (ja foi visto valendo durante um envio pelo Kdrop, com
+            // nada em tela cheia). Antes valia como exclusiva, e a Kisland
+            // sumia de todas as janelas e so aparecia com a area de trabalho a
+            // mostra. Agora so vale se houver de fato uma janela cobrindo um
+            // monitor inteiro; e ai e ela, com o monitor dela, que decide.
             var ocupado = estado == EstadoOcupado;
 
             if (frente == IntPtr.Zero || frente == propria)
-                return new EstadoDeTelaCheia(ocupado, IntPtr.Zero, IntPtr.Zero);
+                return ocupado ? ProcurarTelaCheia(propria) : default;
 
             // A area de trabalho e a barra de tarefas tambem cobrem o monitor
             // inteiro, e nao sao tela cheia de ninguem.
@@ -70,12 +75,79 @@ public static class TelaCheia
             if (CobreOMonitor(frente, out var monitor))
                 return new EstadoDeTelaCheia(false, frente, monitor);
 
-            return new EstadoDeTelaCheia(ocupado, IntPtr.Zero, IntPtr.Zero);
+            return ocupado ? ProcurarTelaCheia(propria) : default;
         }
         catch
         {
             // Na duvida a ilha fica: sumir sem motivo seria pior.
             return default;
+        }
+    }
+
+    /// <summary>
+    /// Com o Windows dizendo "ocupado": procura, entre as janelas visiveis,
+    /// uma que cubra um monitor inteiro e nao seja a area de trabalho, a barra
+    /// de tarefas, uma janela maximizada comum ou a propria Kisland. Achou, e
+    /// ela; nao achou, nao ha tela cheia.
+    /// </summary>
+    private static EstadoDeTelaCheia ProcurarTelaCheia(IntPtr propria)
+    {
+        var achada = new EstadoDeTelaCheia(false, IntPtr.Zero, IntPtr.Zero);
+        EnumWindows((janela, _) =>
+        {
+            if (janela == propria || !IsWindowVisible(janela) || IsIconic(janela) || Escondida(janela)) return true;
+
+            var classe = Classe(janela);
+            if (classe is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") return true;
+            if (IsZoomed(janela) && (GetWindowLong(janela, EstiloDaJanela) & ComBarraDeTitulo) == ComBarraDeTitulo) return true;
+
+            if (!CobreOMonitor(janela, out var monitor)) return true;
+
+            achada = new EstadoDeTelaCheia(false, janela, monitor);
+            return false;
+        }, IntPtr.Zero);
+
+        return achada;
+    }
+
+    /// <summary>Janela "escondida" pelo Windows (cloaked): existe e diz que e visivel, mas nao aparece.</summary>
+    private static bool Escondida(IntPtr janela) =>
+        DwmGetWindowAttribute(janela, Encoberta, out var valor, sizeof(int)) == 0 && valor != 0;
+
+    /// <summary>
+    /// Uma linha para o log, quando a Kisland some por tela cheia: o que o
+    /// Windows disse e quem estava na frente. E por ela que se descobre um
+    /// sumico sem motivo.
+    /// </summary>
+    public static string Descrever(IntPtr propria, EstadoDeTelaCheia estado)
+    {
+        try
+        {
+            SHQueryUserNotificationState(out var aviso);
+            var frente = GetForegroundWindow();
+            var quem = estado.Janela != IntPtr.Zero ? estado.Janela : frente;
+            GetWindowRect(quem, out var r);
+            return $"aviso do Windows {aviso}, exclusiva {estado.Exclusiva}, " +
+                   $"janela {Classe(quem)} de {Processo(quem)} ({r.Esquerda},{r.Topo})-({r.Direita},{r.Baixo})" +
+                   (quem != frente ? $", na frente {Classe(frente)} de {Processo(frente)}" : "");
+        }
+        catch (Exception ex)
+        {
+            return "sem detalhes: " + ex.Message;
+        }
+    }
+
+    private static string Processo(IntPtr janela)
+    {
+        try
+        {
+            GetWindowThreadProcessId(janela, out var pid);
+            using var p = System.Diagnostics.Process.GetProcessById((int)pid);
+            return p.ProcessName;
+        }
+        catch
+        {
+            return "?";
         }
     }
 
@@ -118,6 +190,7 @@ public static class TelaCheia
     // ------------------------------------------------------------------
 
     private const int EstadoOcupado = 2;
+    private const int Encoberta = 14; // DWMWA_CLOAKED
     private const int EstadoD3DTelaCheia = 3;
     private const int EstadoApresentacao = 4;
     private const int MonitorMaisProximo = 2;
@@ -168,4 +241,24 @@ public static class TelaCheia
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetMonitorInfo(IntPtr monitor, ref InfoDoMonitor info);
+
+    private delegate bool CadaJanela(IntPtr janela, IntPtr dado);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumWindows(CadaJanela funcao, IntPtr dado);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr janela);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsIconic(IntPtr janela);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr janela, out uint pid);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr janela, int atributo, out int valor, int tamanho);
 }
