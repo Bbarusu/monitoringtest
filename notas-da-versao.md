@@ -1,11 +1,7 @@
 ## Novidades
 
-- Kdrop: a página do celular deixa de ficar carregando para sempre em PCs com mais de um IP, VPN, máquina virtual ou Firewall alterado.
-- Kdrop: quando algo no PC impede o celular de abrir a página (rede marcada como Pública, Firewall bloqueando tudo, firewall de antivírus), a Kisland avisa abaixo do QR Code, e a rede Pública se resolve com um clique.
+- Kdrop: o QR Code passa a levar ao IP certo em PCs com mais de um endereço na rede, e a página volta a abrir no celular.
 
 ## Detalhes
 
-- Kdrop, página que não carregava no celular: duas causas tratadas. (1) A escolha do IP do QR Code pegava a primeira placa com gateway; com VPN, máquina virtual (Hyper-V, VirtualBox, VMware, WSL, Docker) ou rede "de jogo" (Hamachi, Radmin, ZeroTier, Tailscale), o QR levava a um IP que o celular não alcança. Agora `PlacaDeCasa` dá nota às placas (Wi-Fi e cabo com IP de rede local ganham, virtuais e de VPN perdem) e registra no log a escolhida. (2) Em rede marcada como Pública, o Firewall barra o celular, porque a regra do Kdrop vale só para redes privadas e de domínio. Ao abrir o QR, a Kisland consulta a categoria (`Get-NetConnectionProfile`) e, se for Pública, mostra o aviso com "Tornar a rede Privada" (`Set-NetConnectionProfile`). Se não der, explica o caminho nas Configurações. A regra do Firewall continua fechada para redes públicas.
-- Kdrop, regras do Firewall: antes eram criadas só se não existisse nenhuma com o nome "KInfo Kdrop"; uma regra desativada, pela metade ou alterada por antivírus ficava como estava. Agora as três (TCP 48620, UDP 48621 e mDNS 5353) são apagadas e recriadas, ativas, a cada início do Kdrop, em segundo plano, com erro do netsh no log.
-- Kdrop, diagnóstico ao abrir o QR (`Diagnosticar`, um script PowerShell por `-EncodedCommand`): categoria da rede, Firewall do Windows em "Bloquear todas as conexões de entrada" (`AllowInboundRules` falso no perfil ativo), firewall de antivírus registrado na Central de Segurança (`SecurityCenter2/FirewallProduct`) e se o servidor responde pelo IP do QR. O que achar vira aviso abaixo do QR e uma linha no log. Na placa escolhida, o endereço automático 169.254.x só vale se não houver outro.
 - Kdrop, PC com mais de um IP na mesma placa (um principal por DHCP e outros fixos, de outra faixa): ia para o QR o primeiro da lista, que podia ser o secundário (192.168.0.118 em vez de 192.168.1.118), fora do alcance do celular. Agora cada IP ganha nota, e o da mesma faixa do gateway (pela máscara) vence, seguido do que veio por DHCP.
