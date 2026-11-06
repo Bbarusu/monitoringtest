@@ -270,7 +270,9 @@ public sealed class KdropService : IDisposable
 
         try
         {
-            LiberarNoFirewall();
+            // Em segundo plano: o netsh leva alguns instantes, e o servidor
+            // pode subir antes das regras.
+            _ = Task.Run(LiberarNoFirewall);
 
             var http = new HttpListener();
             http.Prefixes.Add($"http://+:{Porta}/");
@@ -326,18 +328,26 @@ public sealed class KdropService : IDisposable
     /// redes privadas e de dominio: numa rede publica (cafe, aeroporto) o
     /// Kdrop fica fechado. Cria uma vez; se ja existe, nao mexe.
     /// </summary>
+    /// <summary>
+    /// Refaz as regras do Kdrop no Firewall a cada inicio. Antes so criava se
+    /// nao existisse uma com o nome: uma regra desativada, pela metade (so a
+    /// do UDP) ou mexida por antivirus ficava como estava, e o celular era
+    /// barrado sem aviso. Apagar e criar de novo deixa sempre do jeito certo.
+    /// </summary>
     private static void LiberarNoFirewall()
     {
-        // O endereco fixo (mDNS) veio depois: regra propria, para quem ja tem a outra.
-        const string nomeMdns = "KInfo Kdrop mDNS";
-        if (Netsh($"advfirewall firewall show rule name=\"{nomeMdns}\"") != 0)
-            Netsh($"advfirewall firewall add rule name=\"{nomeMdns}\" dir=in action=allow protocol=UDP localport={NomeNaRede.PortaMdns} profile=private,domain");
-
         const string nome = "KInfo Kdrop";
-        if (Netsh($"advfirewall firewall show rule name=\"{nome}\"") == 0) return;
+        const string nomeMdns = "KInfo Kdrop mDNS";
 
-        Netsh($"advfirewall firewall add rule name=\"{nome}\" dir=in action=allow protocol=TCP localport={Porta} profile=private,domain");
-        Netsh($"advfirewall firewall add rule name=\"{nome}\" dir=in action=allow protocol=UDP localport={PortaDescoberta} profile=private,domain");
+        Netsh($"advfirewall firewall delete rule name=\"{nome}\"");
+        Netsh($"advfirewall firewall delete rule name=\"{nomeMdns}\"");
+
+        var tcp = Netsh($"advfirewall firewall add rule name=\"{nome}\" dir=in action=allow enable=yes protocol=TCP localport={Porta} profile=private,domain");
+        var udp = Netsh($"advfirewall firewall add rule name=\"{nome}\" dir=in action=allow enable=yes protocol=UDP localport={PortaDescoberta} profile=private,domain");
+        var mdns = Netsh($"advfirewall firewall add rule name=\"{nomeMdns}\" dir=in action=allow enable=yes protocol=UDP localport={NomeNaRede.PortaMdns} profile=private,domain");
+
+        if (tcp != 0 || udp != 0 || mdns != 0)
+            Log.Nota($"Kdrop: regras do Firewall com erro (TCP {tcp}, UDP {udp}, mDNS {mdns})");
     }
 
     private static int Netsh(string argumentos)
@@ -609,7 +619,12 @@ public sealed class KdropService : IDisposable
                                                      !g.Address.Equals(IPAddress.Any)))
                     continue;
 
-                var ip = props.UnicastAddresses.FirstOrDefault(u => u.Address.AddressFamily == AddressFamily.InterNetwork)?.Address;
+                // Endereco automatico (169.254.x, sem DHCP) so se nao houver outro na placa.
+                var ip = props.UnicastAddresses
+                    .Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork)
+                    .Select(u => u.Address)
+                    .OrderBy(a => a.GetAddressBytes() is [169, 254, ..] ? 1 : 0)
+                    .FirstOrDefault();
                 if (ip is null) continue;
 
                 var nota = 0;
@@ -657,18 +672,75 @@ public sealed class KdropService : IDisposable
     };
 
     /// <summary>
-    /// Como o Windows classifica a rede de casa: "Public", "Private" ou
-    /// "DomainAuthenticated". Em rede Publica o Firewall barra o celular (a
-    /// regra do Kdrop e so para redes privadas), e a pagina nunca carrega.
-    /// Nulo se nao deu para saber.
+    /// O que pode impedir o celular de abrir a pagina, visto do PC:
+    /// <list type="bullet">
+    /// <item>Categoria: "Public", "Private" ou "DomainAuthenticated". Em rede
+    /// Publica o Firewall barra o celular (as regras do Kdrop sao so para
+    /// redes privadas).</item>
+    /// <item>BloqueiaTudo: o Firewall do Windows esta em "Bloquear todas as
+    /// conexoes de entrada", que ignora as regras de liberacao.</item>
+    /// <item>FirewallDeFora: firewall de antivirus (Kaspersky, ESET, Norton,
+    /// Avast...), que tem as proprias regras e nao ve as do Windows.</item>
+    /// <item>Respondendo: o proprio servidor do Kdrop responde pelo IP do
+    /// QR Code (testado do PC; do celular, so o celular sabe).</item>
+    /// </list>
     /// </summary>
+    public sealed record DiagnosticoDeRede(string? Categoria, bool BloqueiaTudo, string? FirewallDeFora, bool Respondendo);
+
+    public static async Task<DiagnosticoDeRede?> Diagnosticar()
+    {
+        if (PlacaDeCasa() is not { } placa) return null;
+
+        string? categoria = null, deFora = null;
+        var bloqueia = false;
+
+        if (placa.Indice >= 0)
+        {
+            var saida = await PowerShell($$"""
+                $ErrorActionPreference = 'SilentlyContinue'
+                $cat = "$((Get-NetConnectionProfile -InterfaceIndex {{placa.Indice}}).NetworkCategory)"
+                $perfil = if ($cat -eq 'DomainAuthenticated') { 'Domain' } elseif ($cat) { $cat } else { 'Public' }
+                $fw = Get-NetFirewallProfile -Name $perfil -PolicyStore ActiveStore
+                $bloq = ("$($fw.Enabled)" -eq 'True') -and ("$($fw.AllowInboundRules)" -eq 'False')
+                $af = @(Get-CimInstance -Namespace root/SecurityCenter2 -ClassName FirewallProduct | ForEach-Object { $_.displayName }) -join ', '
+                "$cat|$bloq|$af"
+                """);
+
+            var partes = (saida ?? "").Trim().Split('|');
+            if (partes.Length >= 3)
+            {
+                categoria = partes[0].Trim() is { Length: > 0 } c ? c : null;
+                bloqueia = partes[1].Trim().Equals("True", StringComparison.OrdinalIgnoreCase);
+                deFora = partes[2].Trim() is { Length: > 0 } f ? f : null;
+            }
+        }
+
+        var respondendo = false;
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+            using var resposta = await http.GetAsync($"http://{placa.Ip}:{Porta}/api/estado");
+            respondendo = resposta.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Log.Nota($"Kdrop: o servidor não respondeu em {placa.Ip}: {ex.Message}");
+        }
+
+        var diagnostico = new DiagnosticoDeRede(categoria, bloqueia, deFora, respondendo);
+        Log.Nota($"Kdrop: diagnóstico da rede em {placa.Nome} ({placa.Ip}): rede {categoria ?? "?"}, " +
+                 $"bloqueia tudo {(bloqueia ? "sim" : "não")}, firewall de antivírus {deFora ?? "nenhum"}, " +
+                 $"servidor {(respondendo ? "respondendo" : "sem resposta")}");
+        return diagnostico;
+    }
+
+    /// <summary>Como o Windows classifica a rede de casa ("Public", "Private"...). Nulo se nao deu para saber.</summary>
     public static async Task<string?> CategoriaDaRede()
     {
         if (PlacaDeCasa() is not { Indice: >= 0 } placa) return null;
 
         var saida = await PowerShell($"(Get-NetConnectionProfile -InterfaceIndex {placa.Indice}).NetworkCategory");
         var categoria = saida?.Trim();
-        if (!string.IsNullOrEmpty(categoria)) Log.Nota($"Kdrop: rede de {placa.Nome} classificada como {categoria}");
         return string.IsNullOrEmpty(categoria) ? null : categoria;
     }
 
@@ -687,8 +759,11 @@ public sealed class KdropService : IDisposable
     {
         try
         {
+            // Codificado (UTF-16 em base64): o script vai inteiro, sem
+            // problema de aspas ou de varias linhas.
+            var codificado = Convert.ToBase64String(Encoding.Unicode.GetBytes("$ProgressPreference = 'SilentlyContinue'\n" + comando));
             using var p = Process.Start(new ProcessStartInfo("powershell.exe",
-                $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{comando}\"")
+                $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {codificado}")
             {
                 UseShellExecute = false,
                 CreateNoWindow = true,

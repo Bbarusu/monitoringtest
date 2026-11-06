@@ -3274,13 +3274,34 @@ public partial class IlhaWindow : Window
     }
 
     /// <summary>
-    /// Com o QR aberto, confere se o Windows marcou a rede como Publica. Nela
-    /// o Firewall barra o celular e a pagina fica carregando para sempre.
+    /// Com o QR aberto, confere do PC o que pode impedir o celular de abrir a
+    /// pagina (rede Publica, Firewall bloqueando tudo, firewall de antivirus,
+    /// servidor sem responder) e avisa logo abaixo do QR. Sem nada disso, a
+    /// causa esta fora do PC (outra rede, Wi-Fi de convidados), e o aviso nao
+    /// aparece.
     /// </summary>
     private async Task ConferirRedePublica()
     {
-        var categoria = await Task.Run(() => KdropService.CategoriaDaRede());
-        RedePublicaKdrop.Visibility = Visivel(categoria == "Public" && QrKdrop.Visibility == Visibility.Visible);
+        var d = await Task.Run(() => KdropService.Diagnosticar());
+        if (d is null || QrKdrop.Visibility != Visibility.Visible)
+        {
+            RedePublicaKdrop.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var motivos = new List<string>();
+        if (!d.Respondendo)
+            motivos.Add("O Kdrop não está respondendo neste PC. Desligue e ligue o Kdrop na Personalização; se continuar, reinicie o KInfo.");
+        if (d.Categoria == "Public")
+            motivos.Add("O Windows marcou esta rede como Pública, e nela bloqueia o acesso de outros aparelhos. Esse costuma ser o motivo de a página ficar carregando. Se é a rede da sua casa, deixe-a como Privada.");
+        if (d.BloqueiaTudo)
+            motivos.Add("O Firewall do Windows está em \"Bloquear todas as conexões de entrada\". Desmarque essa opção em Segurança do Windows › Firewall e proteção de rede, na rede em uso.");
+        if (d.FirewallDeFora is { } produto)
+            motivos.Add($"O {produto} tem firewall próprio, que pode barrar o celular. Se a página não abrir, libere o KInfo (ou a porta {KdropService.Porta}) nele.");
+
+        TextoRedePublicaKdrop.Text = string.Join("\n\n", motivos);
+        BotaoRedePrivada.Visibility = Visivel(d.Categoria == "Public");
+        RedePublicaKdrop.Visibility = Visivel(motivos.Count > 0);
     }
 
     private async void TornarRedePrivada_Click(object sender, RoutedEventArgs e)
@@ -3294,7 +3315,9 @@ public partial class IlhaWindow : Window
         BotaoRedePrivada.Content = "Tornar a rede Privada";
         if (deu)
         {
+            // Confere de novo: pode haver outro bloqueio alem da rede Publica.
             RedePublicaKdrop.Visibility = Visibility.Collapsed;
+            await ConferirRedePublica();
             return;
         }
 
