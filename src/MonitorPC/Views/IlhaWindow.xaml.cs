@@ -46,7 +46,7 @@ public partial class IlhaWindow : Window
     private readonly DispatcherTimer _cursor;
     private readonly DispatcherTimer _fimDoAviso;
 
-    private enum Aviso { Nenhum, Volume, Faixa }
+    private enum Aviso { Nenhum, Volume, Faixa, Texto }
 
     private Aviso _aviso = Aviso.Nenhum;
     private bool _expandida;
@@ -1498,9 +1498,10 @@ public partial class IlhaWindow : Window
         if (!_expandida) RolagemExpandida.ScrollToTop();
         AvisoVolume.Visibility = Visivel(aviso == Aviso.Volume);
         AvisoFaixa.Visibility = Visivel(aviso == Aviso.Faixa);
+        AvisoTexto.Visibility = Visivel(aviso == Aviso.Texto);
         Compacta.Visibility = Visivel(!_expandida && aviso == Aviso.Nenhum);
 
-        Casca.CornerRadius = new CornerRadius(_expandida ? 16 : aviso == Aviso.Faixa ? 28 : 22);
+        Casca.CornerRadius = new CornerRadius(_expandida ? 16 : aviso is Aviso.Faixa or Aviso.Texto ? 28 : 22);
 
         // Animacoes paradas quando ninguem as ve.
         var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && !_escondidaPorInatividade &&
@@ -2382,7 +2383,7 @@ public partial class IlhaWindow : Window
     /// </summary>
     private void MontarBandeja()
     {
-        _bandeja.RemoveAll(c => !System.IO.File.Exists(c) && !System.IO.Directory.Exists(c));
+        _bandeja.RemoveAll(c => !TextoNaBandeja.Eh(c) && !System.IO.File.Exists(c) && !System.IO.Directory.Exists(c));
 
         GradeBandeja.Children.Clear();
         foreach (var caminho in _bandeja)
@@ -2423,13 +2424,19 @@ public partial class IlhaWindow : Window
         TituloBandeja.Text = quantos switch
         {
             0 => "Bandeja",
-            1 => "Bandeja · 1 arquivo",
-            _ => $"Bandeja · {quantos} arquivos"
+            1 => "Bandeja · 1 item",
+            _ => $"Bandeja · {quantos} itens"
         };
     }
 
+    private const string DesenhoLink =
+        "M10,14 A4,4 0 0,0 15.7,14 L18.7,11 A4,4 0 0,0 13,5.3 L12,6.3 M14,10 A4,4 0 0,0 8.3,10 L5.3,13 A4,4 0 0,0 11,18.7 L12,17.7";
+    private const string DesenhoTexto = "M4,7 L4,5 L16,5 L16,7 M10,5 L10,19 M8,19 L12,19 M14,12 L20,12 M17,12 L17,19";
+
     private UIElement ItemDaBandeja(string caminho)
     {
+        if (TextoNaBandeja.Eh(caminho)) return ItemDeTextoDaBandeja(caminho);
+
         var pasta = System.IO.Directory.Exists(caminho);
 
         var circulo = new Border
@@ -2528,8 +2535,224 @@ public partial class IlhaWindow : Window
     {
         if (sender is not Button { Tag: string caminho }) return;
 
+        // Texto: um toque copia; link: um toque abre no navegador.
+        if (TextoNaBandeja.Eh(caminho))
+        {
+            var texto = TextoNaBandeja.De(caminho);
+            if (TextoNaBandeja.EhLink(texto))
+            {
+                Recolher();
+                AbrirLink(texto);
+            }
+            else if (CopiarTexto(texto))
+            {
+                Recado("Texto copiado! Cole com Ctrl+V");
+            }
+            return;
+        }
+
         Recolher();
         AtalhoService.Abrir(caminho);
+    }
+
+    /// <summary>
+    /// Um texto ou link na bandeja: o mesmo quadrado dos arquivos, com um
+    /// "T" ou um elo no lugar do icone e a borda na cor de destaque, para
+    /// nao se confundir com arquivo.
+    /// </summary>
+    private UIElement ItemDeTextoDaBandeja(string item)
+    {
+        var texto = TextoNaBandeja.De(item);
+        var link = TextoNaBandeja.EhLink(texto);
+
+        var circulo = new Border
+        {
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(12),
+            BorderThickness = new Thickness(1),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
+        circulo.SetResourceReference(Border.BorderBrushProperty, "Acento");
+
+        var desenho = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse(link ? DesenhoLink : DesenhoTexto),
+            StrokeThickness = 1.8,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round,
+            Width = 17,
+            Height = 17,
+            Stretch = Stretch.Uniform
+        };
+        desenho.SetResourceReference(Shape.StrokeProperty, "Acento");
+        circulo.Child = desenho;
+
+        var rotulo = new TextBlock
+        {
+            Text = TextoNaBandeja.Resumo(texto, 30),
+            FontSize = 10.5,
+            Margin = new Thickness(0, 5, 0, 0),
+            MaxWidth = 64,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        rotulo.SetResourceReference(TextBlock.ForegroundProperty, "TextoFraco");
+
+        var conteudo = new StackPanel();
+        conteudo.Children.Add(circulo);
+        conteudo.Children.Add(rotulo);
+
+        var amostra = texto.Length > 300 ? texto[..300] + "…" : texto;
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoAtalho"),
+            Content = conteudo,
+            Tag = item,
+            ToolTip = amostra + (link
+                ? "\nClique para abrir · botão direito copia"
+                : "\nClique para copiar")
+        };
+        botao.Click += ItemDaBandeja_Click;
+        botao.MouseRightButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            if (CopiarTexto(texto)) Recado(link ? "Link copiado!" : "Texto copiado! Cole com Ctrl+V");
+        };
+        botao.PreviewMouseLeftButtonDown += (_, e) => _inicioDoArrasto = e.GetPosition(this);
+        botao.PreviewMouseMove += ItemDaBandeja_Arrastar;
+
+        var x = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse("M6,6 L18,18 M18,6 L6,18"),
+            StrokeThickness = 2,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            Width = 7,
+            Height = 7,
+            Stretch = Stretch.Uniform
+        };
+        x.SetResourceReference(Shape.StrokeProperty, "Icone");
+
+        var tirar = new Button
+        {
+            Style = (Style)FindResource("BotaoRedondoPequeno"),
+            Width = 18,
+            Height = 18,
+            Content = x,
+            Tag = item,
+            ToolTip = "Tirar da bandeja",
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 2, 4, 0)
+        };
+        tirar.Click += TirarDaBandeja_Click;
+
+        var grade = new Grid();
+        grade.Children.Add(botao);
+        grade.Children.Add(tirar);
+        return grade;
+    }
+
+    /// <summary>Copia um texto; a area de transferencia pode estar presa por outro app.</summary>
+    private static bool CopiarTexto(string texto)
+    {
+        try
+        {
+            Clipboard.SetText(texto);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Bandeja: copiar texto", ex);
+            return false;
+        }
+    }
+
+    private static void AbrirLink(string link)
+    {
+        if (!TextoNaBandeja.EhLink(link)) return;
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(link.Trim()) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Bandeja: abrir link", ex);
+        }
+    }
+
+    /// <summary>Um recado curto no titulo da bandeja ("Copiado!"), que volta ao normal sozinho.</summary>
+    private void Recado(string texto)
+    {
+        TituloBandeja.Text = texto;
+        _fimDoRecado?.Stop();
+        _fimDoRecado = Temporizador(TimeSpan.FromSeconds(2.5), () =>
+        {
+            _fimDoRecado?.Stop();
+            TituloDaBandeja();
+        });
+        _fimDoRecado.Start();
+    }
+
+    /// <summary>Poe um texto ou link na bandeja (ou o traz para o fim, se ja estava).</summary>
+    private void PorTextoNaBandeja(string texto)
+    {
+        var item = TextoNaBandeja.Item(texto);
+        if (TextoNaBandeja.De(item).Length == 0) return;
+
+        _bandeja.Remove(item);
+        _bandeja.Add(item);
+        while (_bandeja.Count > MaximoNaBandeja) _bandeja.RemoveAt(0);
+
+        MontarBandeja();
+        AtualizarSemItens();
+        MostrarEstado();
+    }
+
+    /// <summary>
+    /// "Colar texto": o que estiver copiado entra na bandeja. Arquivos
+    /// copiados no Explorer entram como arquivos; texto ou link, como texto
+    /// — e ai o celular e os outros PCs ja o veem.
+    /// </summary>
+    private void ColarNaBandeja_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (Clipboard.ContainsFileDropList())
+            {
+                var arquivos = Clipboard.GetFileDropList().Cast<string>().ToList();
+                foreach (var caminho in arquivos)
+                {
+                    _bandeja.Remove(caminho);
+                    _bandeja.Add(caminho);
+                }
+                while (_bandeja.Count > MaximoNaBandeja) _bandeja.RemoveAt(0);
+
+                MontarBandeja();
+                AtualizarSemItens();
+                MostrarEstado();
+                return;
+            }
+
+            var texto = Clipboard.ContainsText() ? Clipboard.GetText() : "";
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                Recado("Nada copiado para colar");
+                return;
+            }
+
+            PorTextoNaBandeja(texto);
+        }
+        catch (Exception ex)
+        {
+            // A area de transferencia pode estar presa por outro app.
+            Log.Erro("Bandeja: colar", ex);
+            Recado("Não deu para colar agora");
+        }
     }
 
     /// <summary>
@@ -2548,6 +2771,21 @@ public partial class IlhaWindow : Window
             return;
 
         _inicioDoArrasto = null;
+
+        // Texto sai como texto, solto em qualquer campo que aceite texto.
+        if (TextoNaBandeja.Eh(caminho))
+        {
+            botao.ReleaseMouseCapture();
+            try
+            {
+                DragDrop.DoDragDrop(botao, new DataObject(DataFormats.UnicodeText, TextoNaBandeja.De(caminho)), DragDropEffects.Copy);
+            }
+            catch (Exception ex)
+            {
+                Log.Erro("Bandeja: arrastar texto", ex);
+            }
+            return;
+        }
 
         // Com o Kdrop e algum aparelho por perto, o arrasto comeca dentro da
         // Kisland: soltar num aparelho manda o arquivo; sair da Kisland vira
@@ -2626,6 +2864,7 @@ public partial class IlhaWindow : Window
             _kdrop.ArquivoRecebido += c => Dispatcher.BeginInvoke(() => ReceberDoKdrop(c));
             _kdrop.AparelhosMudaram += () => Dispatcher.BeginInvoke(() => MontarAparelhos());
             _kdrop.BandejasMudaram += () => Dispatcher.BeginInvoke(() => MontarBandejasDeFora());
+            _kdrop.TextoRecebido += p => Dispatcher.BeginInvoke(() => ReceberTextoDoKdrop(p));
             _kdrop.Iniciar();
         }
         else if (!KdropLigado && _kdrop is not null)
@@ -2648,6 +2887,7 @@ public partial class IlhaWindow : Window
         BandejasDeFora.Children.Clear();
         BandejasDeFora.Visibility = Visibility.Collapsed;
         PedidoKdrop.Visibility = Visibility.Collapsed;
+        FecharTextoKdrop();
         QrKdrop.Visibility = Visibility.Collapsed;
         AreaKdrop.Visibility = Visibility.Collapsed;
     }
@@ -2738,9 +2978,11 @@ public partial class IlhaWindow : Window
             circulo.SetResourceReference(Border.BorderBrushProperty, "Acento");
         }
 
+        var ehTexto = item.Texto is not null;
+        var ehLink = ehTexto && TextoNaBandeja.EhLink(item.Texto!);
         var desenho = new System.Windows.Shapes.Path
         {
-            Data = Geometry.Parse(item.Pasta
+            Data = Geometry.Parse(ehLink ? DesenhoLink : ehTexto ? DesenhoTexto : item.Pasta
                 ? "M3,7 A2,2 0 0,1 5,5 L9,5 L11,7 L19,7 A2,2 0 0,1 21,9 L21,18 A2,2 0 0,1 19,20 L5,20 A2,2 0 0,1 3,18 Z"
                 : "M6,3 L14,3 L19,8 L19,19 A2,2 0 0,1 17,21 L7,21 A2,2 0 0,1 5,19 L5,4 A1,1 0 0,1 6,3 Z M14,3 L14,8 L19,8"),
             StrokeThickness = 1.6,
@@ -2772,7 +3014,9 @@ public partial class IlhaWindow : Window
         {
             Style = (Style)FindResource("BotaoAtalho"),
             Content = conteudo,
-            ToolTip = $"{item.Nome} · {detalhe}\nNa bandeja de {pc.Nome}. Clique para trazer para este PC"
+            ToolTip = ehTexto
+                ? $"{item.Texto}\nNa bandeja de {pc.Nome}. Clique para trazer e copiar"
+                : $"{item.Nome} · {detalhe}\nNa bandeja de {pc.Nome}. Clique para trazer para este PC"
         };
         botao.Click += async (_, _) => await BuscarDeFora(pc, item);
         return botao;
@@ -2790,6 +3034,24 @@ public partial class IlhaWindow : Window
             if (texto is null) _buscando.Remove(chave);
             else _buscando[chave] = texto;
             MontarBandejasDeFora();
+        }
+
+        // Texto: busca o texto inteiro (no anuncio ele vem cortado), poe
+        // nesta bandeja e ja copia.
+        if (item.Texto is not null)
+        {
+            Mostrar("0%");
+            var texto = await _kdrop.BuscarTextoDePc(pc, item);
+            if (texto is null)
+            {
+                Mostrar("Não veio");
+                return;
+            }
+
+            Mostrar(null);
+            PorTextoNaBandeja(texto);
+            if (CopiarTexto(texto)) Recado("Texto copiado! Cole com Ctrl+V");
+            return;
         }
 
         Mostrar("0%");
@@ -2932,17 +3194,27 @@ public partial class IlhaWindow : Window
     {
         if (_kdrop is null) return;
 
-        var arquivos = caminhos.Where(System.IO.File.Exists).ToList();
-        if (arquivos.Count == 0)
+        // Para o celular, textos tambem: a pagina la os destaca, com Copiar.
+        if (!aparelho.EhPc)
         {
-            Situacao(aparelho.Id, "Bandeja vazia");
+            var paraOCelular = caminhos.Where(c => TextoNaBandeja.Eh(c) || System.IO.File.Exists(c)).ToList();
+            if (paraOCelular.Count == 0)
+            {
+                Situacao(aparelho.Id, "Bandeja vazia");
+                return;
+            }
+
+            _kdrop.AvisarCelular(aparelho.Id, paraOCelular);
+            Situacao(aparelho.Id, "Enviado");
             return;
         }
 
-        if (!aparelho.EhPc)
+        // Para outro PC so arquivos viajam: os textos ele ja ve na bandeja
+        // deste PC, logo abaixo da dele.
+        var arquivos = caminhos.Where(c => !TextoNaBandeja.Eh(c) && System.IO.File.Exists(c)).ToList();
+        if (arquivos.Count == 0)
         {
-            _kdrop.AvisarCelular(aparelho.Id, arquivos);
-            Situacao(aparelho.Id, "Enviado");
+            Situacao(aparelho.Id, "Bandeja vazia");
             return;
         }
 
@@ -2987,6 +3259,12 @@ public partial class IlhaWindow : Window
 
         ImagemQrKdrop.Source = _qr;
         EnderecoKdrop.Text = endereco.Replace("http://", "").TrimEnd('/');
+
+        // O QR leva ao IP (funciona em qualquer celular); a pagina aberta
+        // por ele ja oferece o endereco fixo, para salvar nos favoritos.
+        var fixo = _kdrop?.EnderecoFixo;
+        FixoKdrop.Text = fixo is null ? "" : $"Endereço fixo, para salvar nos favoritos: {fixo.Replace("http://", "").TrimEnd('/')}";
+        FixoKdrop.Visibility = Visivel(fixo is not null);
         QrKdrop.Visibility = Visibility.Visible;
         MontarAparelhos();
     }
@@ -3023,12 +3301,21 @@ public partial class IlhaWindow : Window
     {
         _pedidoKdrop = pedido;
 
-        var n = pedido.Arquivos.Count;
-        TituloPedidoKdrop.Text = $"{pedido.OrigemNome} quer colocar {(n == 1 ? "1 arquivo" : $"{n} arquivos")} na sua bandeja";
+        if (pedido.Texto is { } texto)
+        {
+            var link = TextoNaBandeja.EhLink(texto);
+            TituloPedidoKdrop.Text = $"{pedido.OrigemNome} quer mandar {(link ? "um link" : "um texto")}";
+            DetalhePedidoKdrop.Text = TextoNaBandeja.Resumo(texto, 120);
+        }
+        else
+        {
+            var n = pedido.Arquivos.Count;
+            TituloPedidoKdrop.Text = $"{pedido.OrigemNome} quer colocar {(n == 1 ? "1 arquivo" : $"{n} arquivos")} na sua bandeja";
 
-        var nomes = string.Join(", ", pedido.Arquivos.Take(3).Select(a => a.Nome));
-        if (n > 3) nomes += $" e mais {n - 3}";
-        DetalhePedidoKdrop.Text = $"{nomes} · {Tamanho(pedido.Total)}";
+            var nomes = string.Join(", ", pedido.Arquivos.Take(3).Select(a => a.Nome));
+            if (n > 3) nomes += $" e mais {n - 3}";
+            DetalhePedidoKdrop.Text = $"{nomes} · {Tamanho(pedido.Total)}";
+        }
 
         IconePedidoKdrop.Data = Geometry.Parse(pedido.OrigemEhPc ? DesenhoDesktop : DesenhoCelular);
         LembrarPedidoKdrop.IsChecked = false;
@@ -3101,6 +3388,82 @@ public partial class IlhaWindow : Window
         MontarBandeja();
         AtualizarSemItens();
         MostrarEstado();
+    }
+
+    /// <summary>O texto mostrado no aviso e no cartao, para Copiar e Abrir.</summary>
+    private string? _textoKdrop;
+    private DispatcherTimer? _fimDoTextoKdrop;
+
+    /// <summary>
+    /// Chegou um texto ou link (aceito, ou de aparelho confiavel): entra na
+    /// bandeja e aparece no topo dela, com Copiar e, se for link, Abrir. Com
+    /// a Kisland fechada, vem antes um aviso rapido na pilula.
+    /// </summary>
+    private void ReceberTextoDoKdrop(PedidoKdrop pedido)
+    {
+        if (pedido.Texto is not { } texto) return;
+
+        PorTextoNaBandeja(texto);
+
+        var link = TextoNaBandeja.EhLink(texto);
+        _textoKdrop = texto;
+        var origem = $"{(link ? "Link" : "Texto")} de {pedido.OrigemNome} · Kdrop";
+        var desenho = Geometry.Parse(link ? DesenhoLink : DesenhoTexto);
+
+        OrigemTextoKdrop.Text = origem;
+        ConteudoTextoKdrop.Text = texto.Length > 500 ? texto[..500] + "…" : texto;
+        IconeTextoKdrop.Data = desenho;
+        CopiarTextoKdrop.Content = "Copiar";
+        AbrirTextoKdrop.Visibility = Visivel(link);
+        ColunaAbrirTextoKdrop.Width = link ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+        TextoKdrop.Visibility = Visibility.Visible;
+
+        OrigemAvisoTexto.Text = origem;
+        ConteudoAvisoTexto.Text = TextoNaBandeja.Resumo(texto, 80);
+        IconeAvisoTexto.Data = desenho;
+        CopiarAvisoTexto.Content = "Copiar";
+
+        // O cartao sai sozinho depois de um tempo; o texto fica na bandeja.
+        _fimDoTextoKdrop?.Stop();
+        _fimDoTextoKdrop = Temporizador(TimeSpan.FromSeconds(20), FecharTextoKdrop);
+        _fimDoTextoKdrop.Start();
+
+        if (!_expandida) MostrarAviso(Aviso.Texto, TimeSpan.FromSeconds(6));
+    }
+
+    private void FecharTextoKdrop()
+    {
+        _fimDoTextoKdrop?.Stop();
+        _textoKdrop = null;
+        TextoKdrop.Visibility = Visibility.Collapsed;
+        if (_aviso == Aviso.Texto) EncerrarAviso();
+    }
+
+    private void FecharTextoKdrop_Click(object sender, RoutedEventArgs e) => FecharTextoKdrop();
+
+    private void CopiarTextoKdrop_Click(object sender, RoutedEventArgs e)
+    {
+        if (_textoKdrop is not { } texto || !CopiarTexto(texto)) return;
+
+        CopiarTextoKdrop.Content = "Copiado";
+        CopiarAvisoTexto.Content = "Copiado";
+
+        // No aviso da pilula, copiar e o fim: ele some logo depois.
+        if (_aviso == Aviso.Texto)
+        {
+            _fimDoAviso.Stop();
+            _fimDoAviso.Interval = TimeSpan.FromSeconds(1.2);
+            _fimDoAviso.Start();
+        }
+    }
+
+    private void AbrirTextoKdrop_Click(object sender, RoutedEventArgs e)
+    {
+        if (_textoKdrop is not { } texto) return;
+
+        AbrirLink(texto);
+        FecharTextoKdrop();
+        Recolher();
     }
 
     private static string Tamanho(long bytes) => bytes switch
@@ -3201,18 +3564,21 @@ public partial class IlhaWindow : Window
 
         try
         {
-            var lista = new System.Collections.Specialized.StringCollection();
-            lista.AddRange(_bandeja.ToArray());
-            Clipboard.SetFileDropList(lista);
-
-            TituloBandeja.Text = "Copiado! Cole com Ctrl+V";
-            _fimDoRecado?.Stop();
-            _fimDoRecado = Temporizador(TimeSpan.FromSeconds(2.5), () =>
+            // Arquivos vao como arquivos; se so ha textos, vao os textos,
+            // um por linha.
+            var arquivos = _bandeja.Where(c => !TextoNaBandeja.Eh(c)).ToArray();
+            if (arquivos.Length > 0)
             {
-                _fimDoRecado?.Stop();
-                TituloDaBandeja();
-            });
-            _fimDoRecado.Start();
+                var lista = new System.Collections.Specialized.StringCollection();
+                lista.AddRange(arquivos);
+                Clipboard.SetFileDropList(lista);
+            }
+            else
+            {
+                Clipboard.SetText(string.Join(Environment.NewLine, _bandeja.Select(TextoNaBandeja.De)));
+            }
+
+            Recado("Copiado! Cole com Ctrl+V");
         }
         catch (Exception ex)
         {

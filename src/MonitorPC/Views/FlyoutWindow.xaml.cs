@@ -1688,6 +1688,17 @@ public partial class FlyoutWindow : Window
         { Owner = this }.ShowDialog();
     }
 
+    /// <summary>As Novidades (o Kdrop), abertas sozinhas pelo App para todos, uma vez.</summary>
+    public void AbrirNovidades(bool obrigatorio = false)
+    {
+        new NovidadesWindow(_cfg, () =>
+        {
+            (Application.Current as App)?.AplicarAparencia();
+            AplicarTransparencia();
+        }, obrigatorio)
+        { Owner = this }.ShowDialog();
+    }
+
     private void Ajustes_Click(object sender, RoutedEventArgs e) => AbrirConfiguracao(false);
 
     private void Sensores_Click(object sender, RoutedEventArgs e) =>

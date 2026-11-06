@@ -118,6 +118,19 @@ de fora:
 - Anúncio UDP na porta 48621, a cada 5 s, para os KInfo da rede se acharem.
 - O envio para outro PC é o mesmo caminho do celular: pede, espera o aceite,
   envia arquivo por arquivo.
+- Endereço fixo (`NomeNaRede`): um responder mDNS mínimo na porta UDP 5353
+  (compartilhada com o Windows) responde só a perguntas de endereço IPv4 por
+  `kdrop-<nome>.local`, com o IP da placa da rede de casa. O nome sai do nome
+  do Kdrop (`KdropNome` ou o nome do PC), sem acento; o anúncio de 5 s confere
+  se mudou. `/api/estado` devolve `fixo`, e a página do celular oferece abrir
+  por ele para salvar nos favoritos. Regra "KInfo Kdrop mDNS" no Firewall.
+- Textos e links: a bandeja guarda um texto como um item com o prefixo
+  `kdrop-texto:` (`TextoNaBandeja`), e assim ele vai no anúncio (cortado em
+  300 caracteres), na página do celular (com Copiar e Abrir) e na bandeja dos
+  outros PCs; `GET /api/arquivo/{id}` devolve o texto inteiro. O celular manda
+  `POST /api/pedido` com `texto`: aceito (ou de aparelho confiável), entra na
+  bandeja e a Kisland mostra o cartão com Copiar e Abrir link; fechada, um
+  aviso rápido na pílula. "Colar texto" põe na bandeja o que está copiado.
 - A bandeja fica à vista da casa assim que algo entra nela: o anúncio UDP leva
   a lista (id, nome, tamanho, se é pasta) e sai na hora em que a bandeja muda
   (`BandejaMudou`), não só a cada 5 s. Cada KInfo mostra na Kisland as
@@ -208,7 +221,7 @@ abre ao passar o mouse, e a roda e o clique do meio não agem. Tela cheia em out
 continua escondendo: nada aparece por cima, e o Windows não diz em qual monitor
 ela está.
 
-### Guia
+### Guia e Novidades
 
 `GuiaKislandWindow` são dez passos com prévia desenhada e o controle de
 verdade: o que se mexe ali grava na configuração na hora — inclusive ligar o
@@ -218,6 +231,12 @@ quem instalou agora e para quem atualizou; subir o número faz todos verem de
 novo. Fica marcado como visto no momento em que aparece: pular também é
 resposta. Para
 rever, Personalização → Ver o guia da Kisland.
+
+`NovidadesWindow` segue o mesmo formato, dedicada ao Kdrop (seis passos). Abre
+sozinha uma vez por versão das novidades (`App.VersaoDasNovidades`, hoje 1,
+contra `NovidadesVersaoVista`), sem o "Pular", e toma o lugar do guia: quem vê
+as novidades tem o guia marcado como visto. Para rever, Personalização → Ver as
+novidades do Kdrop.
 
 ### Funcionamento
 

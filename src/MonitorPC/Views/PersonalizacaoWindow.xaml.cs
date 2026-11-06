@@ -249,6 +249,15 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
+    private void Novidades_Click(object sender, RoutedEventArgs e)
+    {
+        new NovidadesWindow(_cfg, _aoMudar) { Owner = this }.ShowDialog();
+
+        _carregando = true;
+        Carregar();
+        _carregando = false;
+    }
+
     private void GuiaKisland_Click(object sender, RoutedEventArgs e)
     {
         new GuiaKislandWindow(_cfg, _aoMudar) { Owner = this }.ShowDialog();

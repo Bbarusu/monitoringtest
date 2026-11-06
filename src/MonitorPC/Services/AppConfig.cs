@@ -207,6 +207,12 @@ public sealed class AppConfig
     public int GuiaKislandVersaoVista { get; set; }
 
     /// <summary>
+    /// A versao das Novidades (a janela do Kdrop) que ja apareceu para esta
+    /// pessoa. Sobe no App quando ha novidade nova para mostrar a todos.
+    /// </summary>
+    public int NovidadesVersaoVista { get; set; }
+
+    /// <summary>
     /// Contador de FPS na Kisland quando um jogo esta rodando, em qualquer
     /// monitor. Desligado por padrao: liga uma sessao de rastreamento do
     /// Windows, e quem nao joga nao precisa dela.

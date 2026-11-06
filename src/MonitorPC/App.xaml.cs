@@ -439,6 +439,36 @@ public partial class App : Application
     private const int VersaoDoGuia = 2;
 
     /// <summary>
+    /// A versao atual das Novidades. Subir este numero faz a janela abrir de
+    /// novo, uma vez, para todos. 1 (0.1.32): o Kdrop inteiro, com o endereco
+    /// fixo e os textos e links.
+    /// </summary>
+    private const int VersaoDasNovidades = 1;
+
+    /// <summary>
+    /// As Novidades, obrigatorias uma vez: sem o "Pular". Marcadas como vistas
+    /// ao aparecer, como o guia — fechar o app no meio nao faz voltar.
+    /// </summary>
+    private void MostrarNovidades()
+    {
+        try
+        {
+            _cfg.NovidadesVersaoVista = VersaoDasNovidades;
+            _cfg.GuiaKislandVersaoVista = Math.Max(_cfg.GuiaKislandVersaoVista, VersaoDoGuia);
+            _cfg.GuiaKislandVisto = true;
+            _cfg.Salvar();
+
+            _painel.Mostrar();
+            Dispatcher.BeginInvoke(() => _painel.AbrirNovidades(obrigatorio: true),
+                                   System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Novidades", ex);
+        }
+    }
+
+    /// <summary>
     /// Uma vez por versao do guia, na primeira abertura: o guia da Kisland abre
     /// sozinho, para todos. Para quem instalou agora, depois da configuracao
     /// inicial, que vem antes. Fica marcado como visto no momento em que
@@ -447,6 +477,14 @@ public partial class App : Application
     /// </summary>
     private void ConvidarParaAKisland()
     {
+        // As Novidades vem antes e tomam o lugar do guia: quem as ve nao
+        // recebe o guia da Kisland em seguida (ele continua na Personalizacao).
+        if (_cfg.NovidadesVersaoVista < VersaoDasNovidades)
+        {
+            MostrarNovidades();
+            return;
+        }
+
         if (_cfg.GuiaKislandVersaoVista >= VersaoDoGuia) return;
 
         try

@@ -33,7 +33,56 @@ public sealed record AparelhoKdrop(string Id, string Nome, bool EhPc, string? En
 /// (que viaja como .zip). Tamanho -1 para pasta: somar tudo dentro dela a
 /// cada anuncio custaria caro.
 /// </summary>
-public sealed record ItemKdrop(string Id, string Nome, long Tamanho, bool Pasta);
+public sealed record ItemKdrop(string Id, string Nome, long Tamanho, bool Pasta, string? Texto = null);
+
+/// <summary>
+/// Textos e links na bandeja. A bandeja e uma lista de caminhos; um texto
+/// entra nela como um "caminho" com este prefixo e o texto inteiro depois,
+/// e assim passa por tudo o que a bandeja ja faz (anuncio, pagina do
+/// celular, outros PCs) sem uma segunda lista.
+/// </summary>
+public static class TextoNaBandeja
+{
+    public const string Prefixo = "kdrop-texto:";
+
+    /// <summary>Texto maior que isso e cortado: a bandeja e para recados e links, nao para documentos.</summary>
+    public const int Maximo = 20000;
+
+    public static bool Eh(string item) => item.StartsWith(Prefixo, StringComparison.Ordinal);
+
+    public static string De(string item) => Eh(item) ? item[Prefixo.Length..] : item;
+
+    public static string Item(string texto)
+    {
+        var limpo = texto.Replace("\r\n", "\n").Trim();
+        if (limpo.Length > Maximo) limpo = limpo[..Maximo];
+        return Prefixo + limpo;
+    }
+
+    /// <summary>E um link sozinho (http ou https), que da para abrir no navegador?</summary>
+    public static bool EhLink(string texto)
+    {
+        var t = texto.Trim();
+        return !t.Any(char.IsWhiteSpace) &&
+               Uri.TryCreate(t, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+    }
+
+    /// <summary>Uma linha curta para mostrar: o host do link, ou o comeco do texto.</summary>
+    public static string Resumo(string texto, int tamanho = 60)
+    {
+        var t = texto.Trim();
+        if (EhLink(t) && Uri.TryCreate(t, UriKind.Absolute, out var uri))
+        {
+            var host = uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? uri.Host[4..] : uri.Host;
+            var resto = uri.PathAndQuery == "/" ? "" : uri.PathAndQuery;
+            t = host + resto;
+        }
+
+        t = string.Join(' ', t.Split(new[] { '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries));
+        return t.Length <= tamanho ? t : t[..(tamanho - 1)].TrimEnd() + "…";
+    }
+}
 
 public enum EstadoDoPedido { Esperando, Aceito, Recusado, Expirado, Concluido }
 
@@ -46,6 +95,9 @@ public sealed class PedidoKdrop
     public bool OrigemEhPc { get; init; }
     public List<ArquivoDoPedido> Arquivos { get; init; } = new();
     public DateTime CriadoEm { get; init; } = DateTime.UtcNow;
+
+    /// <summary>Pedido de texto ou link, em vez de arquivos: chega inteiro, sem envio depois do aceite.</summary>
+    public string? Texto { get; init; }
 
     public EstadoDoPedido Estado { get; set; }
     public long Recebidos { get; set; }
@@ -186,6 +238,17 @@ public sealed class KdropService : IDisposable
     public event Action? AparelhosMudaram;
     public event Action? BandejasMudaram;
 
+    /// <summary>Um texto ou link chegou (aceito, ou de aparelho confiavel).</summary>
+    public event Action<PedidoKdrop>? TextoRecebido;
+
+    private readonly NomeNaRede _nomeNaRede = new();
+
+    /// <summary>
+    /// O endereco fixo deste PC ("http://kdrop-desktop.local:48620/"), para
+    /// favoritar no celular. Nulo se o nome nao pode ser anunciado na rede.
+    /// </summary>
+    public string? EnderecoFixo => _nomeNaRede.Nome is { } nome ? $"http://{nome}:{Porta}/" : null;
+
     public KdropService(AppConfig cfg, Func<IReadOnlyList<string>> bandeja)
     {
         _cfg = cfg;
@@ -218,6 +281,7 @@ public sealed class KdropService : IDisposable
             _ = Task.Run(() => Atender(http, _fim.Token));
 
             IniciarDescoberta(_fim.Token);
+            _nomeNaRede.Iniciar(NomeNaRede.NomePara(NomeDestePc));
             Motivo = null;
             return true;
         }
@@ -238,6 +302,7 @@ public sealed class KdropService : IDisposable
         try { _anuncio?.Dispose(); } catch { }
         try { _http?.Stop(); _http?.Close(); } catch { }
         try { _udp?.Dispose(); } catch { }
+        _nomeNaRede.Parar();
 
         _http = null;
         _udp = null;
@@ -263,6 +328,11 @@ public sealed class KdropService : IDisposable
     /// </summary>
     private static void LiberarNoFirewall()
     {
+        // O endereco fixo (mDNS) veio depois: regra propria, para quem ja tem a outra.
+        const string nomeMdns = "KInfo Kdrop mDNS";
+        if (Netsh($"advfirewall firewall show rule name=\"{nomeMdns}\"") != 0)
+            Netsh($"advfirewall firewall add rule name=\"{nomeMdns}\" dir=in action=allow protocol=UDP localport={NomeNaRede.PortaMdns} profile=private,domain");
+
         const string nome = "KInfo Kdrop";
         if (Netsh($"advfirewall firewall show rule name=\"{nome}\"") == 0) return;
 
@@ -362,12 +432,24 @@ public sealed class KdropService : IDisposable
         catch (ObjectDisposedException) { }
     }
 
-    /// <summary>Os itens da bandeja deste PC que ainda existem, arquivos e pastas.</summary>
-    private List<ItemKdrop> MinhaBandeja()
+    /// <summary>
+    /// Os itens da bandeja deste PC que ainda existem: arquivos, pastas e
+    /// textos. No anuncio pela rede o texto vai cortado (o pacote e pequeno);
+    /// quem quer o texto inteiro busca pelo id.
+    /// </summary>
+    private List<ItemKdrop> MinhaBandeja(bool textoInteiro = true)
     {
         var itens = new List<ItemKdrop>();
         foreach (var caminho in _bandeja())
         {
+            if (TextoNaBandeja.Eh(caminho))
+            {
+                var texto = TextoNaBandeja.De(caminho);
+                itens.Add(new ItemKdrop(IdDoArquivo(caminho), TextoNaBandeja.Resumo(texto), texto.Length, false,
+                                        textoInteiro || texto.Length <= 300 ? texto : texto[..300]));
+                continue;
+            }
+
             try
             {
                 if (File.Exists(caminho))
@@ -435,7 +517,7 @@ public sealed class KdropService : IDisposable
                 try
                 {
                     List<ItemKdrop> bandeja;
-                    try { bandeja = MinhaBandeja(); }
+                    try { bandeja = MinhaBandeja(textoInteiro: false); }
                     catch { bandeja = new List<ItemKdrop>(); }
 
                     var anuncio = JsonSerializer.SerializeToUtf8Bytes(new Anuncio
@@ -452,6 +534,7 @@ public sealed class KdropService : IDisposable
 
                 ConferirAparelhos();
                 ExpirarPedidos();
+                ConferirNomeNaRede();
             }, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
         }
         catch (Exception ex)
@@ -523,7 +606,11 @@ public sealed class KdropService : IDisposable
         lock (pedido)
         {
             if (pedido.Estado != EstadoDoPedido.Esperando) return;
-            pedido.Estado = aceitar ? EstadoDoPedido.Aceito : EstadoDoPedido.Recusado;
+
+            // Texto nao tem envio depois do aceite: ja veio no pedido.
+            pedido.Estado = !aceitar ? EstadoDoPedido.Recusado
+                          : pedido.Texto is not null ? EstadoDoPedido.Concluido
+                          : EstadoDoPedido.Aceito;
             pedido.AtividadeEm = DateTime.UtcNow;
         }
 
@@ -536,6 +623,7 @@ public sealed class KdropService : IDisposable
         }
 
         PedidoMudou?.Invoke(pedido);
+        if (aceitar && pedido.Texto is not null) TextoRecebido?.Invoke(pedido);
     }
 
     /// <summary>Aceito e sem nenhuma parte chegando ha tanto tempo, o envio foi abandonado.</summary>
@@ -838,13 +926,22 @@ public sealed class KdropService : IDisposable
 
         // Pasta vai como .zip, montado na hora do download.
         var bandeja = MinhaBandeja()
-            .Select(i => new { id = i.Id, nome = i.Pasta ? i.Nome + ".zip" : i.Nome, tamanho = i.Tamanho, pasta = i.Pasta });
+            .Select(i => new
+            {
+                id = i.Id,
+                nome = i.Pasta ? i.Nome + ".zip" : i.Nome,
+                tamanho = i.Tamanho,
+                pasta = i.Pasta,
+                texto = i.Texto,
+                link = i.Texto is not null && TextoNaBandeja.EhLink(i.Texto)
+            });
 
         await Escrever(res, JsonSerializer.Serialize(new
         {
             id = _id,
             nome = NomeDestePc,
             acento = _cfg.CorDestaque,
+            fixo = EnderecoFixo,
             pcs,
             bandeja,
             novos
@@ -858,6 +955,14 @@ public sealed class KdropService : IDisposable
     private async Task Baixar(string id, HttpListenerResponse res)
     {
         var caminho = _bandeja().FirstOrDefault(c => IdDoArquivo(c) == id);
+
+        // Texto da bandeja: vai como texto puro (outro PC busca assim o texto
+        // inteiro, que no anuncio vai cortado).
+        if (caminho is not null && TextoNaBandeja.Eh(caminho))
+        {
+            await Escrever(res, TextoNaBandeja.De(caminho), "text/plain; charset=utf-8");
+            return;
+        }
 
         if (caminho is not null && Directory.Exists(caminho))
         {
@@ -1000,6 +1105,42 @@ public sealed class KdropService : IDisposable
         }
     }
 
+    /// <summary>
+    /// O nome do Kdrop mudou na Personalizacao: o endereco fixo passa a ser o
+    /// do nome novo (o antigo deixa de responder).
+    /// </summary>
+    private void ConferirNomeNaRede()
+    {
+        lock (_nomeNaRede)
+        {
+            if (_fim is null || _nomeNaRede.Nome is not { } atual) return;
+
+            var certo = NomeNaRede.NomePara(NomeDestePc);
+            if (!string.Equals(atual, certo, StringComparison.OrdinalIgnoreCase))
+                _nomeNaRede.Iniciar(certo);
+        }
+    }
+
+    /// <summary>
+    /// O texto inteiro de um item de texto da bandeja de outro PC (no anuncio
+    /// ele vem cortado). Nulo se nao deu.
+    /// </summary>
+    public async Task<string?> BuscarTextoDePc(AparelhoKdrop pc, ItemKdrop item)
+    {
+        if (pc.Endereco is null) return null;
+
+        try
+        {
+            using var http = new HttpClient { BaseAddress = new Uri(pc.Endereco), Timeout = TimeSpan.FromSeconds(10) };
+            return await http.GetStringAsync($"api/arquivo/{Uri.EscapeDataString(item.Id)}");
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Kdrop: buscar texto de outro PC", ex);
+            return null;
+        }
+    }
+
     /// <summary>"Fotos", e se ja existir, "Fotos (2)".</summary>
     private static string PastaLivre(string pasta, string nome)
     {
@@ -1015,6 +1156,7 @@ public sealed class KdropService : IDisposable
         public string Nome { get; set; } = "";
         public bool Pc { get; set; }
         public List<ArquivoDoPedido> Arquivos { get; set; } = new();
+        public string? Texto { get; set; }
     }
 
     private async Task NovoPedido(HttpListenerRequest req, HttpListenerResponse res)
@@ -1023,7 +1165,10 @@ public sealed class KdropService : IDisposable
         using (var leitor = new StreamReader(req.InputStream, Encoding.UTF8))
             dados = JsonSerializer.Deserialize<PedidoRecebido>(await leitor.ReadToEndAsync(), Json);
 
-        if (dados is null || string.IsNullOrWhiteSpace(dados.Cliente) || dados.Arquivos.Count == 0 || dados.Arquivos.Count > 100)
+        var temTexto = !string.IsNullOrWhiteSpace(dados?.Texto);
+        if (dados is null || string.IsNullOrWhiteSpace(dados.Cliente) ||
+            (dados.Arquivos.Count == 0 && !temTexto) || dados.Arquivos.Count > 100 ||
+            (temTexto && dados.Texto!.Length > TextoNaBandeja.Maximo))
         {
             res.StatusCode = 400;
             return;
@@ -1035,19 +1180,27 @@ public sealed class KdropService : IDisposable
             OrigemId = dados.Cliente,
             OrigemNome = string.IsNullOrWhiteSpace(dados.Nome) ? "Aparelho" : dados.Nome.Trim(),
             OrigemEhPc = dados.Pc,
-            Arquivos = dados.Arquivos.Select(a => new ArquivoDoPedido { Nome = NomeSeguro(a.Nome), Tamanho = a.Tamanho }).ToList()
+            Texto = temTexto ? dados.Texto!.Trim() : null,
+            Arquivos = temTexto
+                ? new List<ArquivoDoPedido>()
+                : dados.Arquivos.Select(a => new ArquivoDoPedido { Nome = NomeSeguro(a.Nome), Tamanho = a.Tamanho }).ToList()
         };
         pedido.Chegando = new ArquivoChegando?[pedido.Arquivos.Count];
 
         // Aparelho confiavel nao precisa de aceite.
         var confiavel = _cfg.KdropConfiaveis.Any(c => c.Id == pedido.OrigemId);
-        pedido.Estado = confiavel ? EstadoDoPedido.Aceito : EstadoDoPedido.Esperando;
+        pedido.Estado = !confiavel ? EstadoDoPedido.Esperando
+                      : pedido.Texto is not null ? EstadoDoPedido.Concluido
+                      : EstadoDoPedido.Aceito;
         _pedidos[pedido.Id] = pedido;
 
-        Log.Nota($"Kdrop: pedido {pedido.Id} de {pedido.OrigemNome}, {pedido.Arquivos.Count} arquivo(s){(confiavel ? ", aceito sozinho" : "")}");
+        Log.Nota($"Kdrop: pedido {pedido.Id} de {pedido.OrigemNome}, " +
+                 (pedido.Texto is not null ? "texto" : $"{pedido.Arquivos.Count} arquivo(s)") +
+                 (confiavel ? ", aceito sozinho" : ""));
 
-        if (confiavel) PedidoMudou?.Invoke(pedido);
-        else PedidoChegou?.Invoke(pedido);
+        if (!confiavel) PedidoChegou?.Invoke(pedido);
+        else if (pedido.Texto is not null) TextoRecebido?.Invoke(pedido);
+        else PedidoMudou?.Invoke(pedido);
 
         await Escrever(res, JsonSerializer.Serialize(new { pedido = pedido.Id, estado = Texto(pedido.Estado) }, Json),
                        "application/json; charset=utf-8");
