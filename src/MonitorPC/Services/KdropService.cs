@@ -88,6 +88,24 @@ internal sealed class ArquivoChegando
 
     /// <summary>Uma parte esta sendo gravada agora: outra para o mesmo arquivo espera.</summary>
     public bool Ocupado { get; set; }
+
+    /// <summary>
+    /// O arquivo fica aberto de uma parte para a outra. Abrir e fechar a cada
+    /// parte fazia o antivirus do Windows reler o arquivo inteiro a cada
+    /// fechamento — 8 MB, 16, 24... —, e um video de 137 MB levava minutos.
+    /// Fecha quando termina, quando o envio e abandonado e quando o Kdrop para.
+    /// </summary>
+    public FileStream? Fluxo { get; set; }
+
+    /// <summary>Quando a primeira parte chegou, para o log dizer a velocidade.</summary>
+    public DateTime InicioEm { get; init; } = DateTime.UtcNow;
+
+    public void Fechar()
+    {
+        try { Fluxo?.Dispose(); }
+        catch (IOException) { }
+        Fluxo = null;
+    }
 }
 
 /// <summary>
@@ -227,6 +245,13 @@ public sealed class KdropService : IDisposable
         _pcs.Clear();
         _celulares.Clear();
         _bandejasDosPcs.Clear();
+
+        // Arquivos que estavam chegando ficam como estao (incompletos), mas
+        // fechados: aberto, o arquivo ficaria preso ate o app fechar.
+        foreach (var pedido in _pedidos.Values)
+            lock (pedido)
+                foreach (var chegando in pedido.Chegando)
+                    chegando?.Fechar();
     }
 
     public void Dispose() => Parar();
@@ -536,6 +561,7 @@ public sealed class KdropService : IDisposable
                     // Abandonado no meio (o celular saiu da pagina, a rede
                     // caiu de vez): os pedacos gravados nao servem para nada.
                     pedido.Estado = EstadoDoPedido.Expirado;
+                    foreach (var c in pedido.Chegando) c?.Fechar();
                     incompletos.AddRange(pedido.Chegando.Where(c => c is { Pronto: false }).Select(c => c!.Caminho));
                     mudou = true;
                 }
@@ -1146,14 +1172,17 @@ public sealed class KdropService : IDisposable
         }
 
         var limite = pedido.Arquivos[indice].Tamanho;
+        var inicioDaParte = DateTime.UtcNow;
+        var posDaParte = estado.Gravados;
         try
         {
-            var buffer = new byte[81920];
-            await using var arquivo = new FileStream(estado.Caminho, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            var buffer = new byte[256 * 1024];
+            var arquivo = estado.Fluxo ??= new FileStream(estado.Caminho, FileMode.OpenOrCreate, FileAccess.Write,
+                                                           FileShare.Read, 1024 * 1024, useAsync: true);
 
             // Continua de onde parou, e corta o que uma parte interrompida
             // tenha deixado alem disso.
-            arquivo.SetLength(estado.Gravados);
+            if (arquivo.Length != estado.Gravados) arquivo.SetLength(estado.Gravados);
             arquivo.Seek(estado.Gravados, SeekOrigin.Begin);
 
             int n;
@@ -1190,12 +1219,23 @@ public sealed class KdropService : IDisposable
             // A conexao caiu no meio da parte. O que chegou fica gravado, e a
             // proxima tentativa continua dali.
             Log.Nota($"Kdrop: parte interrompida no pedido {id}, arquivo {indice}, em {estado.Gravados} bytes");
+
+            // Erro do proprio arquivo (disco cheio, por exemplo) deixa o fluxo
+            // num estado incerto: fecha, e a proxima parte abre de novo.
+            if (ex is IOException && ex is not HttpListenerException) lock (pedido) estado.Fechar();
             return;
         }
         finally
         {
             lock (pedido) estado.Ocupado = false;
         }
+
+        // Parte lenta vai para o log, com a velocidade: e por ai que se ve se
+        // a demora e da rede (Wi-Fi) ou do PC.
+        var duracaoDaParte = DateTime.UtcNow - inicioDaParte;
+        if (duracaoDaParte > TimeSpan.FromSeconds(5))
+            Log.Nota($"Kdrop: parte lenta no pedido {id}: {(estado.Gravados - posDaParte) / 1048576.0:0.0} MB em " +
+                     $"{duracaoDaParte.TotalSeconds:0.0} s");
 
         if (!ultima)
         {
@@ -1204,7 +1244,10 @@ public sealed class KdropService : IDisposable
             return;
         }
 
-        Log.Nota($"Kdrop: recebido {Path.GetFileName(estado.Caminho)} ({estado.Gravados} bytes)");
+        estado.Fechar();
+        var segundos = Math.Max(0.1, (DateTime.UtcNow - estado.InicioEm).TotalSeconds);
+        Log.Nota($"Kdrop: recebido {Path.GetFileName(estado.Caminho)} ({estado.Gravados / 1048576.0:0.0} MB em " +
+                 $"{segundos:0} s, {estado.Gravados / 1048576.0 / segundos:0.0} MB/s)");
 
         bool terminou;
         lock (pedido)

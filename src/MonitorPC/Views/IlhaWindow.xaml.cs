@@ -666,6 +666,33 @@ public partial class IlhaWindow : Window
         return false;
     }
 
+    private bool _avisouPorCima;
+
+    /// <summary>
+    /// A Kisland e "sempre por cima" (WS_EX_TOPMOST). Durante envios pelo
+    /// Kdrop ela foi vista indo para tras das janelas, visivel so com a area
+    /// de trabalho a mostra — o Windows (ou outro programa) tirou o "sempre
+    /// por cima" dela. A cada 2 s confere e, se perdeu, devolve, sem ativar a
+    /// janela e sem mexer na ordem entre janelas que continuam por cima. A
+    /// primeira vez vai para o log, para descobrir quando acontece.
+    /// </summary>
+    private void ConferirPorCima()
+    {
+        if (_handle == IntPtr.Zero || !_ativa || !IsVisible) return;
+
+        if ((GetWindowLong(_handle, EstiloEstendido) & SempreNaFrente) != 0) return;
+
+        SetWindowPos(_handle, PorCimaDeTudo, 0, 0, 0, 0, SemTamanho | SemMover | SemAtivarJanela);
+        if (!_avisouPorCima)
+        {
+            _avisouPorCima = true;
+            Log.Nota($"Kisland: tinha perdido o 'sempre por cima' (Kdrop {(_recebendoKdrop is null ? "parado" : "recebendo")}); devolvido");
+        }
+    }
+
+    /// <summary>WS_EX_TOPMOST.</summary>
+    private const int SempreNaFrente = 0x00000008;
+
     private WF.Screen MonitorDaIlha()
     {
         var escolhido = string.IsNullOrEmpty(_cfg.IlhaMonitor)
@@ -1016,6 +1043,8 @@ public partial class IlhaWindow : Window
     private void Relogio_Tick()
     {
         _segundos++;
+
+        if (_segundos % 2 == 0) ConferirPorCima();
 
         // O aparelho de som pode ter mudado (fone ligado, troca no painel de
         // som). Conferir e barato, mas nao precisa ser a cada segundo.
