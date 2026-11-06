@@ -112,6 +112,18 @@
 (function () {
   "use strict";
 
+  // Diagnóstico da galeria do iPhone (iOS 26 trava no ✓ desta página, e não
+  // na /teste, servida igual): ?diag= desliga partes da página para achar a
+  // culpada. "sem-consulta": pergunta ao PC uma vez só, ao abrir. "sem-foco":
+  // não liga os avisos de foco e de escolha aberta. "campo": mostra o campo
+  // comum do Safari no lugar do botão desenhado. Dá para juntar:
+  // ?diag=sem-consulta,sem-foco.
+  var diag = (function () {
+    try { return (new URLSearchParams(location.search).get("diag") || "").split(","); }
+    catch (e) { return []; }
+  })();
+  function semParte(nome) { return diag.indexOf(nome) >= 0; }
+
   // Quem e este celular, para o PC mostrar na Kisland e lembrar se a pessoa
   // marcar "aceitar sozinho". Guardado no navegador; sem isso, um por visita.
   var cliente;
@@ -286,13 +298,28 @@
   }
   ligarCampo($("arquivos"));
 
-  document.querySelector(".escolher").addEventListener("click", comecarEscolha);
-  // Escolha cancelada (X) nao dispara "change": a pagina sabe que ela fechou
-  // quando volta a ter o foco.
-  window.addEventListener("focus", function () { setTimeout(terminarEscolha, 500); });
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") setTimeout(terminarEscolha, 500);
-  });
+  if (!semParte("sem-foco")) {
+    document.querySelector(".escolher").addEventListener("click", comecarEscolha);
+    // Escolha cancelada (X) nao dispara "change": a pagina sabe que ela fechou
+    // quando volta a ter o foco.
+    window.addEventListener("focus", function () { setTimeout(terminarEscolha, 500); });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") setTimeout(terminarEscolha, 500);
+    });
+  }
+
+  if (semParte("campo")) {
+    var campoVisivel = document.createElement("style");
+    campoVisivel.textContent = "input[type=file]#arquivos{position:static;width:auto;height:auto;opacity:1;pointer-events:auto;color:var(--texto)} .escolher{display:none}";
+    document.head.appendChild(campoVisivel);
+  }
+
+  if (diag.length && diag[0]) {
+    var aviso = document.createElement("div");
+    aviso.className = "sec";
+    aviso.textContent = "Diagnóstico: " + diag.join(", ");
+    document.querySelector("main").insertBefore(aviso, document.querySelector("main").firstChild);
+  }
 
   // O iPhone chama toda foto de "image.jpg". Com nomes repetidos, cada uma
   // ganha um nome com a data e a hora, e um numero.
@@ -519,7 +546,7 @@
   });
 
   atualizar();
-  setInterval(atualizar, 2000);
+  if (!semParte("sem-consulta")) setInterval(atualizar, 2000);
 })();
 </script>
 </body>
