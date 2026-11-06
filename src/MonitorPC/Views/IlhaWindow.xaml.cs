@@ -2889,6 +2889,7 @@ public partial class IlhaWindow : Window
         PedidoKdrop.Visibility = Visibility.Collapsed;
         FecharTextoKdrop();
         QrKdrop.Visibility = Visibility.Collapsed;
+        RedePublicaKdrop.Visibility = Visibility.Collapsed;
         AreaKdrop.Visibility = Visibility.Collapsed;
     }
 
@@ -3239,6 +3240,7 @@ public partial class IlhaWindow : Window
         if (QrKdrop.Visibility == Visibility.Visible)
         {
             QrKdrop.Visibility = Visibility.Collapsed;
+            RedePublicaKdrop.Visibility = Visibility.Collapsed;
             MontarAparelhos();
             return;
         }
@@ -3265,8 +3267,39 @@ public partial class IlhaWindow : Window
         var fixo = _kdrop?.EnderecoFixo;
         FixoKdrop.Text = fixo is null ? "" : $"Endereço fixo, para salvar nos favoritos: {fixo.Replace("http://", "").TrimEnd('/')}";
         FixoKdrop.Visibility = Visivel(fixo is not null);
+
+        _ = ConferirRedePublica();
         QrKdrop.Visibility = Visibility.Visible;
         MontarAparelhos();
+    }
+
+    /// <summary>
+    /// Com o QR aberto, confere se o Windows marcou a rede como Publica. Nela
+    /// o Firewall barra o celular e a pagina fica carregando para sempre.
+    /// </summary>
+    private async Task ConferirRedePublica()
+    {
+        var categoria = await Task.Run(() => KdropService.CategoriaDaRede());
+        RedePublicaKdrop.Visibility = Visivel(categoria == "Public" && QrKdrop.Visibility == Visibility.Visible);
+    }
+
+    private async void TornarRedePrivada_Click(object sender, RoutedEventArgs e)
+    {
+        BotaoRedePrivada.IsEnabled = false;
+        BotaoRedePrivada.Content = "Mudando…";
+
+        var deu = await Task.Run(() => KdropService.TornarRedePrivada());
+
+        BotaoRedePrivada.IsEnabled = true;
+        BotaoRedePrivada.Content = "Tornar a rede Privada";
+        if (deu)
+        {
+            RedePublicaKdrop.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        TextoRedePublicaKdrop.Text = "O Windows não deixou mudar por aqui. Abra Configurações › Rede e Internet › Wi-Fi (ou Ethernet), " +
+                                     "toque na rede e escolha Rede privada.";
     }
 
     private static System.Windows.Media.Imaging.BitmapSource? GerarQr(string texto)

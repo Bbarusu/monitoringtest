@@ -568,10 +568,36 @@ public sealed class KdropService : IDisposable
     /// O IPv4 deste PC na rede de casa: o da placa ligada que tem um gateway
     /// (a que sai para o roteador), e nao o de placas virtuais.
     /// </summary>
-    public static string? IpLocal()
+    public static string? IpLocal() => PlacaDeCasa()?.Ip;
+
+    /// <summary>A placa da rede de casa: o IP que vai no QR Code e o indice dela no Windows.</summary>
+    public sealed record PlacaDeRede(string Ip, int Indice, string Nome);
+
+    // Placas que nao sao a rede de casa, mesmo com gateway: VPNs, maquinas
+    // virtuais e redes "de jogo". Com uma delas na frente, o QR Code levava a
+    // um IP que o celular nao alcanca e a pagina ficava carregando para sempre.
+    private static readonly string[] PlacasVirtuais =
+    {
+        "virtual", "vethernet", "hyper-v", "vmware", "virtualbox", "vbox", "tap-", "tap ", "tun",
+        "vpn", "wireguard", "wintun", "tailscale", "zerotier", "hamachi", "radmin", "openvpn",
+        "nordlynx", "proton", "cloudflare", "warp", "wsl", "docker", "npcap", "loopback", "bluetooth"
+    };
+
+    private static string? _placaAnterior;
+
+    /// <summary>
+    /// Escolhe a placa da rede de casa entre todas as ligadas com gateway:
+    /// fora as virtuais e de VPN, prefere Wi-Fi e cabo com IP de rede local
+    /// (192.168.x, 10.x, 172.16-31.x). Antes era a primeira com gateway, que
+    /// numa VPN ou maquina virtual nao era a certa.
+    /// </summary>
+    public static PlacaDeRede? PlacaDeCasa()
     {
         try
         {
+            PlacaDeRede? melhor = null;
+            var melhorNota = int.MinValue;
+
             foreach (var placa in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (placa.OperationalStatus != OperationalStatus.Up ||
@@ -583,16 +609,108 @@ public sealed class KdropService : IDisposable
                                                      !g.Address.Equals(IPAddress.Any)))
                     continue;
 
-                var ip = props.UnicastAddresses.FirstOrDefault(u => u.Address.AddressFamily == AddressFamily.InterNetwork);
-                if (ip is not null) return ip.Address.ToString();
+                var ip = props.UnicastAddresses.FirstOrDefault(u => u.Address.AddressFamily == AddressFamily.InterNetwork)?.Address;
+                if (ip is null) continue;
+
+                var nota = 0;
+                var descricao = (placa.Name + " " + placa.Description).ToLowerInvariant();
+                if (PlacasVirtuais.Any(descricao.Contains)) nota -= 100;
+                if (placa.NetworkInterfaceType is NetworkInterfaceType.Wireless80211) nota += 20;
+                else if (placa.NetworkInterfaceType is NetworkInterfaceType.Ethernet or NetworkInterfaceType.GigabitEthernet) nota += 15;
+                if (IpDeCasa(ip)) nota += 30;
+                if (ip.GetAddressBytes() is [169, 254, ..]) nota -= 200;
+
+                if (nota <= melhorNota) continue;
+
+                int indice;
+                try { indice = props.GetIPv4Properties()?.Index ?? -1; }
+                catch { indice = -1; }
+
+                melhor = new PlacaDeRede(ip.ToString(), indice, placa.Name);
+                melhorNota = nota;
             }
+
+            // Fica no log qual placa foi escolhida (so quando muda), para
+            // achar o motivo quando o celular nao abre a pagina.
+            var resumo = melhor is null ? "nenhuma" : $"{melhor.Nome} ({melhor.Ip})";
+            if (resumo != _placaAnterior)
+            {
+                _placaAnterior = resumo;
+                Log.Nota($"Kdrop: placa da rede de casa: {resumo}");
+            }
+
+            return melhor;
         }
         catch (Exception ex)
         {
             Log.Erro("Kdrop: endereço", ex);
+            return null;
         }
+    }
 
-        return null;
+    private static bool IpDeCasa(IPAddress ip) => ip.GetAddressBytes() switch
+    {
+        [192, 168, ..] => true,
+        [10, ..] => true,
+        [172, var b, ..] when b is >= 16 and <= 31 => true,
+        _ => false
+    };
+
+    /// <summary>
+    /// Como o Windows classifica a rede de casa: "Public", "Private" ou
+    /// "DomainAuthenticated". Em rede Publica o Firewall barra o celular (a
+    /// regra do Kdrop e so para redes privadas), e a pagina nunca carrega.
+    /// Nulo se nao deu para saber.
+    /// </summary>
+    public static async Task<string?> CategoriaDaRede()
+    {
+        if (PlacaDeCasa() is not { Indice: >= 0 } placa) return null;
+
+        var saida = await PowerShell($"(Get-NetConnectionProfile -InterfaceIndex {placa.Indice}).NetworkCategory");
+        var categoria = saida?.Trim();
+        if (!string.IsNullOrEmpty(categoria)) Log.Nota($"Kdrop: rede de {placa.Nome} classificada como {categoria}");
+        return string.IsNullOrEmpty(categoria) ? null : categoria;
+    }
+
+    /// <summary>Passa a rede de casa para Privada (a pessoa pediu, pelo botao da Kisland).</summary>
+    public static async Task<bool> TornarRedePrivada()
+    {
+        if (PlacaDeCasa() is not { Indice: >= 0 } placa) return false;
+
+        await PowerShell($"Set-NetConnectionProfile -InterfaceIndex {placa.Indice} -NetworkCategory Private");
+        var depois = await CategoriaDaRede();
+        Log.Nota($"Kdrop: rede passada para Privada a pedido: {depois ?? "sem resposta"}");
+        return depois is "Private";
+    }
+
+    private static async Task<string?> PowerShell(string comando)
+    {
+        try
+        {
+            using var p = Process.Start(new ProcessStartInfo("powershell.exe",
+                $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{comando}\"")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            });
+            if (p is null) return null;
+
+            var saida = p.StandardOutput.ReadToEndAsync();
+            var erro = p.StandardError.ReadToEndAsync();
+            using var prazo = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            await p.WaitForExitAsync(prazo.Token);
+
+            var textoDeErro = (await erro).Trim();
+            if (textoDeErro.Length > 0) Log.Nota($"Kdrop: PowerShell: {textoDeErro.Split('\n')[0].Trim()}");
+            return await saida;
+        }
+        catch (Exception ex)
+        {
+            Log.Erro("Kdrop: PowerShell", ex);
+            return null;
+        }
     }
 
     // ------------------------------------------------------------------
