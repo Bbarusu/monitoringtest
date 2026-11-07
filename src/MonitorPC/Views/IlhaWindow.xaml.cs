@@ -178,6 +178,7 @@ public partial class IlhaWindow : Window
 
         _escondidaPorTelaCheia = false;
         Show();
+        TrazerParaFrente();
         Posicionar();
         _relogio.Start();
         _cursor.Start();
@@ -433,6 +434,7 @@ public partial class IlhaWindow : Window
             if (_ativa && !_escondidaPorTelaCheia)
             {
                 Show();
+                TrazerParaFrente();
                 Posicionar();
                 MostrarEstado();
             }
@@ -681,15 +683,117 @@ public partial class IlhaWindow : Window
     {
         if (_handle == IntPtr.Zero || !_ativa || !IsVisible) return;
 
-        if ((GetWindowLong(_handle, EstiloEstendido) & SempreNaFrente) != 0) return;
-
-        SetWindowPos(_handle, PorCimaDeTudo, 0, 0, 0, 0, SemTamanho | SemMover | SemAtivarJanela);
-        if (!_avisouPorCima)
+        if ((GetWindowLong(_handle, EstiloEstendido) & SempreNaFrente) == 0)
         {
-            _avisouPorCima = true;
-            Log.Nota($"Kisland: tinha perdido o 'sempre por cima' (Kdrop {(_recebendoKdrop is null ? "parado" : "recebendo")}); devolvido");
+            TrazerParaFrente();
+            if (!_avisouPorCima)
+            {
+                _avisouPorCima = true;
+                Log.Nota($"Kisland: tinha perdido o 'sempre por cima' (Kdrop {(_recebendoKdrop is null ? "parado" : "recebendo")}); devolvido");
+            }
+            return;
+        }
+
+        // Com o "sempre por cima" intacto, ainda pode haver janela na frente
+        // dela: outra "sempre por cima" que passou a frente. Se ha, volta para
+        // o topo e anota quem era.
+        if (QuemCobre() is { } cobre)
+        {
+            // Janela do tamanho do monitor inteiro e um jogo ou video em tela
+            // cheia que se pos na frente de proposito: ali vale a opcao de
+            // tela cheia, e a Kisland nao briga. So fica no log.
+            if (!cobre.TelaInteira) TrazerParaFrente();
+            if (_cobertasAvisadas.Count < 20 && _cobertasAvisadas.Add(cobre.Chave))
+                Log.Nota($"Kisland: estava atrás de {cobre.Descricao}" +
+                         (cobre.TelaInteira ? "; tela inteira, ficou atrás" : "; trazida de volta para a frente"));
         }
     }
+
+    private readonly HashSet<string> _cobertasAvisadas = new();
+
+    /// <summary>Topo da faixa das janelas "sempre por cima", sem ativar nem mexer.</summary>
+    private void TrazerParaFrente()
+    {
+        if (_handle == IntPtr.Zero) return;
+        SetWindowPos(_handle, PorCimaDeTudo, 0, 0, 0, 0, SemTamanho | SemMover | SemAtivarJanela);
+    }
+
+    // Janelas do proprio Windows que podem ficar na frente dela de proposito:
+    // menu de contexto, dica, barra de tarefas, Iniciar, Central de
+    // notificacoes, Alt+Tab, area de trabalho.
+    private static readonly HashSet<string> FrentePermitida = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "#32768", "tooltips_class32", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "NotifyIconOverflowWindow",
+        "Windows.UI.Core.CoreWindow", "XamlExplorerHostIslandWindow", "TopLevelWindowForOverflowXamlIsland",
+        "Xaml_WindowedPopupClass", "Progman", "WorkerW", "ForegroundStaging", "MultitaskingViewFrame",
+        "TaskSwitcherWnd", "SysShadow", "IME", "MSCTFIME UI"
+    };
+
+    /// <summary>
+    /// A primeira janela de outro programa que esta acima da Kisland na
+    /// ordem do Windows, visivel e por cima da area dela. Janelas
+    /// transparentes ao clique (sobreposicoes de jogo, gravadores) e as do
+    /// proprio Windows listadas acima nao contam.
+    /// </summary>
+    private (string Chave, string Descricao, bool TelaInteira)? QuemCobre()
+    {
+        if (!GetWindowRect(_handle, out var minha)) return null;
+
+        var meuPid = Environment.ProcessId;
+        var janela = GetWindow(_handle, AnteriorNaOrdem);
+        for (var i = 0; janela != IntPtr.Zero && i < 500; i++, janela = GetWindow(janela, AnteriorNaOrdem))
+        {
+            if (!IsWindowVisible(janela)) continue;
+
+            GetWindowThreadProcessId(janela, out var pid);
+            if (pid == meuPid) continue;
+
+            if (!GetWindowRect(janela, out var r) ||
+                r.Direita <= minha.Esquerda || r.Esquerda >= minha.Direita ||
+                r.Baixo <= minha.Topo || r.Topo >= minha.Baixo)
+                continue;
+
+            if (DwmGetWindowAttribute(janela, Encoberta, out var encoberta, sizeof(int)) == 0 && encoberta != 0) continue;
+
+            var estilo = GetWindowLong(janela, EstiloEstendido);
+            if ((estilo & TransparenteAoClique) != 0) continue;
+
+            var classe = new System.Text.StringBuilder(256);
+            GetClassName(janela, classe, classe.Capacity);
+            if (FrentePermitida.Contains(classe.ToString())) continue;
+
+            string processo;
+            try { processo = System.Diagnostics.Process.GetProcessById(pid).ProcessName; }
+            catch { processo = $"pid {pid}"; }
+
+            var porCima = (estilo & SempreNaFrente) != 0 ? "sempre por cima" : "comum";
+            var tela = MonitorDaIlha().Bounds;
+            var telaInteira = r.Esquerda <= tela.Left && r.Topo <= tela.Top &&
+                              r.Direita >= tela.Right && r.Baixo >= tela.Bottom;
+            return ($"{processo}|{classe}",
+                    $"{processo} (classe {classe}, janela {porCima}, {r.Direita - r.Esquerda}×{r.Baixo - r.Topo} em {r.Esquerda},{r.Topo})",
+                    telaInteira);
+        }
+
+        return null;
+    }
+
+    private const uint AnteriorNaOrdem = 3; // GW_HWNDPREV
+    private const int Encoberta = 14;       // DWMWA_CLOAKED
+    private const int TransparenteAoClique = 0x20; // WS_EX_TRANSPARENT
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetWindow(IntPtr janela, uint relacao);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindowVisible(IntPtr janela);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr janela, System.Text.StringBuilder classe, int tamanho);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr janela, int atributo, out int valor, int tamanho);
 
     /// <summary>WS_EX_TOPMOST.</summary>
     private const int SempreNaFrente = 0x00000008;
@@ -1373,6 +1477,7 @@ public partial class IlhaWindow : Window
             if (!_escondidaPorInatividade)
             {
                 Show();
+                TrazerParaFrente();
                 Posicionar();
                 MostrarEstado();
             }
@@ -3444,6 +3549,7 @@ public partial class IlhaWindow : Window
         {
             _escondidaPorInatividade = false;
             Show();
+            TrazerParaFrente();
             Posicionar();
         }
 
