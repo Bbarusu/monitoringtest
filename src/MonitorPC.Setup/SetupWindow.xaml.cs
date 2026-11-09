@@ -13,28 +13,20 @@ public partial class SetupWindow : Window
     private readonly bool _desinstalando = App.Desinstalando;
     private string _pasta = Instalacao.PastaPadrao;
 
-    /// <summary>
-    /// Aberto pelo app para atualizar, com uma instalação anterior no lugar.
-    /// Nesse caso as opções não aparecem: valem as da instalação que existe.
-    /// </summary>
     private bool _atualizando;
     private OpcoesDeInstalacao? _anteriores;
 
-    /// <summary>O que falhou sem impedir a instalação, para a tela final dizer.</summary>
     private List<string> _ressalvas = new();
 
     public SetupWindow()
     {
         InitializeComponent();
 
-        // A janela cresce com o conteudo; aqui ela ganha o teto da tela.
         SourceInitialized += (_, _) => CaberNaTela();
         Loaded += (_, _) => CaberNaTela();
         SizeChanged += (_, _) => CaberNaTela();
         DpiChanged += (_, _) => CaberNaTela();
 
-        // Uma instalacao anterior manda: reinstalar por cima da mesma pasta
-        // evita dois Monitores concorrendo pelo mesmo driver.
         if (Instalacao.PastaInstalada() is { Length: > 0 } anterior) _pasta = anterior;
 
         CaminhoDeInstalacao.Text = _pasta;
@@ -44,16 +36,6 @@ public partial class SetupWindow : Window
         else if (App.Atualizando && Instalacao.PastaInstalada() is { Length: > 0 }) PrepararAtualizacao();
     }
 
-    /// <summary>
-    /// O painel de atualização: cabeçalho com de qual versão para qual, o que
-    /// mudou, e a barra já andando. Ninguém precisa clicar em "Instalar" — o
-    /// clique foi o "Baixar e instalar" lá no app.
-    ///
-    /// A confirmação do Windows não depende daqui. Quando o app roda elevado,
-    /// que é o caso de quem instalou com acesso completo aos sensores, ele abre
-    /// este instalador elevado direto e o Windows não pergunta nada. Sem isso,
-    /// a pergunta aparece uma vez — escrever em Arquivos de Programas exige.
-    /// </summary>
     private void PrepararAtualizacao()
     {
         _atualizando = true;
@@ -78,8 +60,6 @@ public partial class SetupWindow : Window
         {
             _anteriores = await Task.Run(() => Instalacao.OpcoesAnteriores());
 
-            // Instalação que sumiu ou não deu para ler: volta ao caminho de
-            // sempre, com as opções na tela, em vez de adivinhar.
             if (_anteriores is null)
             {
                 _atualizando = false;
@@ -93,12 +73,6 @@ public partial class SetupWindow : Window
         };
     }
 
-    /// <summary>
-    /// As notas da versão, embutidas pelo projeto: só a seção "## Novidades",
-    /// a parte para quem usa. "## Detalhes" é técnica e fica na página da
-    /// release. O lembrete em branco que o arquivo tem entre uma versão e outra
-    /// não conta como nota.
-    /// </summary>
     private static string? Notas()
     {
         try
@@ -122,20 +96,11 @@ public partial class SetupWindow : Window
         }
     }
 
-    /// <summary>
-    /// O cartão de aviso explica o que a escolha de administrador significa, e
-    /// muda junto com ela. Deixar um texto fixo falando de privilégio elevado
-    /// com a caixa desmarcada seria contar outra história.
-    /// </summary>
     private void Administrador_Alterado(object sender, RoutedEventArgs e)
     {
         if (AvisoDoDriver is null) return;
 
         AvisoDoDriver.Text = OpcaoAdministrador.IsChecked == true
-            // O texto anterior dizia que "o driver vem dentro da biblioteca de
-            // sensores". Era falso: a biblioteca não embute driver nenhum desde
-            // que trocou a família WinRing0 pelo PawnIO, e foi essa frase errada
-            // que sustentou a ideia de que bastava elevar.
             ? "Ler temperatura de CPU e placa-mãe exige um driver em modo kernel, que só carrega em modo administrador. O instalador registra uma tarefa do Windows para o app subir como admin sem pedir confirmação toda vez. O driver em si é o PawnIO, instalado no sistema pela opção abaixo."
             : "Sem modo admin o driver de sensores não carrega. O app abre e funciona, mas temperatura de CPU, tensões, rotação de ventoinhas e tudo que vem do chip da placa-mãe ficam indisponíveis. GPU, discos, memória e uso de CPU continuam normais. Dá para mudar reinstalando.";
     }
@@ -146,12 +111,8 @@ public partial class SetupWindow : Window
         Subtitulo.Text = "Remove o app, a tarefa dos sensores e os atalhos.";
         BotaoInstalar.Content = "Desinstalar";
 
-        // As opções são de instalação: na saída não há o que escolher. O cartão
-        // de aviso continua, porque explica o que a tarefa do Windows era.
         BlocoDeOpcoes.Visibility = Visibility.Collapsed;
     }
-
-    // ------------------------------------------------------------------
 
     private async void Instalar_Click(object sender, RoutedEventArgs e) => await Rodar();
 
@@ -166,8 +127,6 @@ public partial class SetupWindow : Window
         {
             Etapa.Text = texto;
 
-            // A barra anda por etapa concluída, e não por tempo: uma barra que
-            // estima tempo erra sempre, e aqui as etapas são poucas e nomeadas.
             passos++;
             BarraDeProgresso.Width = Math.Min(passos / 8.0, 1) * 432;
         });
@@ -221,9 +180,6 @@ public partial class SetupWindow : Window
 
         ResultadoTitulo.Text = _ressalvas.Count == 0 ? "Instalado" : "Instalado, com ressalvas";
 
-        // As ressalvas vêm primeiro: o que não deu certo importa mais que o
-        // texto de boas-vindas, e escondê-las no fim repetiria o erro de
-        // instalar em silêncio.
         var texto = _ressalvas.Count > 0 ? string.Join("\n\n", _ressalvas) + "\n\n" : "";
 
         ResultadoDetalhe.Text = texto + (OpcaoAdministrador.IsChecked == true
@@ -239,14 +195,8 @@ public partial class SetupWindow : Window
                 System.Windows.Controls.TextBlock.ForegroundProperty, "AlertaTexto");
     }
 
-    /// <summary>
-    /// Fim da atualização: o app volta sozinho, e a janela some sozinha
-    /// quando não há nada a dizer além de "deu certo".
-    /// </summary>
     private void ConcluirAtualizacao()
     {
-        // A dedução não instala o driver, mas não pode calar a falta dele:
-        // com acesso aos sensores e sem o PawnIO, a temperatura sai vazia.
         if (_anteriores is { AcessoCompletoAosSensores: true } && !Instalacao.DriverPresente())
             _ressalvas.Add("O PawnIO, o driver dos sensores, não está instalado. Sem ele, " +
                            "temperatura de CPU e ventoinhas ficam vazias. Baixe em pawnio.eu " +
@@ -287,17 +237,12 @@ public partial class SetupWindow : Window
         ResultadoTitulo.Text = _desinstalando ? "A desinstalação falhou"
                              : _atualizando ? "A atualização falhou"
                              : "A instalação falhou";
-        // TextBlock.ForegroundProperty, e nao o ForegroundProperty herdado de
-        // Control: sao propriedades diferentes, e a do Control nao pinta nada
-        // num TextBlock.
         ResultadoTitulo.SetResourceReference(
             System.Windows.Controls.TextBlock.ForegroundProperty, "AlertaTexto");
         ResultadoDetalhe.Text = ex.Message;
 
         BotaoAbrirApp.Visibility = Visibility.Collapsed;
     }
-
-    // ------------------------------------------------------------------
 
     private void AbrirApp_Click(object sender, RoutedEventArgs e)
     {
@@ -307,13 +252,6 @@ public partial class SetupWindow : Window
 
     private void AbrirOApp()
     {
-        // Pela tarefa, e não pelo executável: assim o app já sobe elevado, com
-        // os sensores de CPU e placa-mãe disponíveis desde o primeiro segundo.
-        //
-        // O código de saída precisa ser conferido. O schtasks inicia sempre —
-        // o que falha é a tarefa lá dentro —, então Process.Start devolver um
-        // processo não prova nada, e era por isso que este botão não abria
-        // nada quando a tarefa não existia.
         if (!Rodou("schtasks.exe", $"/Run /TN \"{Instalacao.NomeDaTarefa}\""))
         {
             try
@@ -366,26 +304,15 @@ public partial class SetupWindow : Window
         }
         catch
         {
-            // Diagnóstico, não funcionalidade.
         }
     }
 
     private void FecharJanela_Click(object sender, RoutedEventArgs e) => Close();
 
-    /// <summary>
-    /// Nao deixa a janela passar da altura util do monitor em que ela esta.
-    ///
-    /// Com SizeToContent ela pede a altura inteira do conteudo, o que numa
-    /// tela grande e certo e num notebook corta os botoes la embaixo. Com o
-    /// teto, quem encolhe e o meio, que ganha barra de rolagem; o cabecalho e
-    /// os botoes continuam a vista. Numa tela em que tudo cabe, nada muda.
-    /// Tambem puxa a janela para cima se ela estiver passando do fim da tela.
-    /// </summary>
     private void CaberNaTela()
     {
         var area = AreaDoMonitor();
 
-        // Uma leitura estranha da area util nao pode deixar a janela inutil.
         if (area.Height < 240) return;
 
         if (Math.Abs(MaxHeight - area.Height) > 0.5) MaxHeight = area.Height;
@@ -394,7 +321,6 @@ public partial class SetupWindow : Window
             Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - ActualHeight));
     }
 
-    /// <summary>Area util do monitor da janela, em unidades do WPF.</summary>
     private Rect AreaDoMonitor()
     {
         try
@@ -406,7 +332,6 @@ public partial class SetupWindow : Window
             var info = new InfoDoMonitor { Tamanho = System.Runtime.InteropServices.Marshal.SizeOf<InfoDoMonitor>() };
             if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info)) return SystemParameters.WorkArea;
 
-            // A API fala em pixels; o WPF, em unidades que seguem a escala.
             var escala = System.Windows.Media.VisualTreeHelper.GetDpi(this);
             var x = escala.DpiScaleX <= 0 ? 1 : escala.DpiScaleX;
             var y = escala.DpiScaleY <= 0 ? 1 : escala.DpiScaleY;
@@ -450,7 +375,6 @@ public partial class SetupWindow : Window
     [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
     private static extern bool GetMonitorInfo(IntPtr monitor, ref InfoDoMonitor info);
 
-    /// <summary>A janela nao tem barra de título, então o painel inteiro arrasta.</summary>
     private void Painel_Arrastar(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();

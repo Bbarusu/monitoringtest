@@ -14,38 +14,20 @@ using System.Text.Json.Serialization;
 
 namespace MonitorPC.Services;
 
-/// <summary>Um aparelho que aceita envios do Kdrop sem perguntar.</summary>
 public sealed class AparelhoConfiavel
 {
     public string Id { get; set; } = "";
     public string Nome { get; set; } = "";
 }
 
-/// <summary>
-/// Um aparelho da casa que o Kdrop enxerga agora: outro PC com KInfo (achado
-/// pela rede) ou um celular (com a bandeja aberta no navegador).
-/// </summary>
-/// <param name="Endereco">Para PCs: "http://192.168.0.20:48620/". Celulares nao tem.</param>
 public sealed record AparelhoKdrop(string Id, string Nome, bool EhPc, string? Endereco, bool EhNotebook);
 
-/// <summary>
-/// Um item de uma bandeja, como o Kdrop mostra para fora: arquivo ou pasta
-/// (que viaja como .zip). Tamanho -1 para pasta: somar tudo dentro dela a
-/// cada anuncio custaria caro.
-/// </summary>
 public sealed record ItemKdrop(string Id, string Nome, long Tamanho, bool Pasta, string? Texto = null);
 
-/// <summary>
-/// Textos e links na bandeja. A bandeja e uma lista de caminhos; um texto
-/// entra nela como um "caminho" com este prefixo e o texto inteiro depois,
-/// e assim passa por tudo o que a bandeja ja faz (anuncio, pagina do
-/// celular, outros PCs) sem uma segunda lista.
-/// </summary>
 public static class TextoNaBandeja
 {
     public const string Prefixo = "kdrop-texto:";
 
-    /// <summary>Texto maior que isso e cortado: a bandeja e para recados e links, nao para documentos.</summary>
     public const int Maximo = 20000;
 
     public static bool Eh(string item) => item.StartsWith(Prefixo, StringComparison.Ordinal);
@@ -59,7 +41,6 @@ public static class TextoNaBandeja
         return Prefixo + limpo;
     }
 
-    /// <summary>E um link sozinho (http ou https), que da para abrir no navegador?</summary>
     public static bool EhLink(string texto)
     {
         var t = texto.Trim();
@@ -68,7 +49,6 @@ public static class TextoNaBandeja
                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
-    /// <summary>Uma linha curta para mostrar: o host do link, ou o comeco do texto.</summary>
     public static string Resumo(string texto, int tamanho = 60)
     {
         var t = texto.Trim();
@@ -86,7 +66,6 @@ public static class TextoNaBandeja
 
 public enum EstadoDoPedido { Esperando, Aceito, Recusado, Expirado, Concluido }
 
-/// <summary>Um envio chegando: quem manda, o que, e em que pe esta.</summary>
 public sealed class PedidoKdrop
 {
     public string Id { get; init; } = "";
@@ -96,21 +75,14 @@ public sealed class PedidoKdrop
     public List<ArquivoDoPedido> Arquivos { get; init; } = new();
     public DateTime CriadoEm { get; init; } = DateTime.UtcNow;
 
-    /// <summary>Pedido de texto ou link, em vez de arquivos: chega inteiro, sem envio depois do aceite.</summary>
     public string? Texto { get; init; }
 
     public EstadoDoPedido Estado { get; set; }
     public long Recebidos { get; set; }
     public List<string> Salvos { get; } = new();
 
-    /// <summary>
-    /// Ultimo sinal de vida do envio: o aceite ou a ultima parte que chegou.
-    /// Um pedido aceito so e esquecido depois de 30 minutos parado — um video
-    /// grande pode levar mais que isso, mas nunca 30 minutos sem mandar nada.
-    /// </summary>
     public DateTime AtividadeEm { get; set; } = DateTime.UtcNow;
 
-    /// <summary>Cada arquivo do pedido, na ordem declarada: nulo ate a primeira parte chegar.</summary>
     internal ArquivoChegando?[] Chegando { get; set; } = Array.Empty<ArquivoChegando?>();
 
     public long Total => Arquivos.Sum(a => Math.Max(0, a.Tamanho));
@@ -124,32 +96,18 @@ public sealed class ArquivoDoPedido
     public long Tamanho { get; set; }
 }
 
-/// <summary>
-/// Um arquivo do pedido sendo gravado. O nome no disco e escolhido uma vez,
-/// na primeira parte, e as seguintes continuam o mesmo arquivo — escolher a
-/// cada parte criava "video (2).mp4", "video (3).mp4"...
-/// </summary>
 internal sealed class ArquivoChegando
 {
     public string Caminho { get; init; } = "";
 
-    /// <summary>Bytes ja gravados, do inicio: e de onde a proxima parte continua.</summary>
     public long Gravados { get; set; }
 
     public bool Pronto { get; set; }
 
-    /// <summary>Uma parte esta sendo gravada agora: outra para o mesmo arquivo espera.</summary>
     public bool Ocupado { get; set; }
 
-    /// <summary>
-    /// O arquivo fica aberto de uma parte para a outra. Abrir e fechar a cada
-    /// parte fazia o antivirus do Windows reler o arquivo inteiro a cada
-    /// fechamento — 8 MB, 16, 24... —, e um video de 137 MB levava minutos.
-    /// Fecha quando termina, quando o envio e abandonado e quando o Kdrop para.
-    /// </summary>
     public FileStream? Fluxo { get; set; }
 
-    /// <summary>Quando a primeira parte chegou, para o log dizer a velocidade.</summary>
     public DateTime InicioEm { get; init; } = DateTime.UtcNow;
 
     public void Fechar()
@@ -160,31 +118,11 @@ internal sealed class ArquivoChegando
     }
 }
 
-/// <summary>
-/// O Kdrop: a bandeja da Kisland aberta para a casa.
-///
-/// Tres pecas, todas so na rede local e sem servico de fora:
-/// - Um servidor HTTP na porta 48620, que serve a pagina do celular (a
-///   bandeja vista de fora), entrega os arquivos da bandeja e recebe envios.
-/// - Um aviso por UDP na porta 48621, a cada poucos segundos, para os outros
-///   KInfo da rede saberem que este esta ligado — e e assim que os PCs
-///   aparecem uns para os outros e para o celular.
-/// - O cliente que manda para outro PC: pede, espera o aceite, envia.
-///
-/// Todo envio recebido passa pelo aceite na Kisland, a nao ser de aparelho
-/// que a pessoa marcou como confiavel. A conexao e HTTP comum: criptografia
-/// pediria certificado, e o celular mostraria aviso de site inseguro. O que
-/// protege e o aceite, e a regra do Firewall so para redes privadas.
-///
-/// O servidor HTTP do Windows (HttpListener) exige o app elevado para ouvir
-/// fora do proprio PC — o KInfo instalado com acesso completo ja roda assim.
-/// </summary>
 public sealed class KdropService : IDisposable
 {
     public const int Porta = 48620;
     public const int PortaDescoberta = 48621;
 
-    /// <summary>Sem resposta neste tempo, o pedido conta como recusado.</summary>
     public static readonly TimeSpan PrazoDoPedido = TimeSpan.FromSeconds(60);
 
     private static readonly TimeSpan PcSome = TimeSpan.FromSeconds(16);
@@ -221,32 +159,24 @@ public sealed class KdropService : IDisposable
         public readonly List<string> Novos = new();
     }
 
-    /// <summary>Por que nao esta rodando, quando nao esta.</summary>
     public string? Motivo { get; private set; }
 
     public bool Rodando => _http is not null;
 
     public string NomeDestePc => string.IsNullOrWhiteSpace(_cfg.KdropNome) ? Environment.MachineName : _cfg.KdropNome!.Trim();
 
-    /// <summary>Endereco para o celular, como vai no QR Code. Nulo sem rede.</summary>
     public static string? Endereco => IpLocal() is { } ip ? $"http://{ip}:{Porta}/" : null;
 
-    // Avisos, em thread qualquer.
     public event Action<PedidoKdrop>? PedidoChegou;
     public event Action<PedidoKdrop>? PedidoMudou;
     public event Action<string>? ArquivoRecebido;
     public event Action? AparelhosMudaram;
     public event Action? BandejasMudaram;
 
-    /// <summary>Um texto ou link chegou (aceito, ou de aparelho confiavel).</summary>
     public event Action<PedidoKdrop>? TextoRecebido;
 
     private readonly NomeNaRede _nomeNaRede = new();
 
-    /// <summary>
-    /// O endereco fixo deste PC ("http://kdrop-desktop.local:48620/"), para
-    /// favoritar no celular. Nulo se o nome nao pode ser anunciado na rede.
-    /// </summary>
     public string? EnderecoFixo => _nomeNaRede.Nome is { } nome ? $"http://{nome}:{Porta}/" : null;
 
     public KdropService(AppConfig cfg, Func<IReadOnlyList<string>> bandeja)
@@ -254,9 +184,6 @@ public sealed class KdropService : IDisposable
         _cfg = cfg;
         _bandeja = bandeja;
     }
-
-    // ------------------------------------------------------------------
-    // Ligar e desligar
 
     public bool Iniciar()
     {
@@ -270,8 +197,6 @@ public sealed class KdropService : IDisposable
 
         try
         {
-            // Em segundo plano: o netsh leva alguns instantes, e o servidor
-            // pode subir antes das regras.
             _ = Task.Run(LiberarNoFirewall);
 
             var http = new HttpListener();
@@ -313,8 +238,6 @@ public sealed class KdropService : IDisposable
         _celulares.Clear();
         _bandejasDosPcs.Clear();
 
-        // Arquivos que estavam chegando ficam como estao (incompletos), mas
-        // fechados: aberto, o arquivo ficaria preso ate o app fechar.
         foreach (var pedido in _pedidos.Values)
             lock (pedido)
                 foreach (var chegando in pedido.Chegando)
@@ -323,17 +246,6 @@ public sealed class KdropService : IDisposable
 
     public void Dispose() => Parar();
 
-    /// <summary>
-    /// Regras de entrada no Firewall do Windows para as duas portas, so para
-    /// redes privadas e de dominio: numa rede publica (cafe, aeroporto) o
-    /// Kdrop fica fechado. Cria uma vez; se ja existe, nao mexe.
-    /// </summary>
-    /// <summary>
-    /// Refaz as regras do Kdrop no Firewall a cada inicio. Antes so criava se
-    /// nao existisse uma com o nome: uma regra desativada, pela metade (so a
-    /// do UDP) ou mexida por antivirus ficava como estava, e o celular era
-    /// barrado sem aviso. Apagar e criar de novo deixa sempre do jeito certo.
-    /// </summary>
     private static void LiberarNoFirewall()
     {
         const string nome = "KInfo Kdrop";
@@ -373,10 +285,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    // ------------------------------------------------------------------
-    // Aparelhos por perto
-
-    /// <summary>PCs e celulares vistos ha pouco, PCs primeiro.</summary>
     public IReadOnlyList<AparelhoKdrop> Aparelhos()
     {
         var agora = DateTime.UtcNow;
@@ -391,7 +299,6 @@ public sealed class KdropService : IDisposable
         return lista.OrderByDescending(a => a.EhPc).ThenBy(a => a.Nome, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
-    /// <summary>Avisa a Kisland quando alguem chega ou some, e so entao.</summary>
     private void ConferirAparelhos()
     {
         var assinatura = string.Join("|", Aparelhos().Select(a => a.Id + a.Nome));
@@ -404,10 +311,6 @@ public sealed class KdropService : IDisposable
         ConferirBandejas();
     }
 
-    /// <summary>
-    /// O que esta na bandeja de cada outro PC da casa, de quem esta ligado
-    /// agora. Chega junto com o anuncio de cada um, sem precisar perguntar.
-    /// </summary>
     public IReadOnlyList<(AparelhoKdrop Pc, IReadOnlyList<ItemKdrop> Itens)> BandejasDosPcs() =>
         Aparelhos()
             .Where(a => a.EhPc)
@@ -424,11 +327,6 @@ public sealed class KdropService : IDisposable
         BandejasMudaram?.Invoke();
     }
 
-    /// <summary>
-    /// A bandeja deste PC mudou (algo entrou ou saiu): anuncia ja, para os
-    /// outros PCs verem sem esperar o proximo anuncio. O celular ve na
-    /// proxima pergunta, em ate 2 s.
-    /// </summary>
     public void BandejaMudou()
     {
         string assinatura;
@@ -442,11 +340,6 @@ public sealed class KdropService : IDisposable
         catch (ObjectDisposedException) { }
     }
 
-    /// <summary>
-    /// Os itens da bandeja deste PC que ainda existem: arquivos, pastas e
-    /// textos. No anuncio pela rede o texto vai cortado (o pacote e pequeno);
-    /// quem quer o texto inteiro busca pelo id.
-    /// </summary>
     private List<ItemKdrop> MinhaBandeja(bool textoInteiro = true)
     {
         var itens = new List<ItemKdrop>();
@@ -469,7 +362,6 @@ public sealed class KdropService : IDisposable
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // Sumiu ou ficou sem acesso no meio: fica de fora desta vez.
             }
         }
 
@@ -484,7 +376,6 @@ public sealed class KdropService : IDisposable
         public int Porta { get; set; }
         public bool Notebook { get; set; }
 
-        /// <summary>O que esta na bandeja de quem anuncia (ate 12 itens, cabe folgado num pacote).</summary>
         public List<ItemKdrop>? Bandeja { get; set; }
     }
 
@@ -521,7 +412,6 @@ public sealed class KdropService : IDisposable
                 }
             }, fim);
 
-            // Anuncia logo e a cada 5 s; aproveita para notar quem sumiu.
             _anuncio = new System.Threading.Timer(_ =>
             {
                 try
@@ -539,7 +429,6 @@ public sealed class KdropService : IDisposable
                 }
                 catch (Exception ex) when (ex is SocketException or ObjectDisposedException)
                 {
-                    // Sem rede agora; tenta de novo no proximo anuncio.
                 }
 
                 ConferirAparelhos();
@@ -549,15 +438,12 @@ public sealed class KdropService : IDisposable
         }
         catch (Exception ex)
         {
-            // Sem descoberta o Kdrop ainda funciona com o celular; so os
-            // outros PCs nao aparecem.
             Log.Erro("Kdrop: abrir descoberta", ex);
         }
     }
 
     private static bool? _notebook;
 
-    /// <summary>Tem bateria: e notebook. So para o icone do aparelho.</summary>
     private static bool EhNotebook()
     {
         if (_notebook is { } ja) return ja;
@@ -574,18 +460,10 @@ public sealed class KdropService : IDisposable
         return _notebook.Value;
     }
 
-    /// <summary>
-    /// O IPv4 deste PC na rede de casa: o da placa ligada que tem um gateway
-    /// (a que sai para o roteador), e nao o de placas virtuais.
-    /// </summary>
     public static string? IpLocal() => PlacaDeCasa()?.Ip;
 
-    /// <summary>A placa da rede de casa: o IP que vai no QR Code e o indice dela no Windows.</summary>
     public sealed record PlacaDeRede(string Ip, int Indice, string Nome);
 
-    // Placas que nao sao a rede de casa, mesmo com gateway: VPNs, maquinas
-    // virtuais e redes "de jogo". Com uma delas na frente, o QR Code levava a
-    // um IP que o celular nao alcanca e a pagina ficava carregando para sempre.
     private static readonly string[] PlacasVirtuais =
     {
         "virtual", "vethernet", "hyper-v", "vmware", "virtualbox", "vbox", "tap-", "tap ", "tun",
@@ -595,12 +473,6 @@ public sealed class KdropService : IDisposable
 
     private static string? _placaAnterior;
 
-    /// <summary>
-    /// Escolhe a placa da rede de casa entre todas as ligadas com gateway:
-    /// fora as virtuais e de VPN, prefere Wi-Fi e cabo com IP de rede local
-    /// (192.168.x, 10.x, 172.16-31.x). Antes era a primeira com gateway, que
-    /// numa VPN ou maquina virtual nao era a certa.
-    /// </summary>
     public static PlacaDeRede? PlacaDeCasa()
     {
         try
@@ -634,11 +506,6 @@ public sealed class KdropService : IDisposable
                 try { indice = props.GetIPv4Properties()?.Index ?? -1; }
                 catch { indice = -1; }
 
-                // Uma placa pode ter varios IPs (um principal e outros fixos,
-                // de outra faixa). O certo e o da mesma faixa do gateway: e por
-                // ele que o roteador alcanca o PC. Antes ia o primeiro da
-                // lista, que podia ser um secundario de outra faixa (0.118 no
-                // lugar de 1.118), e o celular nao chegava.
                 foreach (var endereco in props.UnicastAddresses)
                 {
                     var ip = endereco.Address;
@@ -660,8 +527,6 @@ public sealed class KdropService : IDisposable
                 }
             }
 
-            // Fica no log qual placa foi escolhida (so quando muda), para
-            // achar o motivo quando o celular nao abre a pagina.
             var resumo = melhor is null ? "nenhuma" : $"{melhor.Nome} ({melhor.Ip})";
             if (resumo != _placaAnterior)
             {
@@ -678,7 +543,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    /// <summary>O IP e o gateway estao na mesma faixa (mesma rede, pela mascara do IP)?</summary>
     private static bool MesmaFaixa(IPAddress ip, IPAddress gateway, IPAddress? mascara)
     {
         if (mascara is null) return false;
@@ -701,20 +565,6 @@ public sealed class KdropService : IDisposable
         _ => false
     };
 
-    /// <summary>
-    /// O que pode impedir o celular de abrir a pagina, visto do PC:
-    /// <list type="bullet">
-    /// <item>Categoria: "Public", "Private" ou "DomainAuthenticated". Em rede
-    /// Publica o Firewall barra o celular (as regras do Kdrop sao so para
-    /// redes privadas).</item>
-    /// <item>BloqueiaTudo: o Firewall do Windows esta em "Bloquear todas as
-    /// conexoes de entrada", que ignora as regras de liberacao.</item>
-    /// <item>FirewallDeFora: firewall de antivirus (Kaspersky, ESET, Norton,
-    /// Avast...), que tem as proprias regras e nao ve as do Windows.</item>
-    /// <item>Respondendo: o proprio servidor do Kdrop responde pelo IP do
-    /// QR Code (testado do PC; do celular, so o celular sabe).</item>
-    /// </list>
-    /// </summary>
     public sealed record DiagnosticoDeRede(string? Categoria, bool BloqueiaTudo, string? FirewallDeFora, bool Respondendo);
 
     public static async Task<DiagnosticoDeRede?> Diagnosticar()
@@ -764,7 +614,6 @@ public sealed class KdropService : IDisposable
         return diagnostico;
     }
 
-    /// <summary>Como o Windows classifica a rede de casa ("Public", "Private"...). Nulo se nao deu para saber.</summary>
     public static async Task<string?> CategoriaDaRede()
     {
         if (PlacaDeCasa() is not { Indice: >= 0 } placa) return null;
@@ -774,7 +623,6 @@ public sealed class KdropService : IDisposable
         return string.IsNullOrEmpty(categoria) ? null : categoria;
     }
 
-    /// <summary>Passa a rede de casa para Privada (a pessoa pediu, pelo botao da Kisland).</summary>
     public static async Task<bool> TornarRedePrivada()
     {
         if (PlacaDeCasa() is not { Indice: >= 0 } placa) return false;
@@ -789,8 +637,6 @@ public sealed class KdropService : IDisposable
     {
         try
         {
-            // Codificado (UTF-16 em base64): o script vai inteiro, sem
-            // problema de aspas ou de varias linhas.
             var codificado = Convert.ToBase64String(Encoding.Unicode.GetBytes("$ProgressPreference = 'SilentlyContinue'\n" + comando));
             using var p = Process.Start(new ProcessStartInfo("powershell.exe",
                 $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {codificado}")
@@ -818,10 +664,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    // ------------------------------------------------------------------
-    // Pedidos recebidos
-
-    /// <summary>A resposta da Kisland a um pedido. "Lembrar" poe o aparelho entre os confiaveis.</summary>
     public void Responder(string pedidoId, bool aceitar, bool lembrar)
     {
         if (!_pedidos.TryGetValue(pedidoId, out var pedido)) return;
@@ -830,7 +672,6 @@ public sealed class KdropService : IDisposable
         {
             if (pedido.Estado != EstadoDoPedido.Esperando) return;
 
-            // Texto nao tem envio depois do aceite: ja veio no pedido.
             pedido.Estado = !aceitar ? EstadoDoPedido.Recusado
                           : pedido.Texto is not null ? EstadoDoPedido.Concluido
                           : EstadoDoPedido.Aceito;
@@ -849,7 +690,6 @@ public sealed class KdropService : IDisposable
         if (aceitar && pedido.Texto is not null) TextoRecebido?.Invoke(pedido);
     }
 
-    /// <summary>Aceito e sem nenhuma parte chegando ha tanto tempo, o envio foi abandonado.</summary>
     public static readonly TimeSpan EnvioParado = TimeSpan.FromMinutes(30);
 
     private void ExpirarPedidos()
@@ -869,8 +709,6 @@ public sealed class KdropService : IDisposable
                 else if (pedido.Estado == EstadoDoPedido.Aceito && agora - pedido.AtividadeEm > EnvioParado &&
                          !pedido.Chegando.Any(c => c is { Ocupado: true }))
                 {
-                    // Abandonado no meio (o celular saiu da pagina, a rede
-                    // caiu de vez): os pedacos gravados nao servem para nada.
                     pedido.Estado = EstadoDoPedido.Expirado;
                     foreach (var c in pedido.Chegando) c?.Fechar();
                     incompletos.AddRange(pedido.Chegando.Where(c => c is { Pronto: false }).Select(c => c!.Caminho));
@@ -890,19 +728,12 @@ public sealed class KdropService : IDisposable
                 PedidoMudou?.Invoke(pedido);
             }
 
-            // Terminado (ou recusado, ou expirado) ha mais de 2 h, sai da
-            // memoria. Aceito e ainda recebendo, nunca: quem decide e o prazo
-            // de parado, acima.
             if (pedido.Estado != EstadoDoPedido.Aceito &&
                 agora - (pedido.AtividadeEm > pedido.CriadoEm ? pedido.AtividadeEm : pedido.CriadoEm) > TimeSpan.FromHours(2))
                 _pedidos.TryRemove(id, out _);
         }
     }
 
-    // ------------------------------------------------------------------
-    // Para o celular
-
-    /// <summary>Marca arquivos da bandeja como mandados para um celular: a pagina dele os destaca.</summary>
     public void AvisarCelular(string celularId, IEnumerable<string> caminhos)
     {
         if (!_celulares.TryGetValue(celularId, out var cel)) return;
@@ -917,20 +748,12 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    // ------------------------------------------------------------------
-    // Para outro PC
-
     private sealed class RespostaDePedido
     {
         public string? Pedido { get; set; }
         public string? Estado { get; set; }
     }
 
-    /// <summary>
-    /// Manda arquivos para outro PC com KInfo: pede, espera o aceite (ate o
-    /// prazo do pedido) e envia um por um. O progresso vai de 0 a 100; o
-    /// resultado diz o que aconteceu, em poucas palavras, para a Kisland.
-    /// </summary>
     public async Task<string> MandarParaPc(AparelhoKdrop pc, IReadOnlyList<string> caminhos, IProgress<int>? progresso)
     {
         if (pc.Endereco is null || caminhos.Count == 0) return "Nada para mandar";
@@ -954,7 +777,6 @@ public sealed class KdropService : IDisposable
             var pedido = JsonSerializer.Deserialize<RespostaDePedido>(await resposta.Content.ReadAsStringAsync(), Json);
             if (pedido?.Pedido is not { } pedidoId) return "O outro PC não respondeu";
 
-            // Espera o aceite, perguntando a cada segundo.
             var estado = pedido.Estado;
             var limite = DateTime.UtcNow + PrazoDoPedido + TimeSpan.FromSeconds(5);
             while (estado == "esperando" && DateTime.UtcNow < limite)
@@ -992,7 +814,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    /// <summary>Corpo de envio que conta o que ja foi lido, para a barra de progresso.</summary>
     private sealed class ConteudoComProgresso : HttpContent
     {
         private readonly Stream _fluxo;
@@ -1024,9 +845,6 @@ public sealed class KdropService : IDisposable
             return _fluxo.CanSeek;
         }
     }
-
-    // ------------------------------------------------------------------
-    // Servidor
 
     private async Task Atender(HttpListener http, CancellationToken fim)
     {
@@ -1063,8 +881,6 @@ public sealed class KdropService : IDisposable
 
             if (metodo == "GET" && caminho is "" or "/index.html")
                 await Pagina(res);
-            else if (metodo == "GET" && caminho == "/teste")
-                await PaginaDeTeste(res);
             else if (metodo == "GET" && caminho == "/api/estado")
                 await Estado(req, res);
             else if (metodo == "GET" && caminho.StartsWith("/api/arquivo/"))
@@ -1106,26 +922,8 @@ public sealed class KdropService : IDisposable
         await Escrever(res, _pagina, "text/html; charset=utf-8");
     }
 
-    /// <summary>
-    /// Pagina de diagnostico (/teste): cinco jeitos de escolher fotos, sem
-    /// enviar nada. Existe para descobrir por que a galeria do iPhone (iOS 26)
-    /// trava no botao de confirmar na pagina do Kdrop: os mesmos cinco jeitos
-    /// funcionam numa pagina com HTTPS, e aqui rodam pelo mesmo HTTP do Kdrop.
-    /// Se travarem aqui, o problema e o HTTP; se nao, e algo da pagina do
-    /// Kdrop.
-    /// </summary>
-    private static async Task PaginaDeTeste(HttpListenerResponse res)
-    {
-        using var recurso = Assembly.GetExecutingAssembly().GetManifestResourceStream("kdrop-teste.html");
-        if (recurso is null) { res.StatusCode = 500; return; }
-        using var leitor = new StreamReader(recurso, Encoding.UTF8);
-        await Escrever(res, await leitor.ReadToEndAsync(), "text/html; charset=utf-8");
-    }
-
     private async Task Estado(HttpListenerRequest req, HttpListenerResponse res)
     {
-        // Quem pergunta e um celular com a pagina aberta: fica visivel na
-        // Kisland enquanto continuar perguntando.
         var cliente = req.QueryString["cliente"];
         string[] novos = Array.Empty<string>();
 
@@ -1147,7 +945,6 @@ public sealed class KdropService : IDisposable
         var pcs = new List<object> { new { nome = NomeDestePc, endereco = (string?)null, eu = true } };
         pcs.AddRange(Aparelhos().Where(a => a.EhPc).Select(a => (object)new { nome = a.Nome, endereco = a.Endereco, eu = false }));
 
-        // Pasta vai como .zip, montado na hora do download.
         var bandeja = MinhaBandeja()
             .Select(i => new
             {
@@ -1171,7 +968,6 @@ public sealed class KdropService : IDisposable
         }, Json), "application/json; charset=utf-8");
     }
 
-    /// <summary>Id curto e estavel de um arquivo da bandeja, pelo caminho.</summary>
     private static string IdDoArquivo(string caminho) =>
         Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(caminho.ToLowerInvariant())))[..16];
 
@@ -1179,8 +975,6 @@ public sealed class KdropService : IDisposable
     {
         var caminho = _bandeja().FirstOrDefault(c => IdDoArquivo(c) == id);
 
-        // Texto da bandeja: vai como texto puro (outro PC busca assim o texto
-        // inteiro, que no anuncio vai cortado).
         if (caminho is not null && TextoNaBandeja.Eh(caminho))
         {
             await Escrever(res, TextoNaBandeja.De(caminho), "text/plain; charset=utf-8");
@@ -1208,12 +1002,6 @@ public sealed class KdropService : IDisposable
         await fluxo.CopyToAsync(res.OutputStream);
     }
 
-    /// <summary>
-    /// Pasta da bandeja: vai como .zip, montado enquanto sai, sem arquivo
-    /// temporario no disco. Sem tamanho conhecido antes, a resposta vai em
-    /// pedacos (chunked). Arquivo que nao abre (em uso, sem acesso) fica de
-    /// fora, e o resto vai.
-    /// </summary>
     private static void BaixarPasta(string pasta, HttpListenerResponse res)
     {
         var nome = Path.GetFileName(pasta.TrimEnd('\\', '/')) + ".zip";
@@ -1250,17 +1038,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    // ------------------------------------------------------------------
-    // Buscar da bandeja de outro PC
-
-    /// <summary>
-    /// Traz um item da bandeja de outro PC para este: vai para a pasta do
-    /// Kdrop e o caminho volta para entrar na bandeja daqui. Sem pedido nem
-    /// aceite, porque quem busca e a propria pessoa, no PC dela, e o outro
-    /// PC ja deixou o item a vista ao po-lo na bandeja. Pasta chega como .zip
-    /// e e aberta numa pasta de mesmo nome.
-    /// </summary>
-    /// <returns>O caminho do que chegou, ou nulo se nao deu.</returns>
     public async Task<string?> BuscarDePc(AparelhoKdrop pc, ItemKdrop item, IProgress<int>? progresso)
     {
         if (pc.Endereco is null) return null;
@@ -1328,10 +1105,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    /// <summary>
-    /// O nome do Kdrop mudou na Personalizacao: o endereco fixo passa a ser o
-    /// do nome novo (o antigo deixa de responder).
-    /// </summary>
     private void ConferirNomeNaRede()
     {
         lock (_nomeNaRede)
@@ -1344,10 +1117,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    /// <summary>
-    /// O texto inteiro de um item de texto da bandeja de outro PC (no anuncio
-    /// ele vem cortado). Nulo se nao deu.
-    /// </summary>
     public async Task<string?> BuscarTextoDePc(AparelhoKdrop pc, ItemKdrop item)
     {
         if (pc.Endereco is null) return null;
@@ -1364,7 +1133,6 @@ public sealed class KdropService : IDisposable
         }
     }
 
-    /// <summary>"Fotos", e se ja existir, "Fotos (2)".</summary>
     private static string PastaLivre(string pasta, string nome)
     {
         var caminho = Path.Combine(pasta, nome);
@@ -1410,7 +1178,6 @@ public sealed class KdropService : IDisposable
         };
         pedido.Chegando = new ArquivoChegando?[pedido.Arquivos.Count];
 
-        // Aparelho confiavel nao precisa de aceite.
         var confiavel = _cfg.KdropConfiaveis.Any(c => c.Id == pedido.OrigemId);
         pedido.Estado = !confiavel ? EstadoDoPedido.Esperando
                       : pedido.Texto is not null ? EstadoDoPedido.Concluido
@@ -1450,20 +1217,6 @@ public sealed class KdropService : IDisposable
         _ => "concluido"
     };
 
-    /// <summary>
-    /// Recebe um arquivo do pedido aceito, inteiro ou em partes.
-    ///
-    /// Em partes (a pagina do celular, desde a 0.1.29): <c>?arquivo=</c> e o
-    /// indice do arquivo no pedido, <c>pos=</c> e de onde a parte comeca e
-    /// <c>fim=1</c> marca a ultima. A parte tem de comecar exatamente onde o
-    /// arquivo parou; se nao, a resposta e 409 com quanto ja foi gravado, e o
-    /// celular continua dali. E isso que deixa um video grande sobreviver a
-    /// uma queda de Wi-Fi ou a tela do celular apagando no meio.
-    ///
-    /// Inteiro (sem <c>arquivo</c>): o jeito antigo, que outros PCs com KInfo
-    /// mais velho ainda usam. Vai para o primeiro arquivo do pedido ainda nao
-    /// comecado, e termina quando o corpo termina.
-    /// </summary>
     private async Task Receber(string id, HttpListenerRequest req, HttpListenerResponse res)
     {
         if (!_pedidos.TryGetValue(id, out var pedido) || pedido.Estado != EstadoDoPedido.Aceito)
@@ -1494,10 +1247,6 @@ public sealed class KdropService : IDisposable
         }
         else
         {
-            // Cabem tantos arquivos quantos o pedido aceito declarou, e nada
-            // alem. Nao confere o nome com o do pedido: o iPhone renomeia
-            // fotos ao enviar ("image.jpg"), e acentos podem chegar
-            // codificados de outro jeito.
             lock (pedido) indice = Array.FindIndex(pedido.Chegando, c => c is null);
         }
 
@@ -1514,9 +1263,6 @@ public sealed class KdropService : IDisposable
 
             if (pedido.Chegando[indice] is null)
             {
-                // O nome no disco e escolhido uma vez so, e o arquivo ja nasce
-                // vazio, para dois arquivos de mesmo nome nao pegarem o mesmo
-                // lugar.
                 var pasta = Pasta(_cfg);
                 Directory.CreateDirectory(pasta);
                 var caminho = CaminhoLivre(pasta, nome);
@@ -1526,10 +1272,6 @@ public sealed class KdropService : IDisposable
 
             estado = pedido.Chegando[indice]!;
 
-            // Ja terminado: uma ultima parte repetida (a resposta se perdeu
-            // no caminho) so ouve que esta tudo certo. Fora de ordem, ou com
-            // outra parte do mesmo arquivo ainda sendo gravada: 409, com
-            // quanto ja chegou, para o celular continuar dali.
             if (estado.Pronto) recusa = 200;
             else if (estado.Ocupado || (emPartes && pos != estado.Gravados)) recusa = 409;
             else
@@ -1556,8 +1298,6 @@ public sealed class KdropService : IDisposable
             var arquivo = estado.Fluxo ??= new FileStream(estado.Caminho, FileMode.OpenOrCreate, FileAccess.Write,
                                                            FileShare.Read, 1024 * 1024, useAsync: true);
 
-            // Continua de onde parou, e corta o que uma parte interrompida
-            // tenha deixado alem disso.
             if (arquivo.Length != estado.Gravados) arquivo.SetLength(estado.Gravados);
             arquivo.Seek(estado.Gravados, SeekOrigin.Begin);
 
@@ -1565,8 +1305,6 @@ public sealed class KdropService : IDisposable
             var ultimoAviso = DateTime.MinValue;
             while ((n = await req.InputStream.ReadAsync(buffer)) > 0)
             {
-                // Mais do que o pedido declarou nao entra: o aceite foi para
-                // aquele tamanho. (Tamanho zero ou desconhecido nao limita.)
                 if (limite > 0 && estado.Gravados + n > limite)
                 {
                     Log.Nota($"Kdrop: envio maior que o declarado no pedido {id}, recusado");
@@ -1582,7 +1320,6 @@ public sealed class KdropService : IDisposable
                     pedido.AtividadeEm = DateTime.UtcNow;
                 }
 
-                // Progresso para a Kisland, no maximo quatro vezes por segundo.
                 if (DateTime.UtcNow - ultimoAviso > TimeSpan.FromMilliseconds(250))
                 {
                     ultimoAviso = DateTime.UtcNow;
@@ -1592,12 +1329,8 @@ public sealed class KdropService : IDisposable
         }
         catch (Exception ex) when (ex is IOException or HttpListenerException)
         {
-            // A conexao caiu no meio da parte. O que chegou fica gravado, e a
-            // proxima tentativa continua dali.
             Log.Nota($"Kdrop: parte interrompida no pedido {id}, arquivo {indice}, em {estado.Gravados} bytes");
 
-            // Erro do proprio arquivo (disco cheio, por exemplo) deixa o fluxo
-            // num estado incerto: fecha, e a proxima parte abre de novo.
             if (ex is IOException && ex is not HttpListenerException) lock (pedido) estado.Fechar();
             return;
         }
@@ -1606,8 +1339,6 @@ public sealed class KdropService : IDisposable
             lock (pedido) estado.Ocupado = false;
         }
 
-        // Parte lenta vai para o log, com a velocidade: e por ai que se ve se
-        // a demora e da rede (Wi-Fi) ou do PC.
         var duracaoDaParte = DateTime.UtcNow - inicioDaParte;
         if (duracaoDaParte > TimeSpan.FromSeconds(5))
             Log.Nota($"Kdrop: parte lenta no pedido {id}: {(estado.Gravados - posDaParte) / 1048576.0:0.0} MB em " +
@@ -1641,10 +1372,6 @@ public sealed class KdropService : IDisposable
                        "application/json; charset=utf-8");
     }
 
-    /// <summary>
-    /// Quanto de cada arquivo do pedido ja chegou: o celular pergunta isto
-    /// depois de uma queda, para continuar de onde parou.
-    /// </summary>
     private async Task EstadoDoEnvio(string id, HttpListenerResponse res)
     {
         if (!_pedidos.TryGetValue(id, out var pedido))
@@ -1675,10 +1402,6 @@ public sealed class KdropService : IDisposable
         await res.OutputStream.WriteAsync(bytes);
     }
 
-    // ------------------------------------------------------------------
-    // Arquivos
-
-    /// <summary>So o nome, sem pasta e sem caracteres que o Windows recusa.</summary>
     private static string NomeSeguro(string nome)
     {
         var limpo = Path.GetFileName(nome.Replace('\\', '/').Split('/').Last());
@@ -1687,7 +1410,6 @@ public sealed class KdropService : IDisposable
         return string.IsNullOrEmpty(limpo) ? "arquivo" : limpo[..Math.Min(limpo.Length, 150)];
     }
 
-    /// <summary>"foto.jpg", e se ja existir, "foto (2).jpg".</summary>
     private static string CaminhoLivre(string pasta, string nome)
     {
         var caminho = Path.Combine(pasta, nome);
@@ -1698,11 +1420,9 @@ public sealed class KdropService : IDisposable
         return caminho;
     }
 
-    /// <summary>A pasta escolhida, ou Downloads\Kdrop.</summary>
     public static string Pasta(AppConfig cfg) =>
         !string.IsNullOrWhiteSpace(cfg.KdropPasta) ? cfg.KdropPasta! : Path.Combine(Downloads(), "Kdrop");
 
-    /// <summary>A pasta Downloads de verdade, mesmo que a pessoa a tenha mudado de lugar.</summary>
     private static string Downloads()
     {
         try
@@ -1716,7 +1436,6 @@ public sealed class KdropService : IDisposable
         }
         catch
         {
-            // Cai no caminho comum.
         }
 
         return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");

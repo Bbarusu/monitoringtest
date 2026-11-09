@@ -5,16 +5,10 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!-- asInvoker: o driver de sensores e registrado pelo instalador, nao pelo app.
-             Enquanto o instalador nao existe, rode o app como administrador para ler
-             CPU e placa-mae. GPU, RAM e discos funcionam sem elevacao. -->
         <requestedExecutionLevel level="asInvoker" uiAccess="false" />
       </requestedPrivileges>
     </security>
   </trustInfo>
-
-  <!-- O DPI fica na propriedade ApplicationHighDpiMode do projeto, nao aqui:
-       declarado no manifest, o WinForms avisa (WFAC010) e as duas fontes brigam. -->
 
   <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
     <application>

@@ -1,19 +1,4 @@
-﻿# ---------------------------------------------------------------------------
-#  Gera o atualizacao.json ao lado do instalador.
-#
-#  Chamado pelo publicar.cmd. É o arquivo que o app baixa para saber se existe
-#  versão nova, e ele carrega o SHA-256 do instalador — que é a única
-#  integridade real do projeto, já que não assinamos o executável.
-#
-#  Por isso o hash é calculado aqui, do arquivo que acabou de sair do build, e
-#  nunca digitado. Hash copiado à mão erra uma vez e o app passa a recusar toda
-#  atualização sem dizer por quê.
-#
-#  A versão também é lida do executável, não escrita aqui: a fonte única é o
-#  Directory.Build.props na raiz.
-# ---------------------------------------------------------------------------
-
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $exe = Join-Path $PSScriptRoot 'dist\instalador\KInfo-Setup.exe'
 
@@ -30,29 +15,18 @@ if ([string]::IsNullOrWhiteSpace($versao)) {
     exit 1
 }
 
-# O SDK pode acrescentar "+<hash do commit>"; o que interessa está antes.
 $versao = ($versao -split '\+')[0].Trim()
 
 $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash
 
-# As notas da versão, se existirem. Opcional de propósito: faltar nota não
-# pode impedir de publicar uma correção.
-#
-# O app mostra estas notas na tela "O que mudou" da atualização, para quem usa.
-# Por isso vai para o manifesto só a seção "## Novidades" — o que muda para a
-# pessoa, em poucas linhas. A seção "## Detalhes", com o que é técnico, fica
-# só na página da release no GitHub (o publicar-release.ps1 manda o arquivo
-# inteiro para lá). Arquivo sem as seções vai inteiro, como antes.
 $arquivoDeNotas = Join-Path $PSScriptRoot 'notas-da-versao.md'
 $notas = ''
 if (Test-Path $arquivoDeNotas) {
     $texto = (Get-Content $arquivoDeNotas -Raw -Encoding UTF8) -replace "`r`n", "`n"
 
-    # Corta no começo da seção de detalhes, onde quer que ela esteja.
     $corte = [regex]::Match($texto, '(?im)^##\s*Detalhes')
     if ($corte.Success) { $texto = $texto.Substring(0, $corte.Index) }
 
-    # Títulos de seção ("## Novidades") não são novidade: ficam de fora.
     $notas = (($texto -split "`n") | Where-Object { $_ -notmatch '^\s*#' }) -join "`n"
     $notas = $notas.Trim()
 }
@@ -68,8 +42,6 @@ $manifesto = [ordered]@{
 $destino = Join-Path $PSScriptRoot 'dist\instalador\atualizacao.json'
 $json = $manifesto | ConvertTo-Json -Depth 4
 
-# Sem BOM: JSON com marca de ordem de bytes quebra leitor estrito, e não há
-# ganho nenhum em pôr uma.
 [System.IO.File]::WriteAllText($destino, $json, (New-Object System.Text.UTF8Encoding $false))
 
 Write-Host ''

@@ -19,8 +19,6 @@ public partial class SensoresWindow : Window
 
         Montar();
 
-        // A lista inteira e remontada a cada segundo: sao algumas dezenas de
-        // linhas, e assim nenhum sensor novo fica de fora.
         _relogio = new DispatcherTimerLeve(TimeSpan.FromSeconds(1), Montar);
         Closed += (_, _) => _relogio.Parar();
     }
@@ -47,8 +45,6 @@ public partial class SensoresWindow : Window
 
         Subtitulo.Text = $"{total} leituras em {componentes} componentes";
 
-        // Reconstroi so quando a estrutura muda; senao atualiza os valores no
-        // lugar, para a rolagem nao saltar enquanto se le.
         if (!MesmaEstrutura(grupos))
         {
             Lista.Children.Clear();

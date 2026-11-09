@@ -11,8 +11,6 @@
     <ApplicationIcon>..\MonitorPC\kinfo.ico</ApplicationIcon>
     <RootNamespace>MonitorPC.Setup</RootNamespace>
 
-    <!-- Um arquivo so, sem exigir runtime instalado: o instalador precisa
-         rodar numa maquina que ainda nao tem nada do projeto. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
@@ -20,30 +18,15 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
-  <!--
-    Mesmo arquivo de versão do app, pelo mesmo caminho: o instalador grava a
-    versão no registro do Windows e o app a compara com a publicada, e os dois
-    discordando fariam o atualizador oferecer o que já está instalado.
-  -->
   <ItemGroup>
     <Compile Include="..\Comum\Versao.cs" Link="Comum\Versao.cs" />
   </ItemGroup>
 
-  <!--
-    O app publicado entra aqui como recurso, zipado pelo publicar.cmd. A
-    condicao deixa o projeto compilar sem o payload, para dar para mexer na
-    interface do instalador sem reempacotar o app a cada vez.
-  -->
   <ItemGroup>
     <EmbeddedResource Include="Payload\app.zip" LogicalName="app.zip"
                       Condition="Exists('Payload\app.zip')" />
   </ItemGroup>
 
-  <!--
-    As notas da versao viajam dentro do instalador, para o painel de
-    atualizacao mostrar o que mudou sem depender de rede. Sao as mesmas que o
-    gerar-manifesto.ps1 poe no atualizacao.json.
-  -->
   <ItemGroup>
     <EmbeddedResource Include="..\..\notas-da-versao.md" LogicalName="notas.md"
                       Condition="Exists('..\..\notas-da-versao.md')" />

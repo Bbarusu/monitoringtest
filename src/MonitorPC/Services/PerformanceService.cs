@@ -4,43 +4,24 @@ using MonitorPC.Models;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// As acoes do Modo Desempenho. Cada uma devolve o que conseguiu fazer, para o
-/// painel relatar o resultado real em vez de prometer o que nao aconteceu.
-/// </summary>
 public static class PerformanceService
 {
-    /// <summary>
-    /// Processos que nunca entram na lista de fechaveis, qualquer que seja o
-    /// consumo: o PC fica inutilizavel ou desprotegido sem eles.
-    /// </summary>
     private static readonly HashSet<string> Protegidos = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Essenciais do Windows
         "explorer", "csrss", "winlogon", "services", "lsass", "smss", "wininit",
         "dwm", "fontdrvhost", "sihost", "ctfmon", "taskhostw", "runtimebroker",
         "shellexperiencehost", "startmenuexperiencehost", "searchhost", "textinputhost",
         "systemsettings", "applicationframehost", "audiodg", "spoolsv", "svchost",
         "system", "idle", "registry", "memory compression", "lsaiso", "wudfhost",
 
-        // Seguranca
         "msmpeng", "nissrv", "securityhealthservice", "securityhealthsystray",
         "mpdefendercoreservice", "avp", "avgui", "avastui", "avastsvc", "bdagent",
         "vsserv", "mcshield", "mbamservice", "mbam", "ekrn", "egui", "nortonsecurity",
         "ns", "avguard", "avgsvc", "avgui", "sophosui", "savservice",
 
-        // O proprio monitor
         "monitorpc"
     };
 
-    // ------------------------------------------------------------------
-    // Processos
-
-    /// <summary>
-    /// Processos que o usuario pode fechar, do maior consumo de memoria para o
-    /// menor. So entram os que tem janela propria e rodam na mesma sessao: um
-    /// servico em segundo plano nao e coisa de fechar na mao.
-    /// </summary>
     public static List<ProcessoFechavel> Fechaveis(int quantos = 8)
     {
         var sessao = Process.GetCurrentProcess().SessionId;
@@ -63,7 +44,6 @@ public static class PerformanceService
             }
             catch
             {
-                // Processos que somem ou negam acesso no meio da varredura.
             }
             finally
             {
@@ -82,18 +62,9 @@ public static class PerformanceService
             .ToList();
     }
 
-    /// <summary>
-    /// Se este processo e um dos que nunca podem ser fechados pelo app, ou o
-    /// proprio app. As telas usam isto para nao oferecer um botao que o
-    /// <see cref="Fechar"/> recusaria em silencio.
-    /// </summary>
     public static bool EhProtegido(string nome, int pid) =>
         pid == Environment.ProcessId || Protegidos.Contains(nome);
 
-    /// <summary>
-    /// Pede para o processo fechar pela janela, como se o usuario clicasse no X,
-    /// para ele poder salvar o que estiver aberto. Nada e forcado.
-    /// </summary>
     public static (int Fechados, double MemoriaMb, int SemJanela) Fechar(IEnumerable<int> pids)
     {
         var fechados = 0;
@@ -109,9 +80,6 @@ public static class PerformanceService
 
                 var mb = p.WorkingSet64 / 1048576.0;
 
-                // Sem janela principal nao ha para onde mandar o pedido.
-                // Contado a parte porque leva a outro caminho: quem chama pode
-                // oferecer forcar, que e a unica saida nesse caso.
                 if (p.MainWindowHandle == IntPtr.Zero)
                 {
                     semJanela++;
@@ -132,11 +100,6 @@ public static class PerformanceService
         return (fechados, memoria, semJanela);
     }
 
-    /// <summary>
-    /// Encerra a forca os processos destes PIDs. Mesmas ressalvas de
-    /// <see cref="ForcarPorNome"/>: nada e perguntado ao programa, e quem
-    /// chama precisa ter perguntado ao usuario.
-    /// </summary>
     public static int Forcar(IEnumerable<int> pids)
     {
         var encerrados = 0;
@@ -162,10 +125,6 @@ public static class PerformanceService
         return encerrados;
     }
 
-    /// <summary>
-    /// Todos os processos da sessao por consumo de memoria, inclusive os
-    /// protegidos — que aparecem marcados, para a lista nao parecer incompleta.
-    /// </summary>
     public static List<ProcessoMemoria> PorMemoria(int quantos = 12)
     {
         var sessao = Process.GetCurrentProcess().SessionId;
@@ -187,7 +146,6 @@ public static class PerformanceService
             }
             catch
             {
-                // Processo encerrado no meio da varredura.
             }
             finally
             {
@@ -195,8 +153,6 @@ public static class PerformanceService
             }
         }
 
-        // Varios processos com o mesmo nome (abas de navegador, por exemplo)
-        // viram uma linha so, com a soma.
         return lista
             .GroupBy(x => x.Nome)
             .Select(g => g.OrderByDescending(x => x.MemoriaMb).First() with
@@ -209,27 +165,9 @@ public static class PerformanceService
             .ToList();
     }
 
-    /// <summary>
-    /// A ultima amostra de tempo de CPU de cada processo, para a proxima
-    /// leitura ter de onde tirar a diferenca.
-    ///
-    /// Guarda tambem o instante em que o processo comecou: o Windows reaproveita
-    /// PID, e sem essa conferencia um processo novo herdaria o tempo acumulado
-    /// do que morreu com o mesmo numero — e apareceria usando a CPU inteira.
-    /// </summary>
     private static readonly Dictionary<int, (TimeSpan Tempo, DateTime Quando, DateTime Inicio)>
         AmostraDeCpu = new();
 
-    /// <summary>
-    /// Processos por uso de CPU, somados por nome.
-    ///
-    /// Diferente da memoria, uso de CPU nao e um valor que existe num instante:
-    /// e trabalho feito entre dois instantes. Entao a primeira chamada nao tem
-    /// o que medir e devolve todo mundo em zero; a partir da segunda, cada
-    /// linha e o que o processo consumiu desde a chamada anterior. Quem exibe
-    /// precisa chamar de novo depois de um intervalo — e e por isso que a tela
-    /// de processamento se atualiza sozinha e a de memoria nao precisa.
-    /// </summary>
     public static List<ProcessoCpu> PorCpu(int quantos = 12)
     {
         var agora = DateTime.UtcNow;
@@ -266,17 +204,12 @@ public static class PerformanceService
                     p.Id,
                     p.ProcessName,
                     string.IsNullOrWhiteSpace(p.MainWindowTitle) ? p.ProcessName : p.MainWindowTitle,
-                    // Arredondamento de relogio pode dar fracao de ponto acima
-                    // de 100 num pico; cortar evita barra passando do fim.
                     Math.Clamp(pct, 0, 100),
                     Protegidos.Contains(p.ProcessName) || p.Id == Environment.ProcessId,
                     p.MainWindowHandle != IntPtr.Zero));
             }
             catch
             {
-                // Processo encerrado no meio da varredura, ou protegido demais
-                // para informar o tempo de CPU. Nos dois casos nao ha o que
-                // mostrar e nao ha o que consertar.
             }
             finally
             {
@@ -284,13 +217,9 @@ public static class PerformanceService
             }
         }
 
-        // Quem morreu sai do historico, senao o dicionario cresce para sempre
-        // numa sessao longa e ainda guarda PID pronto para ser reaproveitado.
         foreach (var morto in AmostraDeCpu.Keys.Where(k => !vistos.Contains(k)).ToList())
             AmostraDeCpu.Remove(morto);
 
-        // Mesma regra da memoria: varios processos com o mesmo nome — as abas
-        // de um navegador, por exemplo — viram uma linha, com a soma.
         return lista
             .GroupBy(x => x.Nome)
             .Select(g => g.OrderByDescending(x => x.CpuPct).First() with
@@ -303,23 +232,11 @@ public static class PerformanceService
             .ToList();
     }
 
-    /// <summary>
-    /// O que aconteceu ao pedir para um programa fechar.
-    ///
-    /// <paramref name="SemJanela"/> existe separado de <paramref name="Recusados"/>
-    /// porque sao coisas diferentes e levam a caminhos diferentes: quem recusou
-    /// ouviu o pedido e pode estar perguntando algo ao usuario; quem nao tem
-    /// janela nunca vai ouvir pedido nenhum, e para esse so forcar resolve.
-    /// </summary>
     public sealed record ResultadoDeFechamento(int Pedidos, int SemJanela, int Recusados)
     {
         public int Total => Pedidos + SemJanela + Recusados;
     }
 
-    /// <summary>
-    /// Pede para os processos com este nome fecharem, pelo mesmo caminho do
-    /// botao X da janela deles. Nada e forcado aqui.
-    /// </summary>
     public static ResultadoDeFechamento FecharPorNome(string nome)
     {
         if (Protegidos.Contains(nome)) return new ResultadoDeFechamento(0, 0, 0);
@@ -332,10 +249,6 @@ public static class PerformanceService
             {
                 if (p.Id == Environment.ProcessId) continue;
 
-                // Sem janela principal nao ha para onde mandar o pedido de
-                // fechar. CloseMainWindow devolveria false na hora, e era isso
-                // que fazia o botao nao surtir efeito nenhum em programa de
-                // segundo plano — sem fechar e sem explicar o porque.
                 if (p.MainWindowHandle == IntPtr.Zero)
                 {
                     semJanela++;
@@ -358,16 +271,6 @@ public static class PerformanceService
         return new ResultadoDeFechamento(pedidos, semJanela, recusados);
     }
 
-    /// <summary>
-    /// Encerra a forca os processos com este nome. Devolve quantos cairam.
-    ///
-    /// Isto nao pergunta nada ao programa: ele para onde estiver, e o que nao
-    /// tiver sido salvo se perde. E o unico caminho possivel para quem nao tem
-    /// janela, e por isso existe — mas quem chama precisa ter perguntado ao
-    /// usuario antes, porque daqui nao ha como desfazer.
-    ///
-    /// A lista de protegidos vale aqui tambem, e com mais razao.
-    /// </summary>
     public static int ForcarPorNome(string nome)
     {
         if (Protegidos.Contains(nome)) return 0;
@@ -382,8 +285,6 @@ public static class PerformanceService
 
                 p.Kill();
 
-                // Espera curta: confirma que caiu mesmo, sem segurar a tela se
-                // o processo demorar a sair.
                 p.WaitForExit(2000);
                 encerrados++;
             }
@@ -400,17 +301,6 @@ public static class PerformanceService
         return encerrados;
     }
 
-    // ------------------------------------------------------------------
-    // Explorer
-
-    /// <summary>
-    /// Reinicia o Explorer: encerra e sobe de novo. Util quando a barra de
-    /// tarefas trava ou a memoria dele cresce demais.
-    ///
-    /// O nosso app e outro processo, entao nao cai junto. O que some e a area de
-    /// notificacao, recriada pelo Explorer; quem chama precisa reinstalar o
-    /// icone da bandeja depois.
-    /// </summary>
     public static bool ReiniciarExplorer()
     {
         try
@@ -419,12 +309,10 @@ public static class PerformanceService
 
             foreach (var p in antes)
             {
-                try { p.Kill(); } catch { /* pode ja ter saido */ }
+                try { p.Kill(); } catch {  }
                 finally { p.Dispose(); }
             }
 
-            // O Windows costuma subir o shell sozinho (AutoRestartShell). Da um
-            // tempo antes de decidir, senao sobem duas instancias.
             Thread.Sleep(1500);
 
             if (Process.GetProcessesByName("explorer").Length == 0)
@@ -439,13 +327,8 @@ public static class PerformanceService
         }
     }
 
-    // ------------------------------------------------------------------
-    // Arquivos temporarios
-
-    /// <summary>Quanto ha para limpar, sem apagar nada.</summary>
     public static (int Arquivos, double Mb) MedirTemporarios() => VarrerTemporarios(false);
 
-    /// <summary>Apaga o que der; o que estiver em uso fica.</summary>
     public static (int Arquivos, double Mb) LimparTemporarios() => VarrerTemporarios(true);
 
     private static (int Arquivos, double Mb) VarrerTemporarios(bool apagar)
@@ -453,7 +336,6 @@ public static class PerformanceService
         var arquivos = 0;
         var bytes = 0L;
 
-        // Arquivos recem-criados podem estar em uso por um programa aberto.
         var corte = DateTime.Now.AddHours(-1);
 
         foreach (var pasta in new[] { Path.GetTempPath() })
@@ -475,7 +357,6 @@ public static class PerformanceService
                 }
                 catch
                 {
-                    // Em uso, sem permissao ou ja removido: segue para o proximo.
                 }
             }
         }

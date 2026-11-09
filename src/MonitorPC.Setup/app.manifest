@@ -5,12 +5,6 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
-        <!--
-          O instalador precisa de administrador de verdade: ele escreve em
-          Arquivos de Programas, cria uma tarefa agendada com privilegio
-          elevado e registra a desinstalacao. Diferente do app, que roda como
-          o usuario e sobe sozinho pela tarefa.
-        -->
         <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
       </requestedPrivileges>
     </security>

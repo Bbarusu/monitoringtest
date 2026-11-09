@@ -16,10 +16,7 @@ public partial class FlyoutWindow : Window
     private const double Raio = 100;
     private const double RaioCpu = 69;
 
-    /// <summary>5 minutos de historico a 1 s, que e o que o grafico mostra.</summary>
     private const int PontosDoHistorico = 300;
-
-
 
     private readonly AppConfig _cfg;
     private readonly SensorService _sensores;
@@ -30,13 +27,10 @@ public partial class FlyoutWindow : Window
     private readonly Queue<double> _historicoEnergia = new();
     private readonly DiskProcessService _processos = new();
 
-    /// <summary>Quantas linhas a lista de processos reserva, para a altura nao oscilar.</summary>
     private const int LinhasDeProcesso = 3;
 
-    /// <summary>-1 mostra o conjunto; acima disso, o indice da unidade escolhida.</summary>
     private int _discoEscolhido = -1;
 
-    /// <summary>Marca que ha maximo novo a gravar; o disco so e tocado ao fechar.</summary>
     private bool _maximosMudaram;
 
     private Aba _aba = Aba.Geral;
@@ -57,38 +51,20 @@ public partial class FlyoutWindow : Window
         AplicarTransparencia();
         _sensores.Atualizado += snap => Dispatcher.BeginInvoke(() => Aplicar(snap));
 
-        // O painel e ancorado pela base: crescendo, ele sobe, em vez de avancar
-        // sobre a barra de tarefas. Vale para troca de aba e para qualquer
-        // conteudo que mude de altura.
         SizeChanged += (_, _) => Posicionar();
 
-        // Por padrao o painel fica aberto mesmo sem foco, para dar para olhar,
-        // trocar de janela e tirar print. Quem fecha e o botao de minimizar
-        // ou o icone da bandeja.
         Deactivated += (_, _) =>
         {
             if (!_cfg.FecharAoPerderFoco) return;
 
-            // Abrir uma tela filha tira o foco do painel: esconde-lo aqui faria
-            // a tela perder a referencia de onde se posicionar.
             if (OwnedWindows.Count > 0) return;
 
             Esconder();
         };
     }
 
-    // ------------------------------------------------------------------
-    // Posicionamento e visibilidade
-
-    /// <summary>
-    /// Canto inferior direito da area de trabalho util, respeitando a barra de
-    /// tarefas em qualquer lado da tela. Depois de arrastado, o painel fica onde
-    /// o usuario deixou.
-    /// </summary>
     private void Posicionar()
     {
-        // UpdateLayout dispara SizeChanged, que chama este metodo de novo:
-        // a guarda evita a recursao.
         if (_posicionando) return;
         _posicionando = true;
 
@@ -103,15 +79,11 @@ public partial class FlyoutWindow : Window
             }
             else
             {
-                // Sem posicao propria, o painel volta ao canto do monitor
-                // principal, que e onde fica a bandeja.
                 var principal = SystemParameters.WorkArea;
                 Left = principal.Right - ActualWidth;
                 Top = principal.Bottom - ActualHeight;
             }
 
-            // A resolucao pode ter mudado, ou a aba ter crescido: puxa de volta,
-            // respeitando o monitor em que o painel esta.
             Janelas.Conter(this);
         }
         finally
@@ -120,17 +92,10 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>
-    /// Arrastar de qualquer area livre do painel. Botoes e abas tratam o proprio
-    /// clique, entao o evento nao chega aqui vindo deles.
-    /// </summary>
     private void Painel_Arrastar(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState != MouseButtonState.Pressed) return;
 
-        // Sai se o clique era de alguém: botão, aba, seletor, barra de
-        // rolagem. Sem esta conferência, arrastar de qualquer ponto custaria
-        // o painel inteiro parar de responder a clique.
         if (EhControle(e.OriginalSource as DependencyObject)) return;
 
         try
@@ -139,28 +104,14 @@ public partial class FlyoutWindow : Window
         }
         catch (InvalidOperationException)
         {
-            // O botao pode ter sido solto antes de o arrasto comecar.
             return;
         }
 
-        // So nesta sessao: a proxima abertura volta ao canto, saindo da bandeja.
         _cfg.PosicaoLivre = true;
         _cfg.PosicaoX = Left;
         _cfg.PosicaoY = Top;
     }
 
-    /// <summary>
-    /// O clique nasceu dentro de um controle que precisa dele.
-    ///
-    /// Sobe a arvore visual a partir de onde o clique nasceu. Sobe, e nao
-    /// confere so a origem, porque o clique num botao nasce em algum
-    /// <c>Border</c> ou <c>TextBlock</c> do template dele — a origem quase
-    /// nunca e o controle em si.
-    ///
-    /// <c>ButtonBase</c> cobre botao, aba e caixa de selecao de uma vez;
-    /// <c>Thumb</c> e <c>ScrollBar</c> cobrem a rolagem, que seria o pior
-    /// lugar para o arrasto roubar o clique.
-    /// </summary>
     private static bool EhControle(DependencyObject? origem)
     {
         while (origem is not null)
@@ -175,9 +126,6 @@ public partial class FlyoutWindow : Window
                        or MenuItem)
                 return true;
 
-            // GetParent exige um Visual: chamado com outra coisa, ele lança.
-            // Um clique sempre nasce num Visual, mas o custo de garantir é
-            // nenhum e o de errar é derrubar o painel.
             if (origem is not Visual) return false;
 
             origem = VisualTreeHelper.GetParent(origem);
@@ -186,22 +134,14 @@ public partial class FlyoutWindow : Window
         return false;
     }
 
-    /// <summary>
-    /// Grava os maiores valores ja medidos. Chamado ao fechar o painel, nao a
-    /// cada leitura: sao poucos bytes, mas escrever a cada segundo nao se
-    /// justifica.
-    /// </summary>
     public void GravarMaximos()
     {
-        // As curvas aprendidas tambem entram aqui: sao o que o app sabe das
-        // ventoinhas, e perde-las a cada fechamento obrigaria a reaprender tudo.
         if (_maximosMudaram) _sensores.Especificacoes.MarcarMudanca();
 
         _maximosMudaram = false;
         _sensores.Especificacoes.Gravar();
     }
 
-    /// <summary>Devolve o painel ao canto, pelo menu da bandeja.</summary>
     public void VoltarAoCanto()
     {
         _cfg.PosicaoLivre = false;
@@ -239,11 +179,6 @@ public partial class FlyoutWindow : Window
         else Mostrar();
     }
 
-    /// <summary>
-    /// A transparencia vai no alpha do fundo, nao na opacidade do elemento:
-    /// Opacity desbota tambem o texto, os aneis e os icones, e o painel inteiro
-    /// fica lavado. Com alpha so o fundo deixa passar o que esta atras.
-    /// </summary>
     private void AplicarTransparencia()
     {
         Painel.Opacity = 1.0;
@@ -259,9 +194,6 @@ public partial class FlyoutWindow : Window
         Painel.Background = new SolidColorBrush(Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
     }
 
-    // ------------------------------------------------------------------
-    // Abas
-
     private void Aba_Selecionada(object sender, RoutedEventArgs e)
     {
         if (!IsInitialized) return;
@@ -272,8 +204,6 @@ public partial class FlyoutWindow : Window
              : ReferenceEquals(sender, AbaEnergia) ? Aba.Energia
              : Aba.Geral;
 
-        // A medicao por processo so corre com a aba Disco aberta. Ao voltar, as
-        // amostras antigas viram um pico falso, entao sao descartadas.
         _processos.Reiniciar();
 
         Mostrar(TopoGeral, BaseGeral, _aba == Aba.Geral);
@@ -292,7 +222,6 @@ public partial class FlyoutWindow : Window
 
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
 
-        // A altura muda com a aba, entao o painel precisa se reancorar no canto.
         if (IsVisible) Posicionar();
     }
 
@@ -315,9 +244,6 @@ public partial class FlyoutWindow : Window
         if (!IsInitialized) return;
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
     }
-
-    // ------------------------------------------------------------------
-    // Dados
 
     private void Aplicar(Snapshot s)
     {
@@ -344,15 +270,9 @@ public partial class FlyoutWindow : Window
         Guardar(_historicoGpu, s.GpuUso);
         Guardar(_historicoDisco, s.DiscoAtividade);
 
-        // O grafico trabalha em porcentagem, entao a potencia entra como fracao
-        // da capacidade da fonte.
         if (_cfg.CapacidadeFonteW > 0)
             Guardar(_historicoEnergia, (float)(s.WattsTotais / _cfg.CapacidadeFonteW * 100));
 
-        // Os maximos medidos ficam guardados entre sessoes. Eles sao o ultimo
-        // recurso da escala, mas tambem servem de conferencia: uma peca que
-        // passa do numero da ficha tecnica denuncia a ficha errada para aquele
-        // exemplar, e a medicao passa a valer.
         if (s.GpuWatts is { } w && w > _cfg.PotenciaGpuMedida)
         {
             _cfg.PotenciaGpuMedida = w;
@@ -371,8 +291,6 @@ public partial class FlyoutWindow : Window
             _maximosMudaram = true;
         }
 
-        // As taxas de disco entram aqui, e nao na aba: a maior leitura do dia
-        // pode acontecer com o painel mostrando outra coisa.
         foreach (var d in s.Discos)
             _sensores.Especificacoes.ObservarDisco(d.Nome, d.LeituraMbs, d.EscritaMbs);
 
@@ -398,21 +316,13 @@ public partial class FlyoutWindow : Window
         ColunaCheia.Width = new GridLength(carga, GridUnitType.Star);
         ColunaVazia.Width = new GridLength(100 - carga, GridUnitType.Star);
 
-        // Passar do limite configurado pinta o anel e o numero de laranja.
         var quente = s.CpuTemp is { } t && t >= _cfg.LimiteCpu;
         var cor = quente ? Pincel("Alerta") : Pincel("Acento");
         Anel.Stroke = cor;
         BarraCarga.Background = cor;
-        // Branco fixo sumia no tema claro. "Texto" é branco no escuro e quase
-        // preto no claro, que é o que este número sempre quis dizer.
         ValorPrincipal.SetResourceReference(
             TextBlock.ForegroundProperty, quente ? "AlertaTexto" : "Texto");
 
-        // Mostra o que existe, e nao nada quando falta uma das duas. Vídeo
-        // integrado não publica temperatura própria — quem mede o calor dele é
-        // o sensor da CPU, no mesmo encapsulamento —, e exigir as duas leituras
-        // fazia o cartão dizer "--" numa máquina onde o uso era perfeitamente
-        // legível.
         CardGpu.Text = (s.GpuTemp, s.GpuUso) switch
         {
             ({ } gt, { } gu) => $"{gt:F0}° · {gu:F0}%",
@@ -445,10 +355,6 @@ public partial class FlyoutWindow : Window
         CpuWattsTexto.Text = s.CpuWatts is > 0 ? $"{s.CpuWatts:F0} W" : "n/d";
         CpuTensaoTexto.Text = s.CpuTensao is > 0 ? $"{s.CpuTensao:0.00} V" : "n/d";
 
-        // Os quadrados sao pequenos demais para carregar "66 / 88 W" sem
-        // atropelar em um processador de tres digitos, entao o teto e a
-        // procedencia dele ficam no tooltip. Sem isso, 66 W nao diz se o
-        // processador esta folgado ou no limite.
         var esp = _sensores.Especificacoes;
 
         CpuWattsTexto.ToolTip = Contexto(s.CpuWatts, esp.TetoDePotenciaCpu(), "W");
@@ -489,13 +395,6 @@ public partial class FlyoutWindow : Window
         MontarBarrasGpu(s);
     }
 
-    /// <summary>
-    /// O hot spot fica naturalmente acima da borda: nas RDNA3 uma diferenca de
-    /// 15 a 25 °C sob carga e esperada. So passa a sugerir contato ruim do
-    /// dissipador acima disso, ou quando o proprio hot spot encosta no teto de
-    /// 110 °C — e nenhum dos dois significa muita coisa com a GPU ociosa, quando
-    /// os dois sensores quase se encontram.
-    /// </summary>
     private void AplicarHotSpot(Snapshot s)
     {
         if (s.GpuHotSpot is not { } hot || hot <= 0)
@@ -507,7 +406,6 @@ public partial class FlyoutWindow : Window
         }
 
         var delta = s.GpuTemp is { } borda && borda > 0 ? hot - borda : (float?)null;
-        // So vale julgar sob carga: parado, a diferenca some sozinha.
         var sobCarga = s.GpuUso is > 30;
         var preocupante = sobCarga && (delta >= 30 || hot >= 100);
 
@@ -522,18 +420,6 @@ public partial class FlyoutWindow : Window
                   "diferença, costuma ser contato irregular do dissipador.";
     }
 
-    /// <summary>
-    /// Cada barra mede o valor atual contra o maximo que aquela peca aguenta, e
-    /// nao contra o maximo que ela ja fez. O teto vem da melhor fonte
-    /// disponivel — a peca, os sensores combinados, a ficha tecnica — e o
-    /// tooltip diz qual foi, porque uma barra pela metade so informa alguma
-    /// coisa se der para saber metade do que.
-    /// </summary>
-    /// <summary>
-    /// Transforma uma leitura solta em leitura com referencia: quanto e, de
-    /// quanto, e quem disse que o teto e esse. Devolve nulo quando nao ha nada a
-    /// acrescentar, para o quadrado nao ganhar um tooltip vazio.
-    /// </summary>
     private static string? Contexto(float? valor, Teto teto, string unidade)
     {
         if (valor is not { } v || v <= 0) return null;
@@ -592,11 +478,6 @@ public partial class FlyoutWindow : Window
         Desenhar(BarrasGpu, barras);
     }
 
-    /// <summary>
-    /// Reaproveita as barras existentes em vez de recriar a lista: as abas se
-    /// redesenham a cada leitura, e recriar faria o tooltip fechar na mao do
-    /// usuario toda vez.
-    /// </summary>
     private static void Desenhar(
         System.Windows.Controls.Panel alvo,
         List<(string Rotulo, string Valor, double Pct, string? Dica)> barras)
@@ -613,15 +494,6 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>
-    /// As barras da CPU, pela mesma régua da GPU: potência contra o PPT do
-    /// modelo, temperatura contra o TjMax, e cada ventoinha da placa-mãe contra
-    /// a rotação máxima que ela própria revelou.
-    ///
-    /// As ventoinhas do gabinete só existiam na contagem da estimativa de
-    /// energia — a rotação era lida e descartada. Agora que há teto para elas,
-    /// passam a caber numa barra.
-    /// </summary>
     private void MontarBarrasCpu(Snapshot s)
     {
         var esp = _sensores.Especificacoes;
@@ -645,18 +517,12 @@ public partial class FlyoutWindow : Window
                 teto.Explicacao("°C")));
         }
 
-        // Só as ventoinhas de verdade chegam aqui: o serviço só reconhece um
-        // canal depois de vê-lo girar, então conector vazio não entra. Uma
-        // ventoinha parada continua aparecendo, como "parada" — some-la faria a
-        // aba pular de altura toda vez que ela desligasse.
         foreach (var (nome, rpm) in s.Ventoinhas.OrderBy(v => v.Key, StringComparer.Ordinal))
         {
             if (!_cfg.MostrarVentoinhasNaCpu) break;
 
             var chave = s.ChavesDeVentoinha.GetValueOrDefault(nome, nome);
 
-            // A escolha de quais ver fica nos Ajustes. A leitura continua
-            // acontecendo para todas: é ela que alimenta as curvas de PWM.
             if (_cfg.VentoinhasOcultas.Contains(chave)) continue;
 
             var teto = esp.TetoDeVentoinha(chave);
@@ -672,17 +538,11 @@ public partial class FlyoutWindow : Window
             barras.Add((nome, valor, teto.Porcentagem(rpm), dica));
         }
 
-        // Sem barra nenhuma — um PC sem sensor de potência e com as ventoinhas
-        // desligadas na configuração —, o rótulo da seção ficaria sozinho.
         RotuloBarrasCpu.Visibility = barras.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
         Desenhar(BarrasCpu, barras);
     }
 
-    /// <summary>
-    /// Leitura e escrita contra o maior valor que a unidade já atingiu, e
-    /// temperatura contra o limiar que ela própria publica pelo SMART.
-    /// </summary>
     private void MontarBarrasDisco(Snapshot s, DiscoInfo? escolhido)
     {
         var esp = _sensores.Especificacoes;
@@ -724,14 +584,11 @@ public partial class FlyoutWindow : Window
     {
         MontarSeletor(s);
 
-        // -1 e o conjunto; acima disso, uma unidade so.
         var escolhido = _discoEscolhido >= 0 && _discoEscolhido < s.Discos.Count
             ? s.Discos[_discoEscolhido]
             : null;
 
         var atividade = Math.Clamp(escolhido?.Atividade ?? s.DiscoAtividade ?? 0, 0, 100);
-        // Com uma unidade escolhida, a temperatura e dela. No conjunto, a da
-        // primeira unidade — a do sistema —, nao a mais alta das tres.
         var temperatura = escolhido?.TemperaturaC
                        ?? s.Discos.FirstOrDefault()?.TemperaturaC
                        ?? s.DiscoTempMaior;
@@ -751,8 +608,6 @@ public partial class FlyoutWindow : Window
             : $"{atividade:F0}";
         AnelDisco.Data = ArcoDeCarga(atividade, RaioCpu, 75);
 
-        // O alerta olha a mais alta entre as unidades: um disco quente nao pode
-        // passar despercebido so porque o painel mostra outro.
         var maisAlta = escolhido?.TemperaturaC ?? s.DiscoTempMaior;
         var quente = maisAlta is { } t && t >= _cfg.LimiteDisco;
         AnelDisco.Stroke = quente ? Pincel("Alerta") : Pincel("Acento");
@@ -763,12 +618,10 @@ public partial class FlyoutWindow : Window
         DiscoTempTexto.Foreground = quente ? Pincel("AlertaTexto") : Pincel("Texto");
         DiscoTempTexto.ToolTip = DicaDeTemperatura(s, escolhido);
 
-        // Numa unidade so, as horas ligado cabem ao lado da vida util.
         DiscoVidaTexto.Text = escolhido is { VidaPct: { } vp, HorasLigado: { } h }
             ? $"{vp:F0}% · {h:N0} h"
             : vida is { } vm ? $"{vm:F0}%" : "n/d";
 
-        // O historico e sempre do conjunto: trocar de unidade nao apaga o grafico.
         DesenharHistoricoDisco();
         MontarBarrasDisco(s, escolhido);
 
@@ -776,12 +629,6 @@ public partial class FlyoutWindow : Window
         else MontarProcessos();
     }
 
-    /// <summary>
-    /// Os limiares que a propria unidade publica pelo SMART, ao lado da leitura.
-    /// O alerta do painel continua no limite que voce configurou: o limiar do
-    /// fabricante marca onde o disco comeca a reduzir desempenho, perto de 85 °C,
-    /// o que como aviso chegaria tarde demais.
-    /// </summary>
     private string? DicaDeTemperatura(Snapshot s, DiscoInfo? escolhido)
     {
         var linhas = new List<string>();
@@ -811,10 +658,6 @@ public partial class FlyoutWindow : Window
         return linhas.Count > 0 ? string.Join("\n", linhas) : null;
     }
 
-    /// <summary>
-    /// A lista do seletor so e refeita quando as unidades mudam, para nao
-    /// descartar a escolha do usuario a cada leitura.
-    /// </summary>
     private void MontarSeletor(Snapshot s)
     {
         var desejado = new List<string> { s.Discos.Count == 1 ? "a unidade" : "todas" };
@@ -838,14 +681,9 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>Nomes de modelo sao longos demais para o cabecalho.</summary>
     private static string Encurtar(string nome) =>
         nome.Length <= 22 ? nome : nome[..21].TrimEnd() + "…";
 
-    /// <summary>
-    /// As taxas de disco em repouso ficam na casa dos KB/s. Arredondar tudo para
-    /// MB/s escondia o movimento real, entao a unidade acompanha a grandeza.
-    /// </summary>
     private static string Taxa(float? mbs)
     {
         if (mbs is not { } v) return "n/d";
@@ -853,7 +691,6 @@ public partial class FlyoutWindow : Window
         return v < 1 ? $"{v * 1024:0} KB/s" : $"{v:0.0} MB/s";
     }
 
-    /// <summary>Uma linha por unidade, com o que o SMART informa.</summary>
     private void MontarUnidades(Snapshot s)
     {
         RotuloListaDisco.Text = "Unidades";
@@ -881,18 +718,6 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>
-    /// Os processos que mais usam disco agora. A medicao so corre com esta aba
-    /// aberta, para nao varrer a lista de processos o tempo todo.
-    ///
-    /// As linhas sao sempre as mesmas: com a quantidade variando, o painel
-    /// mudava de altura a cada leitura.
-    /// </summary>
-    /// <summary>
-    /// Fila de uma medicao por vez. Sem isto, uma varredura que demorasse mais
-    /// que o intervalo de leitura empilharia varreduras, cada uma roubando a
-    /// amostra anterior da outra e estragando as taxas.
-    /// </summary>
     private bool _medindoProcessos;
 
     private async void MontarProcessos()
@@ -904,8 +729,6 @@ public partial class FlyoutWindow : Window
 
         IReadOnlyList<ProcessoDisco> processos;
 
-        // Fora da thread da interface: a varredura abre um handle por processo,
-        // e são trezentos. Mesmo rápida, não pode acontecer entre dois quadros.
         try
         {
             processos = await Task.Run(() => _processos.Medir(LinhasDeProcesso));
@@ -920,7 +743,6 @@ public partial class FlyoutWindow : Window
             _medindoProcessos = false;
         }
 
-        // A aba pode ter mudado durante a medição.
         if (_aba != Aba.Disco || ModoUnidades.IsChecked == true) return;
 
         var maior = processos.Count > 0 ? processos.Max(p => p.TotalMbs) : 0;
@@ -973,7 +795,6 @@ public partial class FlyoutWindow : Window
 
         EnergiaWattsTexto.Text = $"{s.WattsTotais:F0}";
 
-        // O anel compara a potencia com a capacidade da fonte.
         var fracao = _cfg.CapacidadeFonteW > 0
             ? s.WattsTotais / _cfg.CapacidadeFonteW * 100
             : 0;
@@ -997,10 +818,6 @@ public partial class FlyoutWindow : Window
         MontarDistribuicao(s);
     }
 
-    /// <summary>
-    /// Separa o que e medido do que e estimado: so CPU e GPU tem sensor de
-    /// potencia; o resto vem das quantidades detectadas e dos watts por unidade.
-    /// </summary>
     private void MontarDistribuicao(Snapshot s)
     {
         var gpu = s.GpuWatts ?? 0;
@@ -1035,15 +852,6 @@ public partial class FlyoutWindow : Window
                            "Ajuste as quantidades e os watts por unidade no config.json.";
     }
 
-    /// <summary>
-    /// Watt-hora enquanto o número é pequeno, kWh depois.
-    ///
-    /// Antes era sempre kWh com duas casas, e isso fazia o contador parecer
-    /// travado: a 90 W, um PC leva quase sete minutos para andar de 0,01 para
-    /// 0,02 kWh, e nesse meio tempo o número não mexia. Em Wh com uma casa ele
-    /// anda a cada poucos segundos, que é o que se espera de um contador.
-    /// O kWh volta a partir de 1 kWh, que é a unidade da conta de luz.
-    /// </summary>
     private static string Energia(double wh) =>
         wh < 1000 ? $"{wh:0.0} Wh" : $"{wh / 1000.0:0.00} kWh";
 
@@ -1058,10 +866,6 @@ public partial class FlyoutWindow : Window
         return partes.Count == 0 ? "Outros componentes" : string.Join(", ", partes) + " e outros";
     }
 
-    /// <summary>
-    /// O aviso fica acima das abas, entao vale em qualquer uma: uma temperatura
-    /// alta nao deve depender de o usuario estar na aba certa para aparecer.
-    /// </summary>
     private void MostrarAviso(Alerta? alerta)
     {
         _alertaNaTela = alerta;
@@ -1075,8 +879,6 @@ public partial class FlyoutWindow : Window
         AvisoTitulo.Text = alerta.Titulo;
         AvisoDetalhe.Text = alerta.Detalhe;
 
-        // O botao de Economico so aparece se a pessoa pediu essa sugestao, e nao
-        // faz sentido quando o plano ja e esse.
         var oferecer = _cfg.SugerirEconomico && PowerService.Atual() != PerfilEnergia.Economico;
         BotaoEconomico.Visibility = oferecer ? Visibility.Visible : Visibility.Collapsed;
 
@@ -1096,10 +898,6 @@ public partial class FlyoutWindow : Window
         Recado("Não foi possível trocar o plano de energia");
     }
 
-    /// <summary>
-    /// Silencia so o componente do aviso em tela: silenciar o disco nao pode
-    /// esconder um aviso da CPU, que e outro problema.
-    /// </summary>
     private void AvisoSilenciar_Click(object sender, RoutedEventArgs e)
     {
         if (_alertaNaTela is not { } alerta) return;
@@ -1108,7 +906,6 @@ public partial class FlyoutWindow : Window
         AvisoTemperatura.Visibility = Visibility.Collapsed;
         Recado($"Aviso de {alerta.Componente} silenciado por 10 minutos");
 
-        // Outro componente pode estar acima do limite e assumir o aviso agora.
         if (_sensores.Ultimo is { } ultimo)
         {
             _alertas.Avaliar(ultimo);
@@ -1116,31 +913,16 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>
-    /// A faixa de aviso dos sensores de baixo nivel.
-    ///
-    /// O texto e montado pelo <see cref="Diagnostico"/> e nao fica mais fixo no
-    /// XAML: ele dizia "abra como administrador" tambem para quem ja estava como
-    /// administrador, o que mandava o usuario repetir uma tentativa que acabara
-    /// de falhar e escondia o motivo de verdade.
-    /// </summary>
     private void MostrarAvisoDeDriver(bool temSensores)
     {
         AvisoDriver.Visibility = temSensores ? Visibility.Collapsed : Visibility.Visible;
 
         if (temSensores) return;
 
-        // Remontar o mesmo texto a cada leitura faria a faixa piscar debaixo de
-        // quem esta lendo. Nada aqui muda durante a sessao.
         if (!_avisoDeDriverMontado)
         {
             AvisoDriverTexto.Text = Diagnostico.PorQueFaltamSensores();
 
-            // O botao aparece sempre que falta sensor, inclusive sem elevacao.
-            // Antes ele exigia estar elevado, com o argumento de que elevar
-            // resolveria o primeiro caso — mas e justamente a maquina que nao
-            // elevou a que precisa contar por que nao elevou, e sem o botao ela
-            // ficava sem nenhuma forma de dizer isso.
             BotaoDiagnostico.Visibility = Visibility.Visible;
 
             _avisoDeDriverMontado = true;
@@ -1164,20 +946,10 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    // ------------------------------------------------------------------
-    // Atualização
-
     private readonly AtualizacaoService _atualizacoes = new();
     private Manifesto? _atualizacaoOferecida;
     private CancellationTokenSource? _cancelarAtualizacao;
 
-    /// <summary>
-    /// Mostra a faixa de versao nova. Chamada pelo App, que e quem procura.
-    ///
-    /// Oferece, nao instala: baixar e executar fecha o app no meio e custa uma
-    /// confirmacao do Windows, e nenhuma das duas coisas se faz nas costas de
-    /// quem esta usando o PC.
-    /// </summary>
     public void OferecerAtualizacao(Manifesto manifesto)
     {
         _atualizacaoOferecida = manifesto;
@@ -1190,21 +962,10 @@ public partial class FlyoutWindow : Window
         AvisoAtualizacao.Visibility = Visibility.Visible;
     }
 
-    /// <summary>
-    /// As notas da versao viram uma lista, uma novidade por linha.
-    ///
-    /// O arquivo de notas e escrito em linhas curtas justamente para isso:
-    /// despejado como paragrafo unico, dentro de um painel de 432 px, vira um
-    /// bloco que ninguem le. Linhas em branco separam itens e sao descartadas.
-    /// </summary>
     private void MontarNovidades(string? notas)
     {
         ListaDeNovidades.Children.Clear();
 
-        // Só a parte para quem usa: a seção "## Detalhes" das notas é técnica
-        // e fica na página da release. O manifesto já chega cortado (o
-        // gerar-manifesto.ps1 corta), mas um manifesto antigo ou escrito à mão
-        // pode trazer tudo — então corta aqui também, e tira os títulos.
         var conteudo = (notas ?? "").Replace("\r\n", "\n");
         var detalhes = System.Text.RegularExpressions.Regex.Match(conteudo, @"(?im)^##\s*Detalhes");
         if (detalhes.Success) conteudo = conteudo[..detalhes.Index];
@@ -1236,8 +997,6 @@ public partial class FlyoutWindow : Window
             };
             ponto.SetResourceReference(TextBlock.ForegroundProperty, "Acento");
 
-            // Remove o traço de quem escreveu a nota já em lista: o marcador
-            // é desenhado aqui, e dois seguidos ficariam feios.
             var texto = new TextBlock
             {
                 Text = linha.TrimStart('-', '*', '•', ' '),
@@ -1274,8 +1033,6 @@ public partial class FlyoutWindow : Window
         BotaoAtualizar.Content = "Cancelar";
         BotaoAdiarAtualizacao.IsEnabled = false;
 
-        // O estado vai na sua própria linha, e não no subtítulo: o subtítulo diz
-        // qual versão você tem, e isso continua verdade durante o download.
         void Estado(string texto)
         {
             AtualizacaoEstado.Text = texto;
@@ -1304,13 +1061,6 @@ public partial class FlyoutWindow : Window
                 return;
             }
 
-            // O aviso do Windows é dito aqui, e não na faixa: é agora que ele
-            // vai aparecer. Quem vê "editor desconhecido" sem ter sido avisado
-            // conclui, com razão, que pegou algo errado — e quem foi avisado
-            // dois minutos antes, enquanto lia as novidades, já esqueceu.
-            // Com o app elevado o aviso não aparece: o instalador herda a
-            // elevação. Anunciar um aviso que não vem confunde tanto quanto
-            // não anunciar o que vem.
             Estado(AtualizacaoService.Elevado()
                 ? "Arquivo conferido. Abrindo a atualização…"
                 : "Arquivo conferido. Abrindo o instalador — o Windows vai " +
@@ -1330,20 +1080,11 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>
-    /// Esconde a faixa sem registrar recusa.
-    ///
-    /// Nao grava "dispensada": a verificacao e uma vez por dia, e no dia
-    /// seguinte a faixa volta. Guardar a recusa para sempre faria uma correcao
-    /// de seguranca ficar invisivel por causa de um clique distraido.
-    /// </summary>
     private void AdiarAtualizacao_Click(object sender, RoutedEventArgs e) =>
         AvisoAtualizacao.Visibility = Visibility.Collapsed;
 
     private void AtualizarStatus(Snapshot s)
     {
-        // Um recado recente sobre o plano de energia segura o rodape por alguns
-        // segundos: senao a proxima leitura o apagaria antes de dar para ler.
         if (DateTime.UtcNow < _recadoAte) return;
 
         Status.Text = s.SensoresDeBaixoNivel
@@ -1356,7 +1097,6 @@ public partial class FlyoutWindow : Window
 
     private static Brush Pincel(string chave) => (Brush)Application.Current.Resources[chave];
 
-    /// <summary>Desenhos dos icones dos chips, num quadro de 24 por 24.</summary>
     private static class Icone
     {
         public const string Termometro = "M14,14.8 L14,4 A2,2 0 1,0 10,4 L10,14.8 A4,4 0 1,0 14,14.8 Z";
@@ -1367,7 +1107,6 @@ public partial class FlyoutWindow : Window
         public const string Escudo = "M12,3 L20,6 L20,12 C20,17 16.5,20 12,21 C7.5,20 4,17 4,12 L4,6 Z";
     }
 
-    /// <summary>Preenche os dois chips do cabecalho; sem desenho, o icone some.</summary>
     private void Chips(string? iconeEsq, string textoEsq, string? iconeDir, string textoDir)
     {
         Aplicar(IconeEsquerdo, iconeEsq);
@@ -1388,14 +1127,6 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    // ------------------------------------------------------------------
-    // Grade de nucleos
-
-    /// <summary>
-    /// A contagem vem do hardware, nunca fixa. Em "Núcleos" cada barra e a media
-    /// das threads daquele nucleo, que e como a carga se distribui num CPU com
-    /// duas threads por nucleo; em "Threads" cada barra e uma thread.
-    /// </summary>
     private void MontarGrade(Snapshot s)
     {
         var threads = s.CpuCargaPorThread;
@@ -1416,7 +1147,6 @@ public partial class FlyoutWindow : Window
         }
         else if (porNucleo && clocks.Count > 0 && threads.Count == clocks.Count)
         {
-            // Sem SMT: thread e nucleo sao a mesma coisa.
             valores = threads.Select(v => (double)v).ToList();
             prefixo = "N";
         }
@@ -1431,7 +1161,6 @@ public partial class FlyoutWindow : Window
             ? $"detectado: {clocks.Count} núcleos · {threads.Count} threads"
             : $"detectado: {threads.Count} threads";
 
-        // Sem agrupamento possivel, a opcao "Núcleos" nao teria o que mostrar.
         ModoNucleos.IsEnabled = clocks.Count > 0;
 
         SincronizarBarras(valores.Count);
@@ -1441,8 +1170,6 @@ public partial class FlyoutWindow : Window
             var linha = (BarraDeNucleo)GradeNucleos.Children[i];
             var clock = prefixo == "N" && i < clocks.Count ? clocks[i] : (float?)null;
 
-            // O tooltip diz de onde veio o numero, para dar para conferir a
-            // media contra o Gerenciador de Tarefas.
             var origem = prefixo == "N" && podeAgrupar
                 ? $"média de T{i * 2 + 1} e T{i * 2 + 2}"
                 : null;
@@ -1451,7 +1178,6 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>Cria ou remove barras so quando a contagem muda.</summary>
     private void SincronizarBarras(int quantidade)
     {
         while (GradeNucleos.Children.Count > quantidade)
@@ -1460,8 +1186,6 @@ public partial class FlyoutWindow : Window
         while (GradeNucleos.Children.Count < quantidade)
             GradeNucleos.Children.Add(new BarraDeNucleo());
 
-        // Sem folga entre as duas colunas a porcentagem de uma encosta no
-        // rotulo da seguinte.
         for (var i = 0; i < GradeNucleos.Children.Count; i++)
         {
             var par = i % 2 == 0;
@@ -1469,9 +1193,6 @@ public partial class FlyoutWindow : Window
                 new Thickness(0, 0, par ? 18 : 0, 8);
         }
     }
-
-    // ------------------------------------------------------------------
-    // Grafico do historico
 
     private void AreaGrafico_SizeChanged(object sender, SizeChangedEventArgs e) => DesenharHistorico();
 
@@ -1495,7 +1216,6 @@ public partial class FlyoutWindow : Window
         Desenhar(_historicoEnergia, AreaGraficoEnergia, GraficoLinhaEnergia, GraficoAreaEnergia,
                  EnergiaPicoHistorico);
 
-        // O historico esta em porcentagem da fonte; o rotulo mostra watts.
         if (_historicoEnergia.Count >= 2)
             EnergiaPicoHistorico.Text =
                 $"Pico: {_historicoEnergia.Max() / 100 * _cfg.CapacidadeFonteW:F0} W";
@@ -1517,8 +1237,6 @@ public partial class FlyoutWindow : Window
 
         var valores = historico.ToArray();
 
-        // O grafico ocupa sempre a largura toda: com poucos pontos ele cresce da
-        // esquerda para a direita conforme o historico enche.
         var passo = largura / Math.Max(valores.Length - 1, 1);
 
         var pontos = new PointCollection(valores.Length);
@@ -1530,20 +1248,13 @@ public partial class FlyoutWindow : Window
 
         linha.Points = pontos;
 
-        // A area e a mesma linha fechada na base.
         preenchimento.Points = new PointCollection(pontos) { new(largura, altura), new(0, altura) };
 
         rotuloDoPico.Text = $"Pico: {valores.Max():F0}%";
     }
 
-    // ------------------------------------------------------------------
-    // Anel
-
-    /// <summary>Arco do topo no sentido horario, proporcional a carga.</summary>
     private static Geometry? ArcoDeCarga(double porcentagem, double raio, double centro)
     {
-        // Abaixo de uns 2% o arco vira um ponto solto no topo. Um minimo visual
-        // mantem a leitura de "tem pouca carga" sem parecer defeito.
         var valor = Math.Clamp(porcentagem, 0, 100);
         if (valor <= 0) return null;
         valor = Math.Max(valor, 1.8);
@@ -1561,13 +1272,6 @@ public partial class FlyoutWindow : Window
         return new PathGeometry(new[] { new PathFigure(inicio, new[] { arco }, false) });
     }
 
-    // ------------------------------------------------------------------
-    // Perfis de energia
-
-    /// <summary>
-    /// O plano pode ter sido trocado fora do app, entao o painel le o que
-    /// esta em vigor em vez de assumir o que ele mesmo selecionou.
-    /// </summary>
     private void SincronizarPerfil()
     {
         var atual = PowerService.Atual();
@@ -1590,8 +1294,6 @@ public partial class FlyoutWindow : Window
             _ => PerfilEnergia.Equilibrado
         };
 
-        // O Desempenho nao e so um plano de energia: abre a tela com as demais
-        // acoes, para a pessoa escolher o que fazer.
         if (perfil == PerfilEnergia.Desempenho)
         {
             AbrirDesempenho();
@@ -1604,38 +1306,22 @@ public partial class FlyoutWindow : Window
             return;
         }
 
-        // Falhou: volta a marcacao para o plano que realmente esta ativo,
-        // em vez de deixar o painel mostrando algo que nao vigora.
         Recado("Não foi possível trocar o plano de energia");
         SincronizarPerfil();
     }
 
-    /// <summary>
-    /// Mensagem curta no rodapé, por alguns segundos. Pública porque o App
-    /// também precisa dizer coisas por aqui — o resultado de uma procura de
-    /// atualização que o usuário pediu, por exemplo.
-    /// </summary>
     public void Recado(string texto)
     {
         Status.Text = texto;
         _recadoAte = DateTime.UtcNow.AddSeconds(4);
     }
 
-    // ------------------------------------------------------------------
-    // Botoes
-
     private void Minimizar_Click(object sender, RoutedEventArgs e) => Esconder();
 
     private void Personalizar_Click(object sender, RoutedEventArgs e) => AbrirPersonalizacao();
 
-    /// <summary>
-    /// Publica porque a ilha do topo tambem abre esta tela — e, vindo dela,
-    /// abre ja na secao da ilha.
-    /// </summary>
     public void AbrirPersonalizacao(bool irParaIlha = false)
     {
-        // A tela aplica cor e transparencia na hora, para dar para ver o efeito
-        // enquanto se mexe nos controles.
         var tela = new PersonalizacaoWindow(_cfg, () =>
         {
             (Application.Current as App)?.AplicarAparencia();
@@ -1646,38 +1332,6 @@ public partial class FlyoutWindow : Window
         tela.ShowDialog();
     }
 
-    // ------------------------------------------------------------------
-    // Convite e guia da Kisland
-
-    /// <summary>
-    /// Mostra o convite para conhecer a Kisland. Chamado pelo App uma vez so;
-    /// quem marca que ja foi visto e o App, na hora de mostrar — fechar o
-    /// painel sem responder tambem conta como visto, para ele nunca voltar.
-    /// </summary>
-    public void MostrarConviteKisland()
-    {
-        ConviteKisland.Visibility = Visibility.Visible;
-        if (IsVisible) Posicionar();
-    }
-
-    private void ConviteDepois_Click(object sender, RoutedEventArgs e) => FecharConvite();
-
-    private void ConviteVer_Click(object sender, RoutedEventArgs e)
-    {
-        FecharConvite();
-        AbrirGuiaKisland();
-    }
-
-    private void FecharConvite()
-    {
-        ConviteKisland.Visibility = Visibility.Collapsed;
-        if (IsVisible) Posicionar();
-    }
-
-    /// <summary>
-    /// O guia muda a configuracao na hora, como a Personalizacao. Obrigatorio:
-    /// aberto sozinho pelo App, sem o "Pular".
-    /// </summary>
     public void AbrirGuiaKisland(bool obrigatorio = false)
     {
         new GuiaKislandWindow(_cfg, () =>
@@ -1688,7 +1342,6 @@ public partial class FlyoutWindow : Window
         { Owner = this }.ShowDialog();
     }
 
-    /// <summary>As Novidades (o Kdrop), abertas sozinhas pelo App para todos, uma vez.</summary>
     public void AbrirNovidades(bool obrigatorio = false)
     {
         new NovidadesWindow(_cfg, () =>
@@ -1711,13 +1364,9 @@ public partial class FlyoutWindow : Window
     {
         new ComponentesWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
 
-        // A estimativa muda o anel e a faixa: repinta sem esperar a leitura.
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
     }
 
-    /// <summary>
-    /// Em "Unidades" a linha nao tem processo, entao nao abre nada.
-    /// </summary>
     private void Processo_Clicado(object sender, MouseButtonEventArgs e)
     {
         if (sender is not LinhaDeDisco { Pid: { } pid, NomeDoProcesso: { } nome }) return;
@@ -1725,11 +1374,6 @@ public partial class FlyoutWindow : Window
         new ArquivosWindow(pid, nome) { Owner = this }.ShowDialog();
     }
 
-    /// <summary>
-    /// Abre o registro de consumo no bloco de notas, ou no que o Windows tiver
-    /// associado a .txt. Grava antes: senão o arquivo mostraria o estado de até
-    /// trinta segundos atrás, ou nem existiria na primeira vez.
-    /// </summary>
     private void RegistroDeConsumo_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -1748,22 +1392,12 @@ public partial class FlyoutWindow : Window
         }
     }
 
-    /// <summary>
-    /// O par do cartão de RAM: ali é quem ocupa a memória, aqui é quem ocupa a
-    /// placa de vídeo. Os dois ficam lado a lado na aba Geral e abrem do mesmo
-    /// jeito, porque são a mesma pergunta sobre peças diferentes.
-    /// </summary>
     private void CardGpu_Click(object sender, RoutedEventArgs e) =>
         new GpuProcessosWindow { Owner = this }.ShowDialog();
 
     private void CardRam_Click(object sender, RoutedEventArgs e) =>
         new MemoriaWindow(_sensores) { Owner = this }.ShowDialog();
 
-    /// <summary>
-    /// O anel da aba Geral abre quem está usando a CPU — o mesmo que o cartão
-    /// de RAM faz para a memória. Faltava o equivalente para processamento:
-    /// dava para ver que a CPU estava a 90%, e não quem a estava usando.
-    /// </summary>
     private void Processador_Click(object sender, RoutedEventArgs e) =>
         new ProcessadorWindow(_sensores) { Owner = this }.ShowDialog();
 
@@ -1771,35 +1405,24 @@ public partial class FlyoutWindow : Window
     {
         new LogDiscoWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
 
-        // O log usa a mesma medicao por processo; ao voltar, as amostras antigas
-        // virariam um pico falso.
         _processos.Reiniciar();
     }
 
-    /// <summary>Publica porque o botao Desempenho da ilha cai aqui.</summary>
     public void AbrirDesempenho()
     {
         new DesempenhoWindow { Owner = this }.ShowDialog();
 
-        // O plano pode ter mudado la dentro.
         SincronizarPerfil();
     }
 
-    /// <summary>Tambem usada na primeira execucao, pela janela principal.</summary>
     public void AbrirConfiguracao(bool primeiraVez)
     {
         var tela = new ConfiguracaoWindow(_cfg, _sensores, primeiraVez) { Owner = this };
         tela.ShowDialog();
 
-        // Os limites mudam a cor do anel, entao vale repintar sem esperar a
-        // proxima leitura.
         if (_sensores.Ultimo is { } ultimo) Aplicar(ultimo);
     }
 
-    /// <summary>
-    /// Encerra o app de vez: solta os sensores, tira o icone da bandeja e sai.
-    /// Nao ha trabalho a perder, entao nao pede confirmacao.
-    /// </summary>
     private void Encerrar_Click(object sender, RoutedEventArgs e) =>
         Application.Current.Shutdown();
 }

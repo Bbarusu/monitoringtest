@@ -8,26 +8,14 @@ using D = System.Drawing;
 
 namespace MonitorPC.Services;
 
-/// <summary>Um atalho da Kisland: um app (caminho do .exe ou .lnk) ou um site.</summary>
 public sealed class AtalhoDaIlha
 {
     public string Nome { get; set; } = "";
     public string Destino { get; set; } = "";
 }
 
-/// <summary>
-/// Os atalhos da Kisland: o chat de IA do anel e os apps e sites que a pessoa
-/// escolheu.
-///
-/// O KInfo costuma rodar como administrador, por causa dos sensores. Abrir um
-/// site ou um app direto dele faria o navegador e o app rodarem como
-/// administrador tambem — o Chrome reclama, arrastar arquivos para eles deixa
-/// de funcionar, e e mais acesso do que um chat precisa. Por isso, elevado, o
-/// pedido passa pelo Explorer, que abre tudo como o usuario comum.
-/// </summary>
 public static class AtalhoService
 {
-    /// <summary>Quantos atalhos cabem na Kisland aberta sem apertar.</summary>
     public const int Maximo = 6;
 
     public const string IaOutra = "outro";
@@ -44,7 +32,6 @@ public static class AtalhoService
         new("deepseek", "DeepSeek", "https://chat.deepseek.com/")
     };
 
-    /// <summary>O chat escolhido para o anel, ou nulo se nenhum (ou "outro" sem endereco).</summary>
     public static (string Nome, string Destino)? IaEscolhida(AppConfig cfg)
     {
         if (string.IsNullOrEmpty(cfg.IlhaIa)) return null;
@@ -54,8 +41,6 @@ public static class AtalhoService
             var destino = cfg.IlhaIaEndereco?.Trim();
             if (string.IsNullOrEmpty(destino)) return null;
 
-            // "meuchat.com" vira site; um caminho de app ou um endereco com
-            // protocolo proprio ("claude:") fica como esta.
             if (!File.Exists(destino) && !destino.Contains(':') && NormalizarSite(destino) is { } site)
                 destino = site;
 
@@ -69,17 +54,8 @@ public static class AtalhoService
         return ia is null ? null : (ia.Nome, ia.Endereco);
     }
 
-    /// <summary>
-    /// Marca, no lugar do destino, do atalho do chat de IA na Kisland aberta:
-    /// quem decide se abre o app ou o site e <see cref="AbrirIa"/>, na hora.
-    /// </summary>
     public const string MarcaDaIa = "kinfo:ia";
 
-    /// <summary>
-    /// Abre o chat de IA escolhido: o app, se ele estiver instalado no PC (e a
-    /// pessoa preferir assim), ou o site. Um endereco proprio ("Outro") abre
-    /// como esta.
-    /// </summary>
     public static void AbrirIa(AppConfig cfg)
     {
         if (IaEscolhida(cfg) is not { } ia) return;
@@ -91,7 +67,6 @@ public static class AtalhoService
         Abrir(ia.Destino);
     }
 
-    /// <summary>Nomes com que cada chat aparece no menu Iniciar.</summary>
     private static string[] NomesDoApp(string ia) => ia switch
     {
         "Copilot" => new[] { "Copilot", "Microsoft Copilot" },
@@ -99,15 +74,6 @@ public static class AtalhoService
         _ => new[] { ia }
     };
 
-    /// <summary>
-    /// O id do app do chat no menu Iniciar, ou nulo se nao estiver instalado.
-    ///
-    /// A busca e pela lista de apps do proprio Windows (shell:AppsFolder, a
-    /// mesma do menu Iniciar), e nao por pastas de instalacao: cada chat se
-    /// instala de um jeito (Microsoft Store, instalador proprio, app da web
-    /// instalado pelo Edge ou pelo Chrome), e todos aparecem ali com o nome
-    /// e um id que o Explorer sabe abrir.
-    /// </summary>
     public static string? AppInstalado(string ia)
     {
         var apps = AppsDoMenuIniciar();
@@ -121,11 +87,6 @@ public static class AtalhoService
     private static Dictionary<string, string>? _apps;
     private static DateTime _appsLidosEm;
 
-    /// <summary>
-    /// Nome e id de cada app do menu Iniciar. Ler leva uma fracao de segundo;
-    /// a lista fica guardada por 10 minutos, o bastante para um app instalado
-    /// agora aparecer logo.
-    /// </summary>
     private static Dictionary<string, string> AppsDoMenuIniciar()
     {
         if (_apps is not null && DateTime.UtcNow - _appsLidosEm < TimeSpan.FromMinutes(10)) return _apps;
@@ -185,10 +146,6 @@ public static class AtalhoService
         }
     }
 
-    /// <summary>
-    /// "youtube.com" vira "https://youtube.com". Devolve nulo para o que nao
-    /// parece endereco nenhum.
-    /// </summary>
     public static string? NormalizarSite(string? texto)
     {
         var t = texto?.Trim();
@@ -203,11 +160,9 @@ public static class AtalhoService
             : null;
     }
 
-    /// <summary>"youtube.com" de "https://www.youtube.com/...".</summary>
     public static string Host(Uri uri) =>
         uri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? uri.Host[4..] : uri.Host;
 
-    /// <summary>Nome para um app escolhido: a descricao do executavel, ou o nome do arquivo.</summary>
     public static string NomeDoApp(string caminho)
     {
         try
@@ -220,7 +175,6 @@ public static class AtalhoService
         }
         catch
         {
-            // Sem descricao legivel: fica o nome do arquivo.
         }
 
         return Path.GetFileNameWithoutExtension(caminho);
@@ -228,10 +182,6 @@ public static class AtalhoService
 
     private static readonly Dictionary<string, ImageSource?> Icones = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// O icone do app, como o Windows mostra. Site nao tem: quem desenha e a
-    /// Kisland, com a inicial do nome.
-    /// </summary>
     public static ImageSource? Icone(string destino)
     {
         if (Icones.TryGetValue(destino, out var guardado)) return guardado;

@@ -9,18 +9,9 @@ public enum Tema
     Claro,
     Sistema,
 
-    /// <summary>
-    /// O escuro com preto de verdade no fundo, para telas AMOLED: pixel preto
-    /// e pixel apagado, que gasta zero e da o contraste maximo. No fim da
-    /// lista para nao mudar o numero dos outros na configuracao salva.
-    /// </summary>
     Preto
 }
 
-/// <summary>
-/// Troca a paleta do app em tempo de execucao. As telas referenciam estas
-/// chaves por DynamicResource, entao mudar aqui repinta tudo sem reabrir.
-/// </summary>
 public static class ThemeService
 {
     private static readonly (string Chave, string Escuro, string Claro)[] Paleta =
@@ -36,13 +27,9 @@ public static class ThemeService
         ("Alerta",          "#F97316", "#D9600B"),
         ("AlertaTexto",     "#FDBA74", "#9A4B06"),
 
-        // Tracos de icone. No escuro sao um cinza claro; no claro precisam
-        // escurecer, senao os contornos somem no branco do fundo.
         ("Icone",           "#C4CAD6", "#5B6370"),
         ("IconeFraco",      "#8B94A3", "#767E8B"),
 
-        // Cartoes de aviso. O laranja escuro de fundo viraria uma mancha preta
-        // no tema claro, entao a versao clara inverte: fundo creme, traco forte.
         ("AvisoFundo",      "#2A1A10", "#FEF2E4"),
         ("AvisoBorda",      "#7C3A14", "#F3C79A"),
         ("AvisoIcone",      "#FB923C", "#C2600A"),
@@ -50,17 +37,12 @@ public static class ThemeService
         ("AvisoBotao",      "#F97316", "#C2600A"),
         ("AvisoBotaoTexto", "#1A0F08", "#FFFFFF"),
 
-        // Series dos graficos e legendas: o que foi medido e o que foi estimado.
         ("SerieMedida",     "#8FBAFF", "#2563EB"),
         ("SerieEstimada",   "#4B5365", "#A9B0BD"),
         ("InfoFundo",       "#16233D", "#E4EDFF"),
         ("InfoTexto",       "#8FBAFF", "#1D4ED8")
     };
 
-    /// <summary>
-    /// O que o tema Preto troca no escuro: so as superficies. Texto, icones e
-    /// avisos ficam os do escuro. Tambem e a paleta da Kisland preta.
-    /// </summary>
     private static readonly Dictionary<string, string> Preta = new()
     {
         ["Fundo"] = "#000000",
@@ -70,10 +52,6 @@ public static class ThemeService
         ["Trilho"] = "#1C1E22"
     };
 
-    /// <summary>
-    /// A paleta escura com as superficies pretas, pronta para pendurar nos
-    /// recursos de uma janela so (a Kisland preta), sem mexer no resto do app.
-    /// </summary>
     public static Dictionary<string, Brush> PaletaPreta()
     {
         var pinceis = new Dictionary<string, Brush>();
@@ -88,19 +66,12 @@ public static class ThemeService
         return pinceis;
     }
 
-    /// <summary>Tema Preto em vigor: sem transparencia, que acabaria com o preto.</summary>
     public static bool PretoTotal { get; private set; }
 
-    /// <summary>Cor de fundo em vigor, para quem precisa dela com alpha.</summary>
     public static Color CorDeFundo { get; private set; } = (Color)ColorConverter.ConvertFromString("#15171C")!;
 
     public static bool Claro { get; private set; }
 
-    /// <summary>
-    /// Pincel da paleta em vigor. Elementos criados em codigo ficam com a cor do
-    /// momento; os que precisam acompanhar a troca de tema usam
-    /// SetResourceReference com a mesma chave.
-    /// </summary>
     public static Brush Pincel(string chave) => (Brush)Application.Current.Resources[chave];
 
     public static void Aplicar(Tema tema)
@@ -127,7 +98,6 @@ public static class ThemeService
         }
     }
 
-    /// <summary>O Windows guarda isto como "apps usam tema claro".</summary>
     private static bool SistemaEstaClaro()
     {
         try

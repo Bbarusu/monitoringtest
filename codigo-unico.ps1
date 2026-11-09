@@ -1,16 +1,3 @@
-# ---------------------------------------------------------------------------
-#  Junta todo o codigo-fonte do KInfo num arquivo so, para leitura e revisao.
-#
-#  Chamado pelo publicar.cmd, para o arquivo nunca ficar defasado em relacao
-#  ao instalador que saiu junto com ele.
-#
-#  O texto do cabecalho mora em arte\cabecalho-codigo.md, e nao aqui: assim
-#  este script fica em ASCII puro e a prosa acentuada vive num arquivo lido
-#  explicitamente como UTF-8, sem depender da pagina de codigo do console.
-#
-#      powershell -ExecutionPolicy Bypass -File codigo-unico.ps1
-# ---------------------------------------------------------------------------
-
 param(
     [string]$Destino = "dist\instalador\KInfo-codigo-completo.md"
 )
@@ -20,10 +7,8 @@ Set-Location -Path $PSScriptRoot
 
 $extensoes = @(".cs", ".xaml", ".csproj", ".manifest", ".json", ".cmd", ".ps1", ".py", ".md")
 
-# Saida de build, pacote intermediario e o proprio arquivo gerado ficam fora.
 $ignorar = @("\bin\", "\obj\", "\dist\", "\Payload\", "\.git\", "\.vs\")
 
-# Ordem de leitura: o que explica antes do que executa.
 $prioridade = @(
     "README.md", "DESIGN.md",
     ".csproj", ".manifest", "App.xaml", "App.xaml.cs",

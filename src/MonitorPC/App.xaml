@@ -4,7 +4,6 @@
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
 
-        <!-- Paleta do painel. O acento vem da configuracao em tempo de execucao. -->
         <Color x:Key="FundoColor">#15171C</Color>
         <Color x:Key="AcentoColor">#3B82F6</Color>
 
@@ -35,7 +34,6 @@
         <FontFamily x:Key="FonteUI">Segoe UI Variable Display, Segoe UI</FontFamily>
         <FontFamily x:Key="FonteNumero">Segoe UI Light, Segoe UI</FontFamily>
 
-        <!-- Botao de aba -->
         <Style x:Key="Aba" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource TextoFraco}" />
             <Setter Property="FontSize" Value="12" />
@@ -67,7 +65,6 @@
             </Setter>
         </Style>
 
-        <!-- Botao de perfil de energia -->
         <Style x:Key="Perfil" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{DynamicResource Icone}" />
             <Setter Property="FontSize" Value="13" />
@@ -94,7 +91,6 @@
             </Setter>
         </Style>
 
-        <!-- Botao redondo do cabecalho -->
         <Style x:Key="BotaoRedondo" TargetType="Button">
             <Setter Property="Width" Value="44" />
             <Setter Property="Height" Value="44" />
@@ -115,7 +111,6 @@
             </Setter>
         </Style>
 
-        <!-- Menu do icone da bandeja -->
         <Style x:Key="MenuDaBandeja" TargetType="ContextMenu">
             <Setter Property="FontFamily" Value="{StaticResource FonteUI}" />
             <Setter Property="FontSize" Value="12" />
@@ -156,7 +151,6 @@
             </Setter>
         </Style>
 
-        <!-- Linha de lista clicavel: sem moldura, so realce ao passar o mouse -->
         <ControlTemplate x:Key="LinhaClicavel" TargetType="Button">
             <Border x:Name="bg" CornerRadius="8" Background="Transparent" Padding="8,6">
                 <ContentPresenter />
@@ -168,17 +162,6 @@
             </ControlTemplate.Triggers>
         </ControlTemplate>
 
-        <!--
-            O anel grande da aba Geral é clicável: abre quem está usando a CPU.
-
-            Sem moldura própria — o anel já é o desenho, e uma borda de botão
-            em volta dele competiria com o número. O que anuncia que dá para
-            clicar é o cursor e um realce leve ao passar o mouse, no mesmo tom
-            que as linhas clicáveis usam.
-
-            CornerRadius alto para o realce acompanhar o círculo em vez de
-            desenhar um quadrado atrás dele.
-        -->
         <ControlTemplate x:Key="AnelClicavel" TargetType="Button">
             <Border x:Name="bg" CornerRadius="120" Background="Transparent">
                 <ContentPresenter />
@@ -190,8 +173,6 @@
             </ControlTemplate.Triggers>
         </ControlTemplate>
 
-        <!-- Barra de rolagem fina, no tom do painel. O WPF so usa esta se o
-             estilo for aplicado por tipo, sem chave. -->
         <Style TargetType="ScrollBar">
             <Setter Property="Width" Value="8" />
             <Setter Property="Background" Value="Transparent" />
@@ -225,7 +206,6 @@
                                         </Thumb.Template>
                                     </Thumb>
                                 </Track.Thumb>
-                                <!-- Os botoes de seta somem: a area clicavel do trilho basta. -->
                                 <Track.IncreaseRepeatButton>
                                     <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0"
                                                   Focusable="False" />
@@ -247,7 +227,6 @@
             </Setter>
         </Style>
 
-        <!-- Seletor compacto, no tom do painel -->
         <Style x:Key="Seletor" TargetType="ComboBox">
             <Setter Property="Foreground" Value="{DynamicResource Texto}" />
             <Setter Property="FontFamily" Value="{StaticResource FonteUI}" />
@@ -312,8 +291,6 @@
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </ToggleButton.Template>
-                                <!-- O ContentPresenter nao herda a formatacao do ComboBox:
-                                     sem isto o texto sai preto e na fonte padrao. -->
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center"
                                             TextElement.Foreground="{DynamicResource Texto}"
                                             TextElement.FontFamily="{StaticResource FonteUI}"
@@ -346,7 +323,6 @@
             </Setter>
         </Style>
 
-        <!-- Interruptor -->
         <Style x:Key="Interruptor" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -372,12 +348,6 @@
             </Setter>
         </Style>
 
-        <!--
-            Caixa de selecao compacta, para listas. O Interruptor tem 22 px de
-            altura e um rotulo ao lado; numa lista de oito ventoinhas isso vira
-            uma tela inteira de chaves. Aqui a linha toda e clicavel, e a caixa
-            so marca o estado.
-        -->
         <Style x:Key="CaixaDeSelecao" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -407,7 +377,6 @@
             </Setter>
         </Style>
 
-        <!-- Amostra de cor -->
         <Style x:Key="Amostra" TargetType="RadioButton">
             <Setter Property="Width" Value="44" />
             <Setter Property="Height" Value="44" />
@@ -432,12 +401,6 @@
             </Setter>
         </Style>
 
-        <!--
-            Barras de ajuste (limites, opacidade, tamanho, volume): trilho fino
-            de 6 px, a parte cheia na cor de destaque e uma bolinha branca, o
-            mesmo desenho da Kisland. Sem chave, vale para todo Slider do app;
-            o padrão do Windows, de trilho grosso e marcador quadrado, destoava.
-        -->
         <Style x:Key="TrechoCheioAjuste" TargetType="RepeatButton">
             <Setter Property="Focusable" Value="False" />
             <Setter Property="IsTabStop" Value="False" />
@@ -509,7 +472,6 @@
             </Setter>
         </Style>
 
-        <!-- Botao de acao secundaria, largura cheia -->
         <Style x:Key="BotaoLargo" TargetType="Button">
             <Setter Property="Height" Value="44" />
             <Setter Property="Foreground" Value="{DynamicResource Icone}" />
@@ -533,7 +495,6 @@
             </Setter>
         </Style>
 
-        <!-- Botao redondo discreto, para acoes secundarias do cabecalho -->
         <Style x:Key="BotaoRedondoFraco" TargetType="Button">
             <Setter Property="Width" Value="44" />
             <Setter Property="Height" Value="44" />
@@ -555,7 +516,6 @@
             </Setter>
         </Style>
 
-        <!-- Botao quadrado do rodape -->
         <Style x:Key="BotaoIcone" TargetType="Button">
             <Setter Property="Width" Value="36" />
             <Setter Property="Height" Value="36" />

@@ -14,10 +14,6 @@ public partial class ConfiguracaoWindow : Window
     private readonly Action<Snapshot> _aoLer;
     private bool _carregando = true;
 
-    /// <param name="primeiraVez">
-    /// Na primeira execucao a tela se apresenta como configuracao inicial e nao
-    /// oferece voltar sem concluir. Depois, e so uma tela de ajustes.
-    /// </param>
     public ConfiguracaoWindow(AppConfig cfg, SensorService sensores, bool primeiraVez)
     {
         InitializeComponent();
@@ -35,7 +31,6 @@ public partial class ConfiguracaoWindow : Window
         }
         else
         {
-            // Sem configuracao salva, nao ha a que voltar.
             BotaoVoltar.Visibility = Visibility.Collapsed;
         }
 
@@ -53,8 +48,6 @@ public partial class ConfiguracaoWindow : Window
         _carregando = false;
         AtualizarRotulos();
 
-        // As temperaturas de agora ajudam a escolher um limite que faca sentido
-        // para este PC, em vez de um numero abstrato.
         _aoLer = snap => Dispatcher.BeginInvoke(() => MostrarAtuais(snap));
         _sensores.Atualizado += _aoLer;
         if (_sensores.Ultimo is { } ultimo) MostrarAtuais(ultimo);
@@ -78,24 +71,8 @@ public partial class ConfiguracaoWindow : Window
             linha.Atualizar(s.Ventoinhas.TryGetValue(linha.Nome, out var rpm) ? rpm : null);
     }
 
-    // ------------------------------------------------------------------
-    // Quais ventoinhas aparecem na aba CPU
-
     private readonly List<LinhaDeSelecaoDeVentoinha> _linhasDeVentoinha = new();
 
-    /// <summary>
-    /// Acrescenta as ventoinhas que ainda nao estao na lista.
-    ///
-    /// E chamada a cada leitura, e nao uma vez so, porque o conjunto cresce: o
-    /// servico so reconhece um canal depois de ve-lo girar, entao uma ventoinha
-    /// em modo silencioso aparece na tela no momento em que acorda. Linha
-    /// nenhuma e removida — uma ventoinha que para continua conectada, e some-la
-    /// faria a lista se mexer embaixo do cursor.
-    ///
-    /// O conjunto e exatamente o que vira barra. Oferecer todos os canais da
-    /// placa deixaria o usuario marcar um conector vazio e esperar uma barra que
-    /// nunca viria.
-    /// </summary>
     private void MontarVentoinhas(Snapshot s)
     {
         if (s.Ventoinhas.Count == 0) return;
@@ -125,7 +102,6 @@ public partial class ConfiguracaoWindow : Window
             : Visibility.Collapsed;
     }
 
-    /// <summary>Deixa visivel quando o limite escolhido ja esta sendo ultrapassado.</summary>
     private static void Alertar(TextBlock alvo, float? atual, double limite)
     {
         var passou = atual is { } v && v >= limite;
@@ -160,14 +136,8 @@ public partial class ConfiguracaoWindow : Window
         _cfg.MostrarVentoinhasNaCpu = MostrarVentoinhas.IsChecked == true;
         _cfg.VerificarAtualizacoes = VerificarAtualizacoes.IsChecked == true;
 
-        // Só sobrescreve a escolha se a lista chegou a ser montada: numa tela
-        // aberta e fechada antes da primeira leitura, a lista vazia apagaria o
-        // que o usuário já tinha escolhido.
         if (_linhasDeVentoinha.Count > 0)
         {
-            // Uma ventoinha que não girou nesta sessão ainda não tem linha, mas
-            // pode já estar oculta de antes. Sem preservá-la, ela voltaria a
-            // aparecer sozinha na próxima vez que acordasse.
             var comLinha = _linhasDeVentoinha.Select(l => l.Chave).ToHashSet(StringComparer.Ordinal);
 
             var ocultas = _cfg.VentoinhasOcultas.Where(c => !comLinha.Contains(c)).ToList();
@@ -184,5 +154,4 @@ public partial class ConfiguracaoWindow : Window
     }
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
-
 }

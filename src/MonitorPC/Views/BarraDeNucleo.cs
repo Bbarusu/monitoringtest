@@ -6,11 +6,6 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma linha da grade de nucleos: rotulo, barra de carga e porcentagem.
-/// Montada em codigo porque a quantidade vem do hardware, e so os valores
-/// mudam a cada leitura — os elementos sao reaproveitados.
-/// </summary>
 public sealed class BarraDeNucleo : Grid
 {
     private readonly TextBlock _rotulo;
@@ -25,8 +20,6 @@ public sealed class BarraDeNucleo : Grid
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });
 
-        // Referencia viva ao recurso: um pincel pego no construtor guardaria o
-        // tema do momento em que a grade de nucleos foi montada.
         _rotulo = new TextBlock
         {
             FontSize = 11,
@@ -47,8 +40,6 @@ public sealed class BarraDeNucleo : Grid
         SetColumn(trilho, 1);
         Children.Add(trilho);
 
-        // Duas colunas proporcionais em vez de largura em pixels: acompanha o
-        // painel e nunca produz um valor negativo.
         _cheia = new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) };
         _vazia = new ColumnDefinition { Width = new GridLength(100, GridUnitType.Star) };
 

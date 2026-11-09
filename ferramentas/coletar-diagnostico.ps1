@@ -1,32 +1,4 @@
-﻿# ---------------------------------------------------------------------------
-#  KInfo — coleta de diagnóstico dos sensores
-#
-#  Para rodar numa máquina onde o app não lê temperatura de CPU e placa-mãe.
-#  Não precisa do app aberto, nem de recompilar nada.
-#
-#  Como usar: clique com o botão direito no arquivo e escolha
-#  "Executar com o PowerShell" — ou, num PowerShell COMO ADMINISTRADOR:
-#
-#      powershell -ExecutionPolicy Bypass -File .\coletar-diagnostico.ps1
-#
-#  No fim ele grava KInfo-coleta.txt na Área de Trabalho. É esse arquivo que
-#  responde por que o driver não carregou.
-#
-#  O que ele olha, e por quê:
-#    - se o PowerShell está elevado, para o resto da coleta valer algo;
-#    - a tarefa agendada do instalador e o nível com que ela roda, que é a
-#      pergunta "o instalador colocou como administrador ou não";
-#    - Integridade de Memória e lista de drivers vulneráveis, os dois
-#      bloqueios que recusam este driver sem pôr nada em quarentena;
-#    - o log CodeIntegrity do Windows, que é onde a recusa de um driver fica
-#      registrada com o motivo — a fonte autoritativa;
-#    - o histórico do Defender lido por comando, porque a tela de histórico
-#      pode ter sido limpa e some com a evidência;
-#    - o serviço e o arquivo .sys do driver, para separar "não foi escrito"
-#      de "foi escrito e recusado".
-# ---------------------------------------------------------------------------
-
-$ErrorActionPreference = 'Continue'
+﻿$ErrorActionPreference = 'Continue'
 $linhas = New-Object System.Collections.Generic.List[string]
 
 function Secao($titulo) {
@@ -47,7 +19,6 @@ function Despejar($objeto, $vazio) {
 Diga 'KInfo — coleta de diagnóstico dos sensores'
 Diga ('Gerado em ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
 
-# --- 1. Elevação ------------------------------------------------------------
 Secao 'Elevação deste PowerShell'
 
 $identidade = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -64,7 +35,6 @@ if (-not $elevado) {
     Diga 'administrador para o arquivo valer.'
 }
 
-# --- 2. Máquina -------------------------------------------------------------
 Secao 'Máquina e Windows'
 
 Despejar (Get-CimInstance Win32_ComputerSystem |
@@ -74,7 +44,6 @@ Despejar (Get-CimInstance Win32_OperatingSystem |
 Despejar (Get-CimInstance Win32_Processor |
     Select-Object Name, Manufacturer) '(não disponível)'
 
-# --- 3. A tarefa do instalador ---------------------------------------------
 Secao 'Tarefa agendada do KInfo'
 Diga 'RunLevel = Highest é o que dá acesso aos sensores. Qualquer outra coisa'
 Diga 'aqui explica a falha sozinha.'
@@ -93,7 +62,6 @@ if ($null -eq $tarefa) {
         Select-Object LastRunTime, LastTaskResult, NumberOfMissedRuns) '(sem histórico)'
 }
 
-# --- 4. Bloqueios que recusam o driver sem quarentena ----------------------
 Secao 'Bloqueios de driver do Windows'
 Diga 'Estes dois recusam o driver SEM pôr nada em quarentena — por isso o'
 Diga 'histórico do Defender pode estar limpo e a leitura ainda falhar.'
@@ -119,7 +87,6 @@ Despejar (Get-CimInstance -ClassName Win32_DeviceGuard `
 
 Despejar (Confirm-SecureBootUEFI -ErrorAction SilentlyContinue) '(Secure Boot não respondeu)'
 
-# --- 5. O log que registra a recusa ---------------------------------------
 Secao 'Log CodeIntegrity do Windows'
 Diga 'Esta é a fonte autoritativa: quando o Windows recusa carregar um driver,'
 Diga 'o motivo fica aqui. Vazio aqui quer dizer que não houve recusa.'
@@ -137,7 +104,6 @@ if ($null -eq $eventos -or $eventos.Count -eq 0) {
     }
 }
 
-# --- 6. Defender, lido por comando ----------------------------------------
 Secao 'Defender — detecções registradas'
 Diga 'Lido por comando porque a tela de histórico pode ter sido limpa.'
 Diga ''
@@ -155,7 +121,6 @@ Despejar (Get-MpPreference -ErrorAction SilentlyContinue |
     Select-Object ExclusionPath, ExclusionProcess, ExclusionExtension
     ) '(não foi possível ler as exclusões)'
 
-# --- 6b. O log do sistema: o serviço chegou a ser criado? -----------------
 Secao 'Log do sistema — instalação e início de serviços'
 Diga 'O evento 7045 registra todo serviço instalado no sistema; 7000 e 7026'
 Diga 'registram serviço e driver que não iniciaram, com o erro do Windows.'
@@ -178,7 +143,6 @@ if ($null -eq $servicos -or $servicos.Count -eq 0) {
     }
 }
 
-# --- 7. O driver: foi escrito? foi registrado? ----------------------------
 Secao 'Serviço e arquivo do driver'
 Diga 'Arquivo ausente = não foi escrito ou foi apagado. Arquivo presente com'
 Diga 'serviço parado = foi escrito e recusado. São problemas diferentes.'
@@ -218,20 +182,16 @@ foreach ($pasta in $pastas) {
 Despejar (Get-ChildItem -Path "$env:ProgramFiles\KInfo" -ErrorAction SilentlyContinue |
     Select-Object Name, Length, LastWriteTime) '(pasta de instalação não encontrada)'
 
-# --- 8. O que o app registrou ---------------------------------------------
 Secao 'erro.log do app'
 
 $log = Join-Path $env:APPDATA 'KInfo\erro.log'
 
 if (Test-Path $log) {
-    # -Encoding UTF8: o app grava o log em UTF-8 sem BOM, e o PowerShell 5.1
-    # assume ANSI na leitura, o que transforma "·" em "Â·" no relatório.
     Diga (Get-Content $log -Tail 120 -Encoding UTF8 -ErrorAction SilentlyContinue | Out-String)
 } else {
     Diga ('(não existe: ' + $log + ')')
 }
 
-# --- Grava ------------------------------------------------------------------
 $destino = Join-Path ([Environment]::GetFolderPath('Desktop')) 'KInfo-coleta.txt'
 $linhas -join "`r`n" | Out-File -FilePath $destino -Encoding UTF8
 

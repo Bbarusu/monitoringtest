@@ -16,7 +16,6 @@
 
         <StackPanel>
 
-            <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
@@ -38,7 +37,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Filtros -->
             <Border Margin="0,20,0,0" CornerRadius="14" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="4">
                 <UniformGrid Columns="4">
@@ -53,7 +51,6 @@
                 </UniformGrid>
             </Border>
 
-            <!-- Lista -->
             <Border Margin="0,16,0,0" MinHeight="260" CornerRadius="12"
                     Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}"
                     BorderThickness="1" Padding="12,4">
@@ -67,7 +64,6 @@
                 </Grid>
             </Border>
 
-            <!-- Limite de registro -->
             <Border Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
                 <StackPanel>
@@ -88,7 +84,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Rastreamento avancado -->
             <Border Margin="0,10,0,0" CornerRadius="12" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                 <Grid>
@@ -106,7 +101,6 @@
                 </Grid>
             </Border>
 
-            <!-- Acoes -->
             <Button Style="{StaticResource BotaoLargo}" Margin="0,16,0,0"
                     Content="Limpar log" Click="Limpar_Click" />
 

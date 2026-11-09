@@ -5,23 +5,13 @@ using System.Windows.Media;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma ventoinha na lista de Ajustes: caixa de selecao, nome e a rotacao de
-/// agora.
-///
-/// A rotacao ao vivo e o ponto da linha. "Fan #3" nao diz nada sobre qual
-/// conector e aquele; o numero que sobe quando o usuario encosta a mao na
-/// ventoinha diz. Sem isso, escolher quais mostrar seria chutar.
-/// </summary>
 internal sealed class LinhaDeSelecaoDeVentoinha : Border
 {
     private readonly CheckBox _marca;
     private readonly TextBlock _rotacao;
 
-    /// <summary>Identidade estavel da ventoinha, que vai para a configuracao.</summary>
     public string Chave { get; }
 
-    /// <summary>Nome do sensor, que e como a leitura chega no snapshot.</summary>
     public string Nome { get; }
 
     public bool Marcada => _marca.IsChecked == true;
@@ -34,8 +24,6 @@ internal sealed class LinhaDeSelecaoDeVentoinha : Border
         CornerRadius = new CornerRadius(8);
         Padding = new Thickness(2, 7, 2, 7);
 
-        // Sem um fundo, um Border nao recebe clique: a linha inteira precisa
-        // ser alvo, e nao so os vinte pixels da caixa.
         Background = Brushes.Transparent;
         Cursor = Cursors.Hand;
 
@@ -44,8 +32,6 @@ internal sealed class LinhaDeSelecaoDeVentoinha : Border
             IsChecked = marcada,
             VerticalAlignment = VerticalAlignment.Center,
 
-            // Quem trata o clique e a linha. Deixar a caixa tambem tratar
-            // alternaria duas vezes no mesmo clique.
             IsHitTestVisible = false
         };
         _marca.SetResourceReference(StyleProperty, "CaixaDeSelecao");

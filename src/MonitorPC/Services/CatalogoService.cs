@@ -7,19 +7,12 @@ using System.Text.RegularExpressions;
 
 namespace MonitorPC.Services;
 
-/// <summary>Uma linha do catalogo: o que a ficha tecnica diz sobre um modelo.</summary>
 public sealed class Especificacao
 {
     public string Nome { get; set; } = "";
 
-    /// <summary>TDP nominal. Nao e o teto do sensor: serve so de informacao.</summary>
     public double TdpW { get; set; }
 
-    /// <summary>
-    /// Teto que o sensor de potencia do pacote realmente alcanca: PPT nos Ryzen,
-    /// Maximum Turbo Power nos Intel, TBP nas placas de video. E este que serve
-    /// de escala, e nao o TDP — num Ryzen de 65 W o pacote chega a 88 W.
-    /// </summary>
     public double PotenciaMaxW { get; set; }
 
     public double TjMaxC { get; set; }
@@ -27,29 +20,8 @@ public sealed class Especificacao
     public double ClockBoostMhz { get; set; }
 }
 
-/// <summary>
-/// Catalogo de especificacoes por modelo, para o que nenhum sensor informa:
-/// potencia maxima, limite termico e clock de boost.
-///
-/// Vem embutido no app e e atualizavel pela internet — um GET de poucos
-/// kilobytes no proprio repositorio, no maximo uma vez por semana, com o
-/// resultado em cache. Falhar nao tem consequencia: fica a copia embutida.
-///
-/// Nao ha aqui rotacao maxima de ventoinha de proposito. Ela muda por
-/// fabricante da placa e por modelo do ventilador, entao um numero de tabela
-/// estaria errado na maioria dos PCs. Essa medida sai da extrapolacao pelo PWM,
-/// em <see cref="EspecificacaoService"/>, que mede o ventilador que esta
-/// realmente instalado.
-/// </summary>
 public sealed class CatalogoService
 {
-    /// <summary>
-    /// O catalogo publicado junto com cada release, no repositorio publico de
-    /// releases. Antes apontava para o arquivo no repositorio do codigo, que e
-    /// privado: dava 404 para todo mundo, e o catalogo nunca atualizava.
-    /// "latest" segue a release mais nova; release sem o arquivo da 404, que e
-    /// silencioso (fica o embutido).
-    /// </summary>
     private const string Url =
         "https://github.com/Bbarusu/kinfo-releases/releases/latest/download/catalogo.json";
 
@@ -66,10 +38,6 @@ public sealed class CatalogoService
         Carregar();
     }
 
-    /// <summary>
-    /// A linha cujo nome aparece no nome da peca. Entre varias, vence a mais
-    /// longa: senao "RX 7600" casaria com uma "RX 7600 XT".
-    /// </summary>
     public Especificacao? Cpu(string? nome) => Casar(_dados.Cpus, nome);
 
     public Especificacao? Gpu(string? nome) => Casar(_dados.Gpus, nome);
@@ -86,10 +54,6 @@ public sealed class CatalogoService
             .FirstOrDefault();
     }
 
-    /// <summary>
-    /// Tira o que varia entre fabricantes e deixa so o modelo: "AMD Radeon(TM)
-    /// RX 7600" e "Radeon RX 7600" viram a mesma coisa.
-    /// </summary>
     private static string Normalizar(string texto)
     {
         var t = texto.ToLowerInvariant();
@@ -102,16 +66,11 @@ public sealed class CatalogoService
                  })
             t = t.Replace(lixo, " ");
 
-        // Espacos e hifens nao podem decidir se casou: "i5-13600k" e "i5 13600k"
-        // sao o mesmo processador.
         return Regex.Replace(t, "[^a-z0-9]", "");
     }
 
-    // ------------------------------------------------------------------
-
     private void Carregar()
     {
-        // A copia embutida e o piso: sempre existe, mesmo sem internet nenhuma.
         _dados = Ler(Embutido()) ?? new Catalogo();
 
         try
@@ -120,8 +79,6 @@ public sealed class CatalogoService
             {
                 var baixado = Ler(File.ReadAllText(CaminhoCache));
 
-                // Uma copia baixada so substitui a embutida se for mais nova: um
-                // app atualizado nao pode regredir para um cache antigo.
                 if (baixado is not null &&
                     string.CompareOrdinal(baixado.Versao, _dados.Versao) >= 0)
                     _dados = baixado;
@@ -148,11 +105,6 @@ public sealed class CatalogoService
         }
     }
 
-    /// <summary>
-    /// Busca a versao mais recente do catalogo. Roda em segundo plano, sem
-    /// segurar a abertura do app, e qualquer falha e silenciosa: sem rede, sem
-    /// DNS ou com o arquivo fora do ar, fica o que ja estava.
-    /// </summary>
     public async Task<bool> AtualizarAsync()
     {
         try
@@ -175,16 +127,10 @@ public sealed class CatalogoService
         }
         catch (HttpRequestException)
         {
-            // Sem rede, sem DNS, ou o arquivo fora do ar — inclusive o 404 de
-            // quando ainda nao ha catalogo publicado. O comentario acima sempre
-            // prometeu que essa falha era silenciosa, mas ela ia para o
-            // erro.log a cada abertura, e enterrava o que importa lá debaixo de
-            // uma falha prevista. Fica o catalogo embutido, que e o combinado.
             return false;
         }
         catch (TaskCanceledException)
         {
-            // Estouro do tempo limite de 8 s: mesma situacao.
             return false;
         }
         catch (Exception ex)

@@ -8,11 +8,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Kdrop">
 <title>Kdrop</title>
-<!--
-  A bandeja da Kisland vista do celular. Servida pelo proprio KInfo, na rede
-  de casa: nada de fora, nenhuma fonte ou script baixado. Mesma paleta do
-  painel (tema escuro), e a cor de destaque vem do PC.
--->
 <style>
   :root { --acento: #3b82f6; --fundo: #15171c; --cartao: #1a1d23; --chip: #1d2026; --borda: #262a32;
           --trilho: #2a2e36; --texto: #e6e9ef; --fraco: #9aa3b2; --icone: #c4cad6; --info: #16233d; --infotexto: #8fbaff; }
@@ -49,8 +44,6 @@
   .escolher { height: 52px; border-radius: 14px; background: transparent; border: 1.5px dashed #3a3f4a;
               color: var(--icone); font-weight: 500; font-size: 14px; font-family: inherit; display: flex; align-items: center;
               justify-content: center; cursor: pointer; }
-  /* Escondido, mas nao com display:none: algumas versoes do Safari no iPhone
-     nao abrem a escolha de arquivos por um campo com display:none. */
   input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; pointer-events: none; }
   footer { padding: 14px 20px calc(26px + env(safe-area-inset-bottom)); border-top: 1px solid var(--borda);
            background: var(--fundo); position: sticky; bottom: 0; }
@@ -68,14 +61,12 @@
   .barra div { height: 6px; border-radius: 3px; background: var(--acento); width: 0; transition: width .2s; }
   .oculto { display: none !important; }
   .aviso { font-size: 13px; line-height: 1.5; color: var(--fraco); }
-  /* Endereco fixo: dica no topo ate a pessoa fechar. */
   .dica { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px;
           background: var(--info); border: 1px solid var(--acento); font-size: 13px; line-height: 1.45; color: #c9d7f5; }
   .dica b { color: #fff; font-weight: 600; word-break: break-all; }
   .dica a { color: var(--infotexto); font-weight: 600; }
   .dica .fechar { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--infotexto);
                   font-size: 20px; line-height: 1; font-family: inherit; flex: none; }
-  /* Textos e links */
   .arq.texto { border-color: #2f3a52; }
   .acoes { display: flex; gap: 8px; flex: none; }
   .baixar.sec2 { background: transparent; border: 1px solid var(--trilho); color: var(--icone); }
@@ -116,8 +107,6 @@
   <div id="escolhidos"></div>
   <label class="escolher" for="arquivos">+ Escolher fotos e arquivos</label>
   <input type="file" id="arquivos" multiple>
-  <!-- Campos de escolhas anteriores: ficam guardados aqui, vivos. Veja o
-       comentario em "Escolher e mandar". -->
   <div id="guardados" hidden></div>
 </main>
 
@@ -141,20 +130,6 @@
 (function () {
   "use strict";
 
-  // Diagnóstico da galeria do iPhone (iOS 26 trava no ✓ desta página, e não
-  // na /teste, servida igual): ?diag= desliga partes da página para achar a
-  // culpada. "sem-consulta": pergunta ao PC uma vez só, ao abrir. "sem-foco":
-  // não liga os avisos de foco e de escolha aberta. "campo": mostra o campo
-  // comum do Safari no lugar do botão desenhado. Dá para juntar:
-  // ?diag=sem-consulta,sem-foco.
-  var diag = (function () {
-    try { return (new URLSearchParams(location.search).get("diag") || "").split(","); }
-    catch (e) { return []; }
-  })();
-  function semParte(nome) { return diag.indexOf(nome) >= 0; }
-
-  // Quem e este celular, para o PC mostrar na Kisland e lembrar se a pessoa
-  // marcar "aceitar sozinho". Guardado no navegador; sem isso, um por visita.
   var cliente;
   try {
     cliente = localStorage.getItem("kdrop-cliente");
@@ -174,9 +149,6 @@
   var escolhidos = [];
   var enviando = false;
   var novosVistos = {};
-  // O que ja estava na bandeja quando a pagina abriu nao e novidade; o que
-  // aparece depois (posto na bandeja no PC agora ha pouco) ganha "Acabou de
-  // chegar" por 2 minutos.
   var conhecidos = null;
   var chegouEm = {};
 
@@ -209,19 +181,12 @@
     return linha;
   }
 
-  // ---- Estado do PC, perguntado a cada 2 s ---------------------------
-
-  // Com a escolha de fotos aberta, a pagina fica quieta: nada de perguntar
-  // ao PC nem redesenhar. O iPhone prepara as fotos escolhidas (baixa do
-  // iCloud, converte HEIC para JPG) na hora do ✓, e uma pagina mexendo em si
-  // mesma a cada 2 s so disputa com isso. Volta ao fechar a escolha.
   var escolhendo = false;
   var fimDaEscolha = 0;
 
   function comecarEscolha() {
     escolhendo = true;
     clearTimeout(fimDaEscolha);
-    // Por garantia, se nenhum aviso de "fechou" chegar.
     fimDaEscolha = setTimeout(terminarEscolha, 10 * 60000);
   }
 
@@ -232,8 +197,6 @@
     atualizar();
   }
 
-  // So redesenha quando algo mudou (e a cada 30 s, para o "Acabou de chegar"
-  // sumir na hora certa).
   var ultimoDesenho = "";
 
   function atualizar() {
@@ -295,12 +258,6 @@
     });
   }
 
-  // ---- Endereco fixo -------------------------------------------------------
-  //
-  // O PC responde por um nome fixo na rede de casa (kdrop-<nome>.local). Pelo
-  // QR Code a pagina abre no IP, que o roteador pode trocar; a dica oferece o
-  // endereco fixo, para salvar nos favoritos ou na Tela de Inicio. Fechada,
-  // so volta se o endereco mudar.
   var dicaDe = null;
 
   function desenharDicaFixa(fixo) {
@@ -337,10 +294,6 @@
     $("dicaFixa").classList.add("oculto");
   };
 
-  // ---- Textos e links -----------------------------------------------------
-
-  // Sem HTTPS o Safari nao libera navigator.clipboard; o jeito antigo
-  // (selecionar um campo e "copiar") ainda funciona dentro de um toque.
   function copiar(texto) {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(texto).catch(function () { copiarAntigo(texto); });
@@ -356,7 +309,7 @@
     campo.style.position = "fixed";
     campo.style.top = "0";
     campo.style.opacity = "0";
-    campo.style.fontSize = "16px"; // menor que isso, o iPhone da zoom
+    campo.style.fontSize = "16px";
     document.body.appendChild(campo);
     campo.focus();
     campo.setSelectionRange(0, texto.length);
@@ -443,16 +396,6 @@
       .catch(function () { fim("Sem resposta do PC"); });
   };
 
-  // ---- Escolher e mandar ------------------------------------------------
-
-  // Fotos da galeria do iPhone nao sao arquivos de verdade: o Safari cria
-  // uma copia temporaria presa ao campo de escolha. Limpar o campo (para
-  // escolher mais) apagava essas copias, e a foto nao existia mais na hora
-  // de enviar — por isso arquivos iam e fotos nao. Agora:
-  // - o campo usado nunca e limpo: fica guardado, e um campo novo toma o
-  //   lugar dele para a proxima escolha;
-  // - cada escolhido e lido para a memoria na hora (ate 100 MB), enquanto a
-  //   copia do Safari certamente existe. Maior que isso, vai direto.
   var LIMITE_NA_MEMORIA = 100 * 1048576;
   var contagemDeCampos = 0;
 
@@ -462,7 +405,6 @@
       var arquivos = Array.prototype.slice.call(this.files || []);
       if (!arquivos.length) return;
 
-      // Este campo fica como esta, guardado; um novo assume o lugar dele.
       var novo = document.createElement("input");
       novo.type = "file";
       novo.multiple = true;
@@ -478,31 +420,12 @@
   }
   ligarCampo($("arquivos"));
 
-  if (!semParte("sem-foco")) {
-    document.querySelector(".escolher").addEventListener("click", comecarEscolha);
-    // Escolha cancelada (X) nao dispara "change": a pagina sabe que ela fechou
-    // quando volta a ter o foco.
-    window.addEventListener("focus", function () { setTimeout(terminarEscolha, 500); });
-    document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "visible") setTimeout(terminarEscolha, 500);
-    });
-  }
+  document.querySelector(".escolher").addEventListener("click", comecarEscolha);
+  window.addEventListener("focus", function () { setTimeout(terminarEscolha, 500); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") setTimeout(terminarEscolha, 500);
+  });
 
-  if (semParte("campo")) {
-    var campoVisivel = document.createElement("style");
-    campoVisivel.textContent = "input[type=file]#arquivos{position:static;width:auto;height:auto;opacity:1;pointer-events:auto;color:var(--texto)} .escolher{display:none}";
-    document.head.appendChild(campoVisivel);
-  }
-
-  if (diag.length && diag[0]) {
-    var aviso = document.createElement("div");
-    aviso.className = "sec";
-    aviso.textContent = "Diagnóstico: " + diag.join(", ");
-    document.querySelector("main").insertBefore(aviso, document.querySelector("main").firstChild);
-  }
-
-  // O iPhone chama toda foto de "image.jpg". Com nomes repetidos, cada uma
-  // ganha um nome com a data e a hora, e um numero.
   function nomeDaFoto(original, indice) {
     var ponto = original.lastIndexOf(".");
     var ext = ponto > 0 ? original.slice(ponto) : ".jpg";
@@ -571,8 +494,6 @@
     mostrar("resultado");
   }
 
-  // Durante o envio a tela do celular fica acesa (Wake Lock, onde o navegador
-  // deixa): com a tela apagada o iPhone congela a página e o envio para.
   var telaAcesa = null;
   function manterTela() {
     try {
@@ -620,16 +541,9 @@
     }, 1000);
   }
 
-  // ---- Envio em partes ---------------------------------------------------
-  //
-  // Cada arquivo vai em partes de 8 MB. Se a conexão cai (Wi-Fi oscilando,
-  // tela apagando), a página pergunta ao PC quanto já chegou e continua dali,
-  // tentando por alguns minutos antes de desistir. Um vídeo de 2 GB não
-  // recomeça do zero por causa de um soluço da rede.
-
   var PARTE = 8 * 1048576;
   var TENTATIVAS = 40;
-  var retomarAgora = null; // espera de reconexão em andamento, para a volta da tela
+  var retomarAgora = null;
 
   function mandar(pedido) {
     mostrar("enviando");
@@ -673,7 +587,6 @@
         }
         if (xhr.status === 200) return enviarParte(f, r.gravados, 0);
 
-        // Fora de ordem: o PC diz quanto já tem, e a próxima parte sai dali.
         if (xhr.status === 409 && typeof r.gravados === "number")
           return setTimeout(function () { enviarParte(f, r.gravados, tentativas + 1); }, 400);
 
@@ -686,8 +599,6 @@
       xhr.send(f.arquivo.slice(pos, ate));
     }
 
-    // Caiu: espera um pouco (cada vez mais, até 10 s), pergunta ao PC quanto
-    // já chegou e continua dali.
     function falhou(f, tentativas, motivo) {
       if (tentativas + 1 > TENTATIVAS)
         return terminar("O envio de " + f.nome + " parou: " + motivo + ". Confira se o celular e o PC estão no mesmo Wi-Fi e mande de novo.");
@@ -717,8 +628,6 @@
     proximoArquivo();
   }
 
-  // Voltou para a página (tela acesa de novo, ou saiu de outro app): se um
-  // envio estava esperando para reconectar, tenta já, e reacende a tela.
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState !== "visible" || !enviando) return;
     manterTela();
@@ -726,7 +635,7 @@
   });
 
   atualizar();
-  if (!semParte("sem-consulta")) setInterval(atualizar, 2000);
+  setInterval(atualizar, 2000);
 })();
 </script>
 </body>

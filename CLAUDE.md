@@ -26,6 +26,9 @@
 
 ## Outras regras do projeto
 
+- **Código sem comentários.** Nada de `//`, `///`, `/* */` ou `<!-- -->` no
+  código, nos scripts e nos projetos. O porquê das coisas vai para o
+  `## Detalhes` das notas, o README ou a mensagem do commit.
 - **Sem certificados nem custos.** Nada de assinatura de código, MSIX, widget
   da Xbox Game Bar ou qualquer coisa que exija certificado ou serviço pago.
 - **Visual:** toda tela nova segue o estilo e a personalização do painel do

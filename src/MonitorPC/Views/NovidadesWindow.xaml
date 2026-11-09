@@ -8,13 +8,6 @@
         ShowInTaskbar="False" Topmost="True" ResizeMode="NoResize"
         FontFamily="{StaticResource FonteUI}">
 
-    <!--
-        Novidades: o Kdrop inteiro, em seis passos, no mesmo formato do guia
-        da Kisland (prévia desenhada em cima, texto embaixo). Abre sozinho uma
-        vez para todos (App.VersaoDasNovidades), sem o "Pular", e fica na
-        Personalização para rever.
-    -->
-
     <Window.Resources>
         <Style x:Key="TituloPasso" TargetType="TextBlock">
             <Setter Property="FontSize" Value="17" />
@@ -37,7 +30,6 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="ClipToBounds" Value="True" />
         </Style>
-        <!-- A bandeja da Kisland, menor, para as prévias. -->
         <Style x:Key="BandejaPrevia" TargetType="Border">
             <Setter Property="Width" Value="400" />
             <Setter Property="Margin" Value="0,12,0,0" />
@@ -128,7 +120,6 @@
 
         <StackPanel>
 
-            <!-- Cabeçalho -->
             <Grid>
                 <TextBlock x:Name="Contagem" Text="Novidades · 1 de 6" FontSize="12" FontWeight="Medium"
                            VerticalAlignment="Center" Foreground="{DynamicResource TextoFraco}" />
@@ -144,7 +135,6 @@
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="bg" Property="Background" Value="{DynamicResource Cartao}" />
                                 </Trigger>
-                                <!-- Obrigatório: o "Pular" fica apagado e não responde. -->
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="bg" Property="Background" Value="Transparent" />
                                     <Setter TargetName="bg" Property="Opacity" Value="0.35" />
@@ -156,10 +146,8 @@
                 </Button>
             </Grid>
 
-            <!-- Os passos ocupam a mesma altura, para os botões não pularem. -->
             <Grid Height="430" Margin="0,16,0,0">
 
-                <!-- ===================== 1. O QUE É ===================== -->
                 <StackPanel x:Name="Passo1">
                     <Border Style="{StaticResource Mesa}">
                         <Border Style="{StaticResource BandejaPrevia}">
@@ -230,10 +218,8 @@
                     </Border>
                 </StackPanel>
 
-                <!-- ================ 2. ENDEREÇO FIXO NO CELULAR ================ -->
                 <StackPanel x:Name="Passo2" Visibility="Collapsed">
                     <Border Style="{StaticResource Mesa}">
-                        <!-- O celular, com a página do Kdrop e a dica do endereço fixo. -->
                         <Border Width="230" Height="190" Margin="0,14,0,0" CornerRadius="22" Padding="12,14,12,0"
                                 HorizontalAlignment="Center" VerticalAlignment="Top"
                                 Background="{DynamicResource Fundo}" BorderBrush="{DynamicResource Trilho}" BorderThickness="2">
@@ -276,7 +262,6 @@
                     </Border>
                 </StackPanel>
 
-                <!-- ============== 3. FOTOS, VÍDEOS E ARQUIVOS ============== -->
                 <StackPanel x:Name="Passo3" Visibility="Collapsed">
                     <Border Style="{StaticResource Mesa}">
                         <Border Style="{StaticResource BandejaPrevia}">
@@ -315,7 +300,6 @@
                     </TextBlock>
                 </StackPanel>
 
-                <!-- ================== 4. TEXTOS E LINKS ================== -->
                 <StackPanel x:Name="Passo4" Visibility="Collapsed">
                     <Border Style="{StaticResource Mesa}">
                         <Border Style="{StaticResource BandejaPrevia}">
@@ -370,7 +354,6 @@
                     </TextBlock>
                 </StackPanel>
 
-                <!-- ================ 5. ENTRE OS PCS DA CASA ================ -->
                 <StackPanel x:Name="Passo5" Visibility="Collapsed">
                     <Border Style="{StaticResource Mesa}">
                         <Border Style="{StaticResource BandejaPrevia}">
@@ -411,7 +394,6 @@
                                Text="Cada PC com KInfo e Kdrop ligado mostra a bandeja dele na Kisland dos outros. Um toque traz o arquivo para este PC, sem pedir aceite: quem pôs na bandeja já deixou à vista. Pastas vêm compactadas e chegam abertas; no celular, baixam como .zip. Textos chegam já copiados." />
                 </StackPanel>
 
-                <!-- ================== 6. ARRASTE E SOLTE ================== -->
                 <StackPanel x:Name="Passo6" Visibility="Collapsed">
                     <Border Style="{StaticResource Mesa}">
                         <Grid>
@@ -421,7 +403,6 @@
                                 <TextBlock Text="Solte aqui para deixar na bandeja" FontSize="10.5" HorizontalAlignment="Center"
                                            VerticalAlignment="Center" Foreground="{DynamicResource InfoTexto}" />
                             </Border>
-                            <!-- Um arquivo vindo do Explorer, com a seta do arrasto. -->
                             <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="120,0,0,18">
                                 <Border Width="44" Height="44" CornerRadius="12" Background="{DynamicResource Chip}"
                                         BorderBrush="{DynamicResource Trilho}" BorderThickness="1">
@@ -445,7 +426,6 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Rodapé -->
             <Grid Margin="0,18,0,0">
                 <StackPanel x:Name="Pontos" Orientation="Horizontal" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

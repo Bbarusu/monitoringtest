@@ -26,8 +26,6 @@ public partial class LogDiscoWindow : Window
 
         MontarSeletor();
 
-        // Os contadores por processo nao dizem a unidade: o log guarda qual
-        // estava mais ativa a cada amostra, como pista.
         _sensores.Atualizado += AoLer;
         Closed += (_, _) => _sensores.Atualizado -= AoLer;
 
@@ -46,8 +44,6 @@ public partial class LogDiscoWindow : Window
             _log.Dispose();
         };
     }
-
-    // ------------------------------------------------------------------
 
     private void AoLer(Snapshot s)
     {
@@ -100,13 +96,10 @@ public partial class LogDiscoWindow : Window
         Montar();
     }
 
-    // ------------------------------------------------------------------
-
     private void Montar()
     {
         var eventos = _log.Eventos.AsEnumerable();
 
-        // O filtro por unidade usa a pista do momento, nao a atribuicao exata.
         if (SeletorDisco.SelectedIndex > 0 &&
             _sensores.Ultimo?.Discos is { } discos &&
             SeletorDisco.SelectedIndex - 1 < discos.Count)
@@ -119,7 +112,6 @@ public partial class LogDiscoWindow : Window
         else if (FiltroEscrita.IsChecked == true) eventos = eventos.Where(x => x.Tipo == "Escrita");
         else if (FiltroAltos.IsChecked == true) eventos = eventos.Where(x => x.Alto);
 
-        // Mais que isto nao cabe na tela e so deixaria a rolagem pesada.
         var lista = eventos.Take(60).ToList();
 
         Lista.Children.Clear();
@@ -131,7 +123,6 @@ public partial class LogDiscoWindow : Window
         Vazio.Text = _log.Eventos.Count == 0
             ? "Sem registros por agora"
             : "Nenhum evento com este filtro.";
-
     }
 
     private UIElement MontarLinha(EventoDeDisco ev)
@@ -199,7 +190,6 @@ public partial class LogDiscoWindow : Window
                     "Os contadores por processo não dizem em qual disco o acesso ocorreu.";
         linha.ToolTip = dica;
 
-        // A linha vira botao: abre os arquivos abertos daquele processo.
         var botao = new Button
         {
             Content = linha,
@@ -213,8 +203,6 @@ public partial class LogDiscoWindow : Window
 
         return botao;
     }
-
-    // ------------------------------------------------------------------
 
     private void Evento_Click(object sender, RoutedEventArgs e)
     {
@@ -231,5 +219,4 @@ public partial class LogDiscoWindow : Window
     }
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
-
 }

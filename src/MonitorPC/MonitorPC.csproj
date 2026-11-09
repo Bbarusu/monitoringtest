@@ -2,12 +2,6 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <!--
-      A versao do Windows no alvo existe por causa da ilha do topo: "o que esta
-      tocando agora" so sai do controle de midia do sistema (o mesmo que mostra
-      a musica no painel de volume), e ele e uma API do Windows 10. O minimo
-      suportado fica no 1809, a primeira versao em que essa API existe.
-    -->
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
@@ -21,21 +15,10 @@
     <RootNamespace>MonitorPC</RootNamespace>
   </PropertyGroup>
 
-  <!--
-    A versao vem do Directory.Build.props na raiz, e este arquivo e o unico
-    lugar que sabe le-la. Compartilhado com o instalador pelo mesmo caminho,
-    para os dois nunca discordarem do que e a versao atual.
-  -->
   <ItemGroup>
     <Compile Include="..\Comum\Versao.cs" Link="Comum\Versao.cs" />
   </ItemGroup>
 
-  <!--
-    WPF e WinForms convivem no projeto: o WinForms so entra pelo icone da bandeja.
-    Os using implicitos de System.Drawing e System.Windows.Forms colidiriam com
-    System.Windows.Media em Color, Brush, Point, Size e Application, entao ficam
-    de fora. Quem precisa deles usa o alias D. ou WF., declarado no arquivo.
-  -->
   <ItemGroup>
     <Using Remove="System.Drawing" />
     <Using Remove="System.Windows.Forms" />
@@ -44,27 +27,15 @@
   <ItemGroup>
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
 
-    <!-- Leitura dos eventos de "quadro apresentado" do Windows, para o
-         contador de FPS da Kisland. E a biblioteca da propria Microsoft para
-         rastreamento de eventos; a do PresentMon faz o mesmo em C++. -->
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.*" />
 
-    <!-- QR Code do Kdrop, para o celular abrir a bandeja apontando a camera.
-         Biblioteca livre (MIT), sem dependencias. -->
     <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
-  <!--
-    O catalogo de especificacoes viaja dentro do executavel, para o app saber o
-    teto das pecas sem depender de internet. O nome logico e curto porque e por
-    ele que o CatalogoService procura o recurso.
-  -->
   <ItemGroup>
     <EmbeddedResource Include="Dados\catalogo.json" LogicalName="catalogo.json" />
 
-    <!-- A pagina que o celular abre no Kdrop: a bandeja vista de fora. -->
     <EmbeddedResource Include="Dados\kdrop.html" LogicalName="kdrop.html" />
-    <EmbeddedResource Include="Dados\kdrop-teste.html" LogicalName="kdrop-teste.html" />
   </ItemGroup>
 
 </Project>

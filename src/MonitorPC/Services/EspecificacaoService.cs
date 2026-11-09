@@ -2,43 +2,16 @@ using MonitorPC.Models;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// Decide o valor maximo que serve de escala para cada medida, e de onde ele
-/// veio.
-///
-/// A ordem e sempre a mesma: o que voce informou, depois o que a peca informa,
-/// depois o que da para calcular dos proprios sensores, depois a ficha tecnica,
-/// e so por ultimo o maior valor ja medido. Uma barra cheia pela metade passa a
-/// significar metade do que a peca aguenta, e nao metade do que ela ja fez.
-/// </summary>
 public sealed class EspecificacaoService
 {
-    /// <summary>
-    /// Abaixo deste PWM nao se projeta nada.
-    ///
-    /// A curva rotacao x PWM nao e uma reta: ha um minimo de partida embaixo e
-    /// uma acomodacao em cima, e nas placas de video a porcentagem reportada nem
-    /// sempre e o ciclo de trabalho bruto. Projetar de 40% para 100% multiplica
-    /// o erro dessa curvatura por seis. De 60% para cima o trecho que falta e
-    /// curto e quase reto, e a projecao para de pe.
-    /// </summary>
     private const double PwmMinimoConfiavel = 60;
 
-    /// <summary>
-    /// Teto da projecao, como multiplo do que ja foi medido. Um ventilador nao
-    /// dobra de rotacao do ponto de operacao normal ate o maximo; se a conta
-    /// disser que dobra, a conta errou, e e melhor um teto conservador que um
-    /// numero inventado.
-    /// </summary>
     private const double FatorMaximoDaProjecao = 1.9;
 
-    /// <summary>Abaixo disto o ponto nem entra na curva como referencia baixa.</summary>
     private const double PwmMinimoDaCurva = 20;
 
-    /// <summary>Distancia minima entre os dois pontos para o ajuste de reta valer.</summary>
     private const double EspalhamentoMinimo = 15;
 
-    /// <summary>Acima deste PWM a leitura ja e a rotacao maxima, sem conta nenhuma.</summary>
     private const double PwmCheio = 95;
 
     private readonly AppConfig _cfg;
@@ -47,7 +20,6 @@ public sealed class EspecificacaoService
 
     public CatalogoService Catalogo { get; }
 
-    /// <summary>A ficha tecnica das pecas identificadas, se estiverem no catalogo.</summary>
     public Especificacao? Cpu { get; private set; }
     public Especificacao? Gpu { get; private set; }
 
@@ -61,7 +33,6 @@ public sealed class EspecificacaoService
     private string? _nomeCpu;
     private string? _nomeGpu;
 
-    /// <summary>Casa os nomes que os sensores reportam com as linhas do catalogo.</summary>
     public void Identificar(string? cpu, string? gpu)
     {
         _nomeCpu = cpu;
@@ -70,15 +41,6 @@ public sealed class EspecificacaoService
         Gpu = Catalogo.Gpu(gpu);
     }
 
-    // ------------------------------------------------------------------
-    // Ventoinhas: a rotacao maxima sai dos sensores, nao de tabela
-
-    /// <summary>
-    /// Registra um par rotacao/PWM. Guarda o ponto de maior e o de menor PWM ja
-    /// vistos: com dois pontos da curva da para projetar onde ela chega a 100%,
-    /// que e a rotacao maxima daquele ventilador — o que esta instalado, e nao o
-    /// que uma tabela imagina.
-    /// </summary>
     public void ObservarVentoinha(string chave, float rpm, float? pwm)
     {
         if (rpm <= 0) return;
@@ -113,15 +75,6 @@ public sealed class EspecificacaoService
         }
     }
 
-    /// <summary>
-    /// Rotacao maxima estimada de uma ventoinha.
-    ///
-    /// Com PWM em 95% ou mais, a leitura ja e a propria resposta. Com dois
-    /// pontos distantes, a reta entre eles projetada ate 100% da o teto — e um
-    /// ventilador tem um minimo de partida, entao a reta com intercepto acerta
-    /// mais que uma regra de tres. Com um ponto so, resta a proporcao. Sem PWM
-    /// nenhum, sobra o maior valor ja visto.
-    /// </summary>
     public Teto TetoDeVentoinha(string chave, double? manual = null)
     {
         if (manual is > 0)
@@ -130,8 +83,6 @@ public sealed class EspecificacaoService
         if (!_cfg.CurvasDeVentoinha.TryGetValue(chave, out var c) || c.RpmMax <= 0)
             return Teto.Nenhum;
 
-        // Calibrada, nao ha o que projetar: a rotacao maxima foi medida nela
-        // mesma, com o PWM forcado a 100%.
         if (c.RpmCalibrado > 0)
             return new Teto(Math.Max(c.RpmCalibrado, c.RpmMax), Origem.Hardware,
                 c.CalibradoEm is { } quando
@@ -151,7 +102,6 @@ public sealed class EspecificacaoService
 
             if (espalhamento >= EspalhamentoMinimo && c.RpmAlto > c.RpmBaixo)
             {
-                // Reta pelos dois pontos, projetada ate 100%.
                 var inclinacao = (c.RpmAlto - c.RpmBaixo) / espalhamento;
                 estimado = c.RpmAlto + inclinacao * (100 - c.PwmAlto);
                 detalhe = $"Projetado de {c.RpmBaixo:F0} rpm a {c.PwmBaixo:F0}% e " +
@@ -164,8 +114,6 @@ public sealed class EspecificacaoService
                           "Fica mais exato quando a ventoinha passar por outras rotações.";
             }
 
-            // Um ajuste ruim nao pode virar um teto absurdo, nem ficar abaixo do
-            // que ja foi medido.
             estimado = Math.Clamp(estimado, c.RpmMax, c.RpmMax * FatorMaximoDaProjecao);
 
             return new Teto(Arredondar(estimado), Origem.Extrapolado,
@@ -180,11 +128,6 @@ public sealed class EspecificacaoService
               "projetar. Calibrar em Componentes mede a rotação máxima direto nela.");
     }
 
-    /// <summary>
-    /// Guarda a rotacao medida com o PWM em 100%. Vale mais que qualquer
-    /// projecao, e por isso apaga os pontos da curva: eles existiam so para
-    /// estimar o que agora foi medido.
-    /// </summary>
     public void DefinirCalibrado(string chave, double rpm)
     {
         if (rpm <= 0) return;
@@ -203,12 +146,7 @@ public sealed class EspecificacaoService
         _cfg.Salvar();
     }
 
-
-    /// <summary>Rotacoes projetadas na casa da centena: a precisao nao daria para mais.</summary>
     private static double Arredondar(double rpm) => Math.Round(rpm / 50) * 50;
-
-    // ------------------------------------------------------------------
-    // Potencia
 
     public Teto TetoDePotenciaGpu() => Potencia(
         _cfg.PotenciaMaximaGpuW, Gpu?.PotenciaMaxW ?? 0, _cfg.PotenciaGpuMedida, "placa");
@@ -216,13 +154,6 @@ public sealed class EspecificacaoService
     public Teto TetoDePotenciaCpu() => Potencia(
         _cfg.PotenciaMaximaCpuW, Cpu?.PotenciaMaxW ?? 0, _cfg.PotenciaCpuMedida, "processador");
 
-    /// <summary>
-    /// Nem a GPU nem a CPU informam o proprio limite de potencia por sensor, so o
-    /// consumo do instante. Entao o teto vem da ficha tecnica — e se o que ja foi
-    /// medido passa dela, quem manda e a medicao: e o caso de uma placa de
-    /// fabrica com limite elevado, em que a tabela do modelo de referencia
-    /// subestima.
-    /// </summary>
     private static Teto Potencia(int manual, double catalogo, double medido, string peca)
     {
         if (manual > 0) return new Teto(manual, Origem.Manual);
@@ -242,15 +173,6 @@ public sealed class EspecificacaoService
             : Teto.Nenhum;
     }
 
-    // ------------------------------------------------------------------
-    // Temperatura
-
-    /// <summary>
-    /// Limite termico de um disco. O SMART publica os limiares de aviso e de
-    /// critico do proprio fabricante — os mesmos valores que as abas descartam
-    /// para nao confundi-los com a temperatura atual. Como escala, eles sao
-    /// exatamente o numero certo.
-    /// </summary>
     public Teto TetoDeDisco(float? critico, float? aviso, double configurado)
     {
         if (critico is > 0)
@@ -265,14 +187,6 @@ public sealed class EspecificacaoService
             "O disco não publica limiar próprio, então vale o limite que você configurou.");
     }
 
-    // ------------------------------------------------------------------
-    // Taxas de disco
-
-    /// <summary>
-    /// Registra as taxas de uma unidade. Guardadas entre sessoes porque uma
-    /// escala que recomeca do zero toda vez que o app abre transforma qualquer
-    /// copia de arquivo na barra cheia.
-    /// </summary>
     public void ObservarDisco(string nome, float? leitura, float? escrita)
     {
         Subir(_cfg.LeituraMaximaPorDisco, nome, leitura);
@@ -303,9 +217,6 @@ public sealed class EspecificacaoService
             : Teto.Nenhum;
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>Limite termico da CPU ou da GPU, pelo TjMax da ficha tecnica.</summary>
     public Teto TetoTermicoCpu(double configurado) => Termico(Cpu?.TjMaxC ?? 0, configurado);
     public Teto TetoTermicoGpu(double configurado) => Termico(Gpu?.TjMaxC ?? 0, configurado);
 
@@ -313,7 +224,6 @@ public sealed class EspecificacaoService
         ? new Teto(tjMax, Origem.Catalogo, "Temperatura máxima de operação do modelo.")
         : new Teto(configurado, Origem.Manual, "Limite que você configurou.");
 
-    /// <summary>Clock de boost da ficha tecnica, para a escala dos graficos de clock.</summary>
     public Teto TetoDeClockCpu(double medido) => Clock(Cpu?.ClockBoostMhz ?? 0, medido);
     public Teto TetoDeClockGpu(double medido) => Clock(Gpu?.ClockBoostMhz ?? 0, medido);
 
@@ -325,12 +235,6 @@ public sealed class EspecificacaoService
         return medido > 0 ? new Teto(medido, Origem.Medido) : Teto.Nenhum;
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>
-    /// Guarda o que foi aprendido. Chamado ao fechar o painel, nao a cada
-    /// leitura: sao poucos bytes, mas gravar a cada segundo nao se justifica.
-    /// </summary>
     public void Gravar()
     {
         if (!_mudou) return;
@@ -341,7 +245,6 @@ public sealed class EspecificacaoService
 
     public void MarcarMudanca() => _mudou = true;
 
-    /// <summary>Esquece as curvas aprendidas, para o app remedir do zero.</summary>
     public void Esquecer()
     {
         _cfg.CurvasDeVentoinha.Clear();

@@ -4,11 +4,6 @@ using MonitorPC.Models;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Um componente e suas leituras, na tela de todos os sensores. Guarda as
-/// linhas para atualizar os valores no lugar, em vez de reconstruir a cada
-/// segundo e fazer a rolagem saltar.
-/// </summary>
 public sealed class BlocoDeSensores : StackPanel
 {
     private readonly List<TextBlock> _valores = new();
@@ -69,7 +64,6 @@ public sealed class BlocoDeSensores : StackPanel
         }
     }
 
-    /// <summary>Se este bloco ainda representa o mesmo componente e as mesmas leituras.</summary>
     public bool Corresponde(GrupoDeSensores grupo) =>
         grupo.Nome == _componente &&
         grupo.Leituras.Count == _nomes.Count &&
@@ -81,10 +75,6 @@ public sealed class BlocoDeSensores : StackPanel
             _valores[i].Text = Formatar(grupo.Leituras[i]);
     }
 
-    /// <summary>
-    /// As casas decimais acompanham a grandeza: temperatura com uma, tensao com
-    /// tres, taxas em MB/s em vez dos bytes crus que a biblioteca devolve.
-    /// </summary>
     private static string Formatar(LeituraDeSensor l) => l.Unidade switch
     {
         "V" => $"{l.Valor:0.000} V",

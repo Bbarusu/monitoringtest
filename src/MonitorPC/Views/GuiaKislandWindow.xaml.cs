@@ -6,20 +6,10 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// O guia da Kisland. Abre sozinho uma vez por versao do guia (veja
-/// App.VersaoDoGuia), e fica
-/// na Personalizacao para quem quiser rever.
-///
-/// Os controles sao de verdade: ligar, escolher o que aparece, como abrir e a
-/// cor gravam na configuracao na hora, e a Kisland muda junto. Um guia que so
-/// mostrasse deixaria a pessoa repetir tudo depois na Personalizacao.
-/// </summary>
 public partial class GuiaKislandWindow : Window
 {
     private const int Passos = 10;
 
-    /// <summary>A mesma paleta da Personalizacao.</summary>
     private static readonly (string Nome, string Hex)[] Paleta =
     {
         ("Azul", "#3B82F6"),
@@ -35,11 +25,6 @@ public partial class GuiaKislandWindow : Window
     private bool _carregando = true;
     private int _passo;
 
-    /// <param name="obrigatorio">
-    /// Aberto sozinho para todos (versao nova do guia): o "Pular" fica apagado,
-    /// e o guia so fecha passando pelos passos. Aberto pela Personalizacao,
-    /// para rever, o "Pular" funciona.
-    /// </param>
     public GuiaKislandWindow(AppConfig cfg, Action aoMudar, bool obrigatorio = false)
     {
         InitializeComponent();
@@ -49,8 +34,6 @@ public partial class GuiaKislandWindow : Window
             BotaoPular.IsEnabled = false;
             BotaoPular.ToolTip = "Conheça a Kisland e o Kdrop até o fim para fechar";
         }
-        // Abre no centro, mas com o mesmo cuidado das outras: numa tela baixa
-        // (notebook com escala de 125%), o guia passava do fim da tela.
         Janelas.CaberNaTela(this);
         _cfg = cfg;
         _aoMudar = aoMudar;
@@ -58,8 +41,6 @@ public partial class GuiaKislandWindow : Window
         Ligar.IsChecked = _cfg.IlhaAtiva;
         ItemFps.IsChecked = _cfg.IlhaFps;
 
-        // Sem o app elevado o contador nao roda: a chave fica apagada e diz
-        // por que, como na Personalizacao.
         if (!AtualizacaoService.Elevado())
         {
             ItemFps.IsEnabled = false;
@@ -80,8 +61,6 @@ public partial class GuiaKislandWindow : Window
         ItemBandeja.IsChecked = _cfg.IlhaBandeja;
         ItemKdrop.IsChecked = _cfg.Kdrop && _cfg.IlhaBandeja;
 
-        // O Kdrop abre uma porta na rede, e o Windows so deixa com o app
-        // elevado: sem isso, a chave fica apagada e diz por que.
         if (!AtualizacaoService.Elevado())
         {
             ItemKdrop.IsEnabled = false;
@@ -118,8 +97,6 @@ public partial class GuiaKislandWindow : Window
                 ToolTip = nome,
                 GroupName = "CorDoGuia",
 
-                // Acompanhando a cor do Windows, nenhuma aparece marcada: a
-                // cor em uso nao e nenhuma das seis.
                 IsChecked = !_cfg.AcompanharCorDoSistema &&
                             string.Equals(hex, _cfg.CorDestaque, StringComparison.OrdinalIgnoreCase)
             };
@@ -134,9 +111,6 @@ public partial class GuiaKislandWindow : Window
         for (var i = 0; i < Passos; i++)
             Pontos.Children.Add(new Border { Height = 6, CornerRadius = new CornerRadius(3), Margin = new Thickness(0, 0, 6, 0) });
     }
-
-    // ------------------------------------------------------------------
-    // Passos
 
     private void MostrarPasso(int passo)
     {
@@ -186,38 +160,13 @@ public partial class GuiaKislandWindow : Window
         if (BotaoPular.IsEnabled) Close();
     }
 
-    private void Painel_Arrastar(object sender, MouseButtonEventArgs e)
-    {
-        if (e.ButtonState != MouseButtonState.Pressed) return;
-        if (e.OriginalSource is DependencyObject origem && DentroDeControle(origem)) return;
-
-        try { DragMove(); }
-        catch (InvalidOperationException) { }
-    }
-
-    private static bool DentroDeControle(DependencyObject? origem)
-    {
-        while (origem is not null)
-        {
-            if (origem is System.Windows.Controls.Primitives.ButtonBase) return true;
-            if (origem is not Visual) return false;
-            origem = VisualTreeHelper.GetParent(origem);
-        }
-
-        return false;
-    }
-
-    // ------------------------------------------------------------------
-    // Opcoes, que valem na hora
+    private void Painel_Arrastar(object sender, MouseButtonEventArgs e) => Janelas.ArrastarPeloFundo(this, e);
 
     private void Opcao_Alterada(object sender, RoutedEventArgs e)
     {
         AtualizarPrevia();
         if (_carregando) return;
 
-        // O Kdrop e a bandeja aberta para a casa: ligar um liga a outra, e
-        // desligar a bandeja desliga ele. A troca dispara esta mesma funcao,
-        // que entao grava tudo.
         if (ReferenceEquals(sender, ItemKdrop) && ItemKdrop.IsChecked == true && ItemBandeja.IsChecked != true)
         {
             ItemBandeja.IsChecked = true;
@@ -248,10 +197,6 @@ public partial class GuiaKislandWindow : Window
         Confirmar();
     }
 
-    /// <summary>
-    /// Escolher uma das seis e deixar de acompanhar a cor do Windows: e o que
-    /// a Personalizacao faz, e o guia faz igual.
-    /// </summary>
     private void Cor_Escolhida(object sender, RoutedEventArgs e)
     {
         if (_carregando || sender is not RadioButton { Tag: string hex }) return;
@@ -267,9 +212,6 @@ public partial class GuiaKislandWindow : Window
         _aoMudar();
     }
 
-    // ------------------------------------------------------------------
-    // Calendario e chat de IA
-
     private static readonly string[] Meses =
     {
         "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
@@ -282,10 +224,6 @@ public partial class GuiaKislandWindow : Window
     private static readonly string[] SemanasCurtas = { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" };
     private static readonly string[] Iniciais = { "D", "S", "T", "Q", "Q", "S", "S" };
 
-    /// <summary>
-    /// A previa do passo do calendario: o mes de verdade, com hoje marcado,
-    /// como na Kisland aberta, so que menor.
-    /// </summary>
     private void MontarCalendario()
     {
         var hoje = DateTime.Today;
@@ -357,13 +295,8 @@ public partial class GuiaKislandWindow : Window
         }
     }
 
-    /// <summary>Id de cada linha do seletor de chat, na mesma ordem dos itens.</summary>
     private readonly List<string> _idsDeIa = new();
 
-    /// <summary>
-    /// Os chats conhecidos. "Outro" so aparece para quem ja tem um endereco
-    /// proprio escolhido: digitar o endereco e coisa da Personalizacao.
-    /// </summary>
     private void MontarIas()
     {
         EscolhaIa.Items.Add("Nenhum");
@@ -395,7 +328,6 @@ public partial class GuiaKislandWindow : Window
         Confirmar();
     }
 
-    /// <summary>A pilula do passo 3 mostra o que esta marcado, e o anel quando nada esta.</summary>
     private void AtualizarPrevia()
     {
         if (PreviaMusica is null) return;
@@ -411,8 +343,6 @@ public partial class GuiaKislandWindow : Window
                     ItemGpu.IsChecked == true || ItemRam.IsChecked == true ||
                     ItemVolume.IsChecked == true || ItemRelogio.IsChecked == true;
 
-        // Como na Kisland: com algo a mostrar, o botao de Personalizacao no
-        // fim; sem nada, so o anel.
         PreviaAnel.Visibility = Visivel(!algum);
         PreviaBotao.Visibility = Visivel(algum && _cfg.IlhaBotaoPersonalizacao);
     }

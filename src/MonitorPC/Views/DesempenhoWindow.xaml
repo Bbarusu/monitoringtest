@@ -14,21 +14,10 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
-        <!--
-            Rolagem para tela baixa. Esta janela cresce com o conteúdo, e num
-            notebook o conteúdo passa da altura útil; Janelas.LimitarAltura põe
-            o teto, e sem rolagem o teto cortaria em vez de passar da tela —
-            troca de um problema por outro. Aqui o conteúdo rola inteiro,
-            botões incluídos: são poucas linhas e todas alcançáveis.
-        -->
-        <!-- A barra de rolagem fica na margem interna do painel, com 6 px de
-             folga do conteúdo e da borda: o conteúdo tem a mesma largura com
-             ou sem barra, e ela não encosta em nada. -->
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
         <StackPanel Margin="0,0,14,0">
 
-            <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
@@ -44,7 +33,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Acoes -->
             <TextBlock Text="O que fazer" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -93,7 +81,6 @@
                 </Grid>
             </Border>
 
-            <!-- Lista de processos -->
             <StackPanel x:Name="AreaProcessos" Visibility="Collapsed">
                 <Grid Margin="0,16,0,8">
                     <TextBlock Text="Escolha o que fechar" FontSize="11" HorizontalAlignment="Left"
@@ -107,7 +94,6 @@
                            Text="Encerra o programa. Vale a ressalva: antivírus, drivers essenciais e processos do Windows não são exibidos aqui." />
             </StackPanel>
 
-            <!-- Acao -->
             <Button x:Name="BotaoAtivar" Style="{StaticResource BotaoLargo}" Height="48"
                     Margin="0,20,0,0" Click="Ativar_Click">
                 <TextBlock Text="Ativar Modo Desempenho" FontSize="14" FontWeight="SemiBold" />

@@ -37,8 +37,6 @@ public partial class MemoriaWindow : Window
         foreach (var p in processos)
             Lista.Children.Add(MontarLinha(p));
 
-        // O Explorer costuma crescer com o tempo de uso; mostrar quanto ele ocupa
-        // agora da a dimensao do que reinicia-lo devolve.
         var explorer = processos.FirstOrDefault(x =>
             x.Nome.Equals("explorer", StringComparison.OrdinalIgnoreCase));
 
@@ -92,8 +90,6 @@ public partial class MemoriaWindow : Window
         Grid.SetColumn(memoria, 1);
         linha.Children.Add(memoria);
 
-        // Protegidos aparecem na lista, para o total fazer sentido, mas sem
-        // botao: fechar um deles deixaria o PC inutilizavel ou desprotegido.
         if (!p.Protegido)
         {
             var fechar = new Button
@@ -101,8 +97,6 @@ public partial class MemoriaWindow : Window
                 Style = (Style)FindResource("BotaoIcone"),
                 Width = 32,
                 Height = 32,
-                // O que o botão faz muda conforme a linha, e a dica diz qual
-                // dos dois: pedir para fechar não é a mesma coisa que encerrar.
                 ToolTip = p.TemJanela
                     ? $"Pedir para {p.Nome} fechar"
                     : $"Encerrar {p.Nome} — está em segundo plano, então pede confirmação",
@@ -149,14 +143,8 @@ public partial class MemoriaWindow : Window
     {
         if (sender is not Button { Tag: string nome }) return;
 
-        // O X fica dentro da linha clicavel: sem isto, fechar tambem abriria a
-        // tela de arquivos.
         e.Handled = true;
 
-        // Segundo clique no mesmo X, logo depois do aviso: é a confirmação de
-        // forçar. Dois cliques no mesmo lugar em vez de uma caixa de diálogo
-        // porque a pergunta nasce de um clique ali e a resposta volta para o
-        // mesmo lugar — e porque uma caixa modal neste painel seria a única.
         if (_forcarPendente == nome && DateTime.UtcNow < _forcarAte)
         {
             _forcarPendente = null;
@@ -183,8 +171,6 @@ public partial class MemoriaWindow : Window
         }
         else if (r.SemJanela > 0)
         {
-            // Sem janela não existe pedido gentil: ou força, ou nada acontece.
-            // Era este o caso que não fazia nada e não explicava nada.
             _forcarPendente = nome;
             _forcarAte = DateTime.UtcNow + RodapeComPrazo.Prazo;
 
@@ -208,22 +194,10 @@ public partial class MemoriaWindow : Window
         Recarregar();
     }
 
-    /// <summary>
-    /// Qual programa está com a pergunta de forçar em aberto, e até quando.
-    ///
-    /// O prazo existe para a confirmação não ficar armada: sem ele, um X
-    /// clicado agora e outro daqui a dez minutos, na linha que mudou de lugar
-    /// porque a lista se reordena por memória, encerrariam algo à força sem o
-    /// usuário ter pedido.
-    /// </summary>
     private string? _forcarPendente;
     private DateTime _forcarAte;
     private readonly RodapeComPrazo _rodape;
 
-    /// <summary>
-    /// Remonta a lista depois de um fechamento. Fechar leva tempo: a lista só
-    /// reflete a mudança depois que o programa sai.
-    /// </summary>
     private void Recarregar() => Dispatcher.InvokeAsync(async () =>
     {
         await Task.Delay(1200);
@@ -231,10 +205,6 @@ public partial class MemoriaWindow : Window
         Reposicionar();
     });
 
-    /// <summary>
-    /// O Explorer nao aparece na lista para ser fechado: encerra-lo sem subir de
-    /// volta deixaria o PC sem barra de tarefas. Aqui e encerrar e subir junto.
-    /// </summary>
     private async void Explorer_Click(object sender, RoutedEventArgs e)
     {
         BotaoExplorer.IsEnabled = false;
@@ -243,8 +213,6 @@ public partial class MemoriaWindow : Window
 
         var deuCerto = await Task.Run(PerformanceService.ReiniciarExplorer);
 
-        // A area de notificacao e recriada pelo Explorer: o icone da bandeja
-        // precisa ser reinstalado, senao o app fica sem porta de entrada.
         (Application.Current as App)?.RecriarIconeDaBandeja();
 
         _rodape.Mostrar(deuCerto
@@ -264,5 +232,4 @@ public partial class MemoriaWindow : Window
     {
         Janelas.Ancorar(this, Owner);
     }
-
 }

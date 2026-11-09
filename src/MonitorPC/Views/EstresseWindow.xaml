@@ -14,21 +14,10 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
-        <!--
-            Rolagem para tela baixa. Esta janela cresce com o conteúdo, e num
-            notebook o conteúdo passa da altura útil; Janelas.LimitarAltura põe
-            o teto, e sem rolagem o teto cortaria em vez de passar da tela —
-            troca de um problema por outro. Aqui o conteúdo rola inteiro,
-            botões incluídos: são poucas linhas e todas alcançáveis.
-        -->
-        <!-- A barra de rolagem fica na margem interna do painel, com 6 px de
-             folga do conteúdo e da borda: o conteúdo tem a mesma largura com
-             ou sem barra, e ela não encosta em nada. -->
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
         <StackPanel Margin="0,0,14,0">
 
-            <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
@@ -45,7 +34,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Leitura ao vivo -->
             <Border Margin="0,20,0,0" CornerRadius="12" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="14">
                 <StackPanel>
@@ -88,7 +76,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Ajustes -->
             <StackPanel x:Name="AreaAjustes" Margin="0,10,0,0">
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1"
@@ -132,7 +119,6 @@
                 </Border>
             </StackPanel>
 
-            <!-- Aviso -->
             <Border Margin="0,10,0,0" CornerRadius="12" Background="{DynamicResource AvisoFundo}"
                     BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1" Padding="12">
                 <Grid>
@@ -150,7 +136,6 @@
                 </Grid>
             </Border>
 
-            <!-- Resultado -->
             <Border x:Name="AreaResultado" Visibility="Collapsed" Margin="0,10,0,0" CornerRadius="12"
                     Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}"
                     BorderThickness="1" Padding="14">

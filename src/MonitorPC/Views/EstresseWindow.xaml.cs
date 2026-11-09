@@ -8,11 +8,6 @@ namespace MonitorPC.Views;
 
 public partial class EstresseWindow : Window
 {
-    /// <summary>
-    /// Margem abaixo do limite configurado em que o teste para sozinho. Parar no
-    /// limite exato chegaria tarde: a temperatura sobe mais rapido do que o
-    /// intervalo de leitura.
-    /// </summary>
     private const double Folga = 2;
 
     private readonly AppConfig _cfg;
@@ -20,7 +15,6 @@ public partial class EstresseWindow : Window
     private readonly StressService _estresse = new();
     private readonly Action<Snapshot> _aoLer;
 
-    // Medidas do teste em curso
     private float? _tempAntes;
     private float? _clockAntes;
     private float _tempPico;
@@ -47,15 +41,12 @@ public partial class EstresseWindow : Window
 
         _estresse.Parou += motivo => Dispatcher.BeginInvoke(() => AoParar(motivo));
 
-        // Fechar a janela nao pode deixar a carga rodando.
         Closed += (_, _) =>
         {
             _sensores.Atualizado -= _aoLer;
             _estresse.Dispose();
         };
     }
-
-    // ------------------------------------------------------------------
 
     private void AtualizarRotulos()
     {
@@ -77,8 +68,6 @@ public partial class EstresseWindow : Window
         AtualizarRotulos();
     }
 
-    // ------------------------------------------------------------------
-
     private void Aplicar(Snapshot s)
     {
         TempAgora.Text = s.CpuTemp is > 0 ? $"{s.CpuTemp:F0}" : "--";
@@ -88,7 +77,6 @@ public partial class EstresseWindow : Window
 
         if (!_estresse.Rodando)
         {
-            // Fora do teste, a leitura serve de referencia para o proximo.
             _tempAntes = s.CpuTemp;
             _clockAntes = s.CpuClockMhz;
             return;
@@ -101,8 +89,6 @@ public partial class EstresseWindow : Window
             ? $"{_estresse.ThreadsEmUso} threads · faltam {restante:mm\\:ss}"
             : $"{_estresse.ThreadsEmUso} threads";
 
-        // A parada por temperatura vem antes da parada por tempo: e ela que
-        // protege o hardware.
         if (s.CpuTemp is { } t && t >= _cfg.LimiteCpu - Folga)
         {
             _estresse.Parar($"a CPU chegou a {t:F0} °C");
@@ -121,14 +107,10 @@ public partial class EstresseWindow : Window
         {
             _clockPico = Math.Max(_clockPico, c);
 
-            // O clock dos primeiros segundos ainda esta subindo: so conta como
-            // minimo depois que a carga assentou.
             if ((DateTime.Now - (_estresse.Inicio ?? DateTime.Now)).TotalSeconds > 10)
                 _clockMinimo = Math.Min(_clockMinimo, c);
         }
     }
-
-    // ------------------------------------------------------------------
 
     private void Acao_Click(object sender, RoutedEventArgs e)
     {
@@ -184,8 +166,6 @@ public partial class EstresseWindow : Window
                     ? $"{_clockMinimo / 1000:0.00} a {_clockPico / 1000:0.00} GHz"
                     : $"{_clockPico / 1000:0.00} GHz"));
 
-        // Clock caindo com a carga constante e reducao termica: e o achado que
-        // justifica o teste existir dentro de um monitor.
         if (_clockPico > 0 && _clockMinimo < float.MaxValue)
         {
             var queda = (_clockPico - _clockMinimo) / _clockPico * 100;
@@ -200,8 +180,6 @@ public partial class EstresseWindow : Window
 
         AreaResultado.Visibility = Visibility.Visible;
     }
-
-    // ------------------------------------------------------------------
 
     private static TextBlock Titulo(string texto)
     {

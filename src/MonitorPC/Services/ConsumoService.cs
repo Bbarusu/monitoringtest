@@ -4,38 +4,19 @@ using System.Text;
 
 namespace MonitorPC.Services;
 
-/// <summary>Um dia de consumo acumulado.</summary>
 public sealed class DiaDeConsumo
 {
     public DateOnly Data { get; set; }
 
-    /// <summary>Watt-hora somado no dia.</summary>
     public double Wh { get; set; }
 
-    /// <summary>Tempo com o app aberto naquele dia, em segundos.</summary>
     public double Segundos { get; set; }
 
     public double WattsPico { get; set; }
 
-    /// <summary>
-    /// Media pelo proprio acumulado, e nao por soma de leituras: assim ela
-    /// continua certa mesmo que o intervalo de leitura mude no meio do dia.
-    /// </summary>
     public double WattsMedia => Segundos > 0 ? Wh * 3600 / Segundos : 0;
 }
 
-/// <summary>
-/// Registro de consumo por dia, gravado em texto.
-///
-/// Dois avisos que o arquivo repete, porque sem eles o numero engana: ele e uma
-/// estimativa — so CPU e GPU vem de sensor, o resto e a conta montada na tela
-/// de componentes — e so conta o tempo com o app aberto. O que o PC gasta com o
-/// app fechado nao entra e nao da para recuperar depois.
-///
-/// O arquivo e um so, com a parte de cima para ler e a de baixo para o app
-/// reabrir na proxima sessao. Dois arquivos seriam mais faceis de programar e
-/// um deles ficaria desatualizado sem ninguem perceber.
-/// </summary>
 public sealed class ConsumoService
 {
     private const string Separador = "--- dados abaixo desta linha, não edite ---";
@@ -43,12 +24,6 @@ public sealed class ConsumoService
     private readonly List<DiaDeConsumo> _dias = new();
     private bool _mudou;
 
-    /// <summary>
-    /// A soma vem da thread de leitura; a gravacao vem dela e tambem da
-    /// interface, pelo botao e pelo fechamento do app. Sem trava, percorrer a
-    /// lista enquanto a virada da meia-noite acrescenta um dia derrubaria a
-    /// gravacao.
-    /// </summary>
     private readonly object _trava = new();
 
     public ConsumoService() => Ler();
@@ -56,7 +31,6 @@ public sealed class ConsumoService
     public static string Caminho => Path.Combine(
         Path.GetDirectoryName(AppConfig.Caminho)!, "consumo.txt");
 
-    /// <summary>Acumulado de hoje, incluindo as sessoes anteriores do mesmo dia.</summary>
     public double WhDeHoje
     {
         get { lock (_trava) return Dia(DateOnly.FromDateTime(DateTime.Now))?.Wh ?? 0; }
@@ -67,10 +41,6 @@ public sealed class ConsumoService
         get { lock (_trava) return _dias.Sum(d => d.Wh); }
     }
 
-    /// <summary>
-    /// Soma um intervalo. A virada do dia e automatica: o que conta e a data de
-    /// agora, entao uma sessao que atravessa a meia-noite se divide sozinha.
-    /// </summary>
     public void Somar(double watts, double segundos)
     {
         if (watts <= 0 || segundos <= 0) return;
@@ -95,8 +65,6 @@ public sealed class ConsumoService
     }
 
     private DiaDeConsumo? Dia(DateOnly data) => _dias.FirstOrDefault(d => d.Data == data);
-
-    // ------------------------------------------------------------------
 
     public void Gravar()
     {
@@ -155,8 +123,6 @@ public sealed class ConsumoService
         t.AppendLine();
         t.AppendLine(Separador);
 
-        // Cultura invariante: um ponto decimal aqui nao depende do idioma do
-        // Windows, e o arquivo continua legivel por outra maquina.
         foreach (var d in _dias.OrderBy(d => d.Data))
             t.AppendLine(string.Join('|',
                 d.Data.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
@@ -173,13 +139,6 @@ public sealed class ConsumoService
         return $"{(int)t.TotalHours}h {t.Minutes:00}m";
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>
-    /// Recupera o historico. Uma linha estragada e pulada em silencio: o
-    /// arquivo e de texto e esta na pasta do usuario, entao pode ter sido
-    /// editado, e um registro de energia nao vale travar o app na abertura.
-    /// </summary>
     private void Ler()
     {
         try

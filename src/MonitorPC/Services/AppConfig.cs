@@ -5,17 +5,10 @@ using MonitorPC.Models;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// Configuracao do app. Nenhum valor de hardware fica fixo no codigo:
-/// quantidades sao detectadas, e os campos "Manual" sobrepoem a deteccao
-/// para o que o PC nao enxerga (ventoinhas em controladora externa, LEDs, bomba).
-/// </summary>
 public sealed class AppConfig
 {
-    /// <summary>Opacidade minima do painel. Abaixo disto o texto deixa de ser legivel.</summary>
     public const int OpacidadeMinima = 15;
 
-    // --- Watts por unidade (estimativa, ajustavel) ---
     public double WattsPorModuloRam { get; set; } = 3.0;
     public double WattsPorDisco { get; set; } = 2.0;
     public double WattsPorVentoinha { get; set; } = 1.5;
@@ -24,147 +17,61 @@ public sealed class AppConfig
     public double WattsPlacaMae { get; set; } = 12.0;
     public double WattsOutros { get; set; } = 10.0;
 
-    // --- Quantidades: null = detectar; valor = manual, sobrepoe a deteccao ---
     public int? ModulosRamManual { get; set; }
     public int? DiscosManual { get; set; }
     public int? VentoinhasManual { get; set; }
 
-    // --- Nao detectaveis por nenhum sensor ---
     public int PecasComLed { get; set; }
     public bool TemWaterCooler { get; set; }
 
-    /// <summary>
-    /// Potencia maxima da placa de video, em watts. Zero deixa o app descobrir
-    /// sozinho: ele guarda o maior valor que os sensores ja registraram, que vai
-    /// se aproximando do teto real conforme a GPU e exigida.
-    /// </summary>
     public int PotenciaMaximaGpuW { get; set; }
 
-    /// <summary>
-    /// Maior potencia de GPU ja medida, mantida entre sessoes. Ultimo recurso:
-    /// so vale quando o modelo nao esta no catalogo e nada foi informado a mao.
-    /// </summary>
     public double PotenciaGpuMedida { get; set; }
 
-    /// <summary>Maior rotacao de ventoinha da GPU ja medida.</summary>
     public double RotacaoGpuMedida { get; set; }
 
-    /// <summary>
-    /// Rotacao maxima da ventoinha da GPU, em rpm. Zero deixa o app projetar
-    /// pela curva rotacao x PWM, que e mais confiavel que uma tabela: a rotacao
-    /// varia entre fabricantes da mesma placa.
-    /// </summary>
     public int RotacaoMaximaGpuRpm { get; set; }
 
-    /// <summary>
-    /// Potencia maxima do processador, em watts. Zero usa o PPT ou o Maximum
-    /// Turbo Power do catalogo, e na falta dele o maior valor ja medido.
-    /// </summary>
     public int PotenciaMaximaCpuW { get; set; }
 
-    /// <summary>Maior potencia de pacote da CPU ja medida.</summary>
     public double PotenciaCpuMedida { get; set; }
 
-    /// <summary>
-    /// Curva rotacao x PWM de cada ventoinha, pela chave "peca/sensor". E daqui
-    /// que sai a rotacao maxima: nenhuma tabela sabe qual ventilador esta
-    /// espetado na placa, mas os dois sensores juntos respondem.
-    /// </summary>
     public Dictionary<string, CurvaDeVentoinha> CurvasDeVentoinha { get; set; } = new();
 
-    /// <summary>
-    /// Maior taxa de leitura e de escrita ja vista em cada unidade, em MB/s,
-    /// pelo nome do disco.
-    ///
-    /// Aqui nao ha o que extrapolar nem tabela que ajude: o SMART nao publica a
-    /// velocidade de projeto da unidade, e ela depende tambem da porta em que o
-    /// disco esta. Entao vale a medicao, que ao menos para de reescalar a cada
-    /// sessao — um disco que ja chegou a 3 GB/s mantem essa referencia.
-    /// </summary>
     public Dictionary<string, double> LeituraMaximaPorDisco { get; set; } = new();
     public Dictionary<string, double> EscritaMaximaPorDisco { get; set; } = new();
 
-    /// <summary>
-    /// Mostrar uma barra por ventoinha da placa-mae na aba CPU. Desligado em
-    /// placas com muitos conectores, onde a aba fica longa demais — a rotacao
-    /// continua sendo lida, e aparece na tela de todos os sensores.
-    /// </summary>
     public bool MostrarVentoinhasNaCpu { get; set; } = true;
 
-    /// <summary>
-    /// Ventoinhas que o usuario escolheu nao ver, pela chave "peca/sensor".
-    ///
-    /// Guardadas as ocultas, e nao as visiveis, de proposito: assim a lista
-    /// vazia significa "todas", uma ventoinha nova aparece sozinha, e desmarcar
-    /// todas continua querendo dizer nenhuma — o que uma lista de visiveis nao
-    /// conseguiria distinguir de "ainda nao escolhi".
-    /// </summary>
     public List<string> VentoinhasOcultas { get; set; } = new();
 
-    /// <summary>
-    /// Buscar o catalogo de especificacoes atualizado. Um GET de poucos
-    /// kilobytes no repositorio do app, no maximo uma vez por semana. Desligado,
-    /// vale a copia que veio embutida.
-    /// </summary>
     public bool AtualizarCatalogoOnline { get; set; } = true;
 
-    /// <summary>
-    /// Procura versao nova do app, no maximo uma vez por dia.
-    ///
-    /// Procurar e so procurar: encontrar vira um aviso no painel, e instalar
-    /// continua sendo decisao de quem esta na frente do PC — custa uma
-    /// confirmacao do Windows e fecha o app no meio.
-    /// </summary>
     public bool VerificarAtualizacoes { get; set; } = true;
 
-    /// <summary>
-    /// Quando a ultima procura aconteceu, para nao repetir a cada abertura.
-    /// Um app que sobe junto com a sessao abriria dez vezes num dia de
-    /// reinicios, e dez consultas para a mesma resposta nao servem a ninguem.
-    /// </summary>
     public DateTime? UltimaVerificacaoDeAtualizacao { get; set; }
 
-    // --- Fonte ---
     public double EficienciaFonte { get; set; } = 0.85;
     public int CapacidadeFonteW { get; set; } = 550;
 
-    // --- Limites de temperatura (configuracao inicial) ---
     public double LimiteCpu { get; set; } = 75;
     public double LimiteGpu { get; set; } = 80;
     public double LimiteDisco { get; set; } = 55;
     public bool NotificarNoWindows { get; set; } = true;
     public bool SugerirEconomico { get; set; } = true;
 
-    // --- Aparencia ---
     public Tema Tema { get; set; } = Tema.Escuro;
     public bool AcompanharCorDoSistema { get; set; } = true;
     public string CorDestaque { get; set; } = "#3B82F6";
     public bool Transparencia { get; set; } = true;
 
-    /// <summary>
-    /// Transparencia de fato: o tema Preto desliga, porque com ela o fundo
-    /// mostra o desktop e deixa de ser preto. A escolha fica guardada e volta
-    /// ao sair do tema Preto.
-    /// </summary>
     [JsonIgnore] public bool TransparenciaAtiva => Transparencia && Tema != Tema.Preto;
     public int Opacidade { get; set; } = 85;
 
-    /// <summary>
-    /// Opacidade da Kisland, separada da do painel. Vazia segue a do painel:
-    /// e o que quem ja usava via, e continua vendo ate mexer na barra dela.
-    /// </summary>
     public int? IlhaOpacidade { get; set; }
 
-    // --- Ilha no topo da tela ---
-
-    /// <summary>
-    /// A pilula no centro do topo da tela. Desligada por padrao: uma janela
-    /// sempre por cima de tudo nao pode aparecer sozinha depois de uma
-    /// atualizacao — quem quiser liga em Personalizacao.
-    /// </summary>
     public bool IlhaAtiva { get; set; }
 
-    // O que a pilula mostra fechada. A musica so aparece quando ha algo tocando.
     public bool IlhaMusica { get; set; } = true;
     public bool IlhaCpu { get; set; } = true;
     public bool IlhaGpu { get; set; } = true;
@@ -176,61 +83,24 @@ public sealed class AppConfig
     public bool IlhaPotencia { get; set; }
     public bool IlhaRelogio { get; set; }
 
-    /// <summary>Dia da semana e do mes na pilula ("Qui 29"), junto do relogio ou sozinho.</summary>
     public bool IlhaData { get; set; }
 
-    /// <summary>
-    /// Chat de IA aberto pelo anel pulsante: o id de um dos chats conhecidos
-    /// (AtalhoService.Ias), "outro" para um endereco proprio, ou vazio para
-    /// nenhum. Com um escolhido, o anel fica sempre na pilula.
-    /// </summary>
     public string? IlhaIa { get; set; }
 
-    /// <summary>Endereco (ou app) do chat quando IlhaIa e "outro".</summary>
     public string? IlhaIaEndereco { get; set; }
 
-    /// <summary>Apps e sites da Kisland aberta, na ordem em que aparecem.</summary>
     public List<AtalhoDaIlha> IlhaAtalhos { get; set; } = new();
 
-    /// <summary>
-    /// O convite para conhecer a Kisland ja apareceu (o da primeira versao do
-    /// guia). Fica so para ler configs antigos; quem decide agora e
-    /// <see cref="GuiaKislandVersaoVista"/>.
-    /// </summary>
     public bool GuiaKislandVisto { get; set; }
 
-    /// <summary>
-    /// A versao do guia da Kisland que ja apareceu para esta pessoa. Quando o
-    /// guia ganha passos novos (o Kdrop, por exemplo), o numero da versao do
-    /// guia sobe no App, e ele abre de novo, uma vez, para todo mundo.
-    /// </summary>
     public int GuiaKislandVersaoVista { get; set; }
 
-    /// <summary>
-    /// A versao das Novidades (a janela do Kdrop) que ja apareceu para esta
-    /// pessoa. Sobe no App quando ha novidade nova para mostrar a todos.
-    /// </summary>
     public int NovidadesVersaoVista { get; set; }
 
-    /// <summary>
-    /// Contador de FPS na Kisland quando um jogo esta rodando, em qualquer
-    /// monitor. Desligado por padrao: liga uma sessao de rastreamento do
-    /// Windows, e quem nao joga nao precisa dela.
-    /// </summary>
     public bool IlhaFps { get; set; }
 
-    /// <summary>
-    /// Tentar ficar visivel com o jogo em tela cheia "exclusiva". Muitos jogos
-    /// que dizem isso rodam, na verdade, convertidos pelo Windows para sem
-    /// borda, e ai a Kisland aparece. Nos de exclusiva de verdade ela nao
-    /// aparece, e em alguns a tela pode piscar ou o jogo perder o foco quando
-    /// ela tenta — por isso vem desligado.
-    /// </summary>
     public bool IlhaFicarEmTelaCheia { get; set; }
 
-    // O que a Kisland mostra no modo jogo: o jogo do contador de FPS em tela
-    // cheia no mesmo monitor que ela. O FPS aparece sempre; o resto e escolha,
-    // separada da do dia a dia, porque durante o jogo o que interessa e outro.
     public bool IlhaJogoCpu { get; set; } = true;
     public bool IlhaJogoCpuUso { get; set; }
     public bool IlhaJogoGpu { get; set; } = true;
@@ -240,46 +110,23 @@ public sealed class AppConfig
     public bool IlhaJogoRelogio { get; set; }
     public bool IlhaJogoMusica { get; set; }
 
-    // --- Telas OLED ---
-
-    /// <summary>
-    /// Kisland preta: fundo preto puro, sem borda nem sombra, nas cores do
-    /// tema escuro qualquer que seja o tema do app. Num AMOLED com fundo
-    /// escuro ela se funde com o topo da tela, como a ilha do iPhone com a
-    /// camera.
-    /// </summary>
     public bool IlhaPreta { get; set; }
 
-    /// <summary>
-    /// Proteger a tela contra marca: a Kisland fica sempre no mesmo lugar,
-    /// com texto parado, e em OLED isso marca a tela com o tempo. Ligada por
-    /// padrao: em tela comum ninguem percebe nenhum dos tres cuidados.
-    /// </summary>
     public bool IlhaProtegerTela { get; set; } = true;
 
-    /// <summary>Andar 1 ou 2 px a cada 3 minutos.</summary>
     public bool IlhaMexerPixels { get; set; } = true;
 
-    /// <summary>Minutos sem o mouse por perto ate ela ficar mais apagada. Zero, nunca.</summary>
     public int IlhaEscurecerMinutos { get; set; } = 5;
 
-    /// <summary>Some depois de 10 minutos sem ninguem mexer no PC, e volta ao mexer.</summary>
     public bool IlhaEsconderParado { get; set; } = true;
 
-    /// <summary>Tamanho da Kisland, em porcentagem do desenho original (70 a 100).</summary>
     public int IlhaEscala { get; set; } = 85;
 
-
-    // O que a Kisland mostra aberta. O rodape fica sempre: e dele que saem o
-    // painel e a Personalizacao.
     public bool IlhaAbertaPlayer { get; set; } = true;
 
-    // Antigas, de quando CPU e GPU iam juntas e RAM, disco e energia tambem.
-    // Ficam para quem ja tinha escolhido: as novas, vazias, herdam delas.
     public bool IlhaAbertaTemperaturas { get; set; } = true;
     public bool IlhaAbertaSistema { get; set; } = true;
 
-    // Cada cartao da Kisland aberta por si. Vazio segue a escolha antiga.
     public bool? IlhaAbertaCpu { get; set; }
     public bool? IlhaAbertaGpu { get; set; }
     public bool? IlhaAbertaRam { get; set; }
@@ -296,119 +143,57 @@ public sealed class AppConfig
     public bool IlhaAbertaCalendario { get; set; } = true;
     public bool IlhaAbertaAtalhos { get; set; } = true;
 
-    /// <summary>Botoes para trocar a saida de som (fone, caixa, monitor), junto do volume.</summary>
     public bool IlhaSaidasDeSom { get; set; } = true;
 
-    /// <summary>Botao do mixer (o volume de cada app) ao lado do volume.</summary>
     public bool IlhaMixer { get; set; } = true;
 
-    /// <summary>O mixer estava aberto da ultima vez: a Kisland abre com ele aberto.</summary>
     public bool IlhaMixerAberto { get; set; }
 
-    /// <summary>
-    /// Bandeja de arquivos: arrastar um arquivo ate a Kisland deixa ele ali, a
-    /// mao, ate ser usado. Guarda so o caminho, e so enquanto o app esta aberto.
-    /// </summary>
     public bool IlhaBandeja { get; set; } = true;
 
-    /// <summary>
-    /// Kdrop: a bandeja aberta para o celular e os outros PCs da casa, pela
-    /// rede Wi-Fi. Desligado por padrao: abre uma porta na rede, e isso so
-    /// deve acontecer quando a pessoa pede.
-    /// </summary>
     public bool Kdrop { get; set; }
 
-    /// <summary>Como este PC aparece no celular e nos outros PCs. Vazio usa o nome do Windows.</summary>
     public string? KdropNome { get; set; }
 
-    /// <summary>Onde fica o que chega pelo Kdrop. Vazio e Downloads\Kdrop.</summary>
     public string? KdropPasta { get; set; }
 
-    /// <summary>Aparelhos cujos envios sao aceitos sem perguntar.</summary>
     public List<AparelhoConfiavel> KdropConfiaveis { get; set; } = new();
 
-    /// <summary>A roda do mouse em cima da Kisland muda o volume, e o clique da roda pausa a musica.</summary>
     public bool IlhaRodaMudaVolume { get; set; } = true;
 
-    /// <summary>Botao de Personalizacao na pilula. A ilha aberta tem o dela sempre.</summary>
     public bool IlhaBotaoPersonalizacao { get; set; } = true;
 
-    /// <summary>
-    /// Monitor da ilha, pelo nome do dispositivo do Windows ("\\.\DISPLAY2").
-    /// Vazio e o principal. Monitor desligado faz a ilha ir para o principal
-    /// sem apagar a escolha: religado, ela volta para ele.
-    /// </summary>
     public string? IlhaMonitor { get; set; }
 
-    /// <summary>
-    /// Quanto tempo o mouse precisa ficar em cima para ela abrir, em
-    /// milissegundos. 5 s por padrao: da tempo de clicar no anel de IA ou num
-    /// chip sem a Kisland abrir por cima.
-    /// </summary>
     public int IlhaEsperaParaAbrirMs { get; set; } = 5000;
 
-    /// <summary>Com um chat de IA escolhido, abrir o app dele quando estiver instalado no PC.</summary>
     public bool IlhaIaPreferirApp { get; set; } = true;
 
-    /// <summary>Abre ao passar o mouse; falso, so ao clicar.</summary>
     public bool IlhaAbrirAoPassarMouse { get; set; } = true;
 
-    /// <summary>Sai da frente de jogo, video e apresentacao.</summary>
     public bool IlhaEsconderEmTelaCheia { get; set; } = true;
 
-    /// <summary>
-    /// Mostra o volume na ilha por dois segundos quando ele muda. O aviso do
-    /// proprio Windows continua: ele nao tem como ser desligado por outro app.
-    /// </summary>
     public bool IlhaAvisoDeVolume { get; set; } = true;
 
-    /// <summary>Mostra a faixa nova por tres segundos quando a musica muda.</summary>
     public bool IlhaAvisoDeFaixa { get; set; } = true;
 
-    /// <summary>
-    /// Fechar o painel ao clicar fora dele. Desligado por padrao: assim da para
-    /// olhar o painel, trocar de janela e tirar print sem ele sumir. Quem fecha
-    /// e o botao de minimizar ou o icone da bandeja.
-    /// </summary>
     public bool FecharAoPerderFoco { get; set; }
 
-    // --- Intervalos de leitura, em milissegundos ---
     public int IntervaloPainelAberto { get; set; } = 1000;
     public int IntervaloPainelFechado { get; set; } = 3000;
     public int IntervaloSensoresLentos { get; set; } = 30000;
 
-    // --- Log de disco ---
-    /// <summary>A partir de quantos MB/s um processo entra no log.</summary>
     public double LimiteLogMbs { get; set; } = 10;
 
-    // --- Posicao do painel: vale so nesta sessao ---
-    // Nao vai para o arquivo de proposito: cada abertura do app comeca no canto,
-    // saindo da bandeja. Arrastar vale ate o app ser encerrado.
-
-    /// <summary>
-    /// Falso mantem o painel ancorado no canto inferior direito. Arrastar o
-    /// painel liga isto e guarda onde ele ficou, ate encerrar.
-    /// </summary>
     [JsonIgnore] public bool PosicaoLivre { get; set; }
     [JsonIgnore] public double PosicaoX { get; set; }
     [JsonIgnore] public double PosicaoY { get; set; }
 
     public bool ConfiguracaoInicialFeita { get; set; }
 
-    // ------------------------------------------------------------------
-
     [JsonIgnore]
     public static string Caminho => Path.Combine(Pasta, "config.json");
 
-    /// <summary>
-    /// Onde moram a configuracao, o registro de consumo e o log de erros.
-    ///
-    /// O app se chamava Monitor de PC, e a pasta tinha o nome antigo. Quem ja
-    /// usava tem ali curvas de ventoinha aprendidas durante dias e o consumo de
-    /// cada dia: renomear sem levar isso junto jogaria fora o que o app mais
-    /// demorou para saber. A mudanca acontece uma vez, na primeira abertura
-    /// depois da renomeacao.
-    /// </summary>
     [JsonIgnore]
     public static string Pasta { get; } = PrepararPasta();
 
@@ -426,8 +211,6 @@ public sealed class AppConfig
         }
         catch
         {
-            // Sem Log aqui: o proprio Log depende desta pasta. Falhando, o app
-            // comeca com configuracao nova, que e ruim mas nao impede nada.
         }
 
         return nova;
@@ -448,7 +231,6 @@ public sealed class AppConfig
         }
         catch
         {
-            // Config corrompida nao pode impedir o app de abrir: volta ao padrao.
         }
 
         var cfg = new AppConfig();
@@ -465,7 +247,6 @@ public sealed class AppConfig
         }
         catch
         {
-            // Falha ao gravar nao derruba o app.
         }
     }
 }

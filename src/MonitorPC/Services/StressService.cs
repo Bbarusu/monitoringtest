@@ -1,19 +1,10 @@
 namespace MonitorPC.Services;
 
-/// <summary>
-/// Carga de CPU controlada, para ver como o PC se comporta sob pressao.
-///
-/// Cada thread roda um laco de calculo em ponto flutuante — trabalho real, que
-/// o compilador nao tem como descartar. Parar e imediato: as threads conferem o
-/// cancelamento a cada volta e sao de segundo plano, entao nao seguram o app se
-/// ele for encerrado.
-/// </summary>
 public sealed class StressService : IDisposable
 {
     private CancellationTokenSource? _cts;
     private readonly List<Thread> _threads = new();
 
-    /// <summary>Soma acumulada. So existe para o calculo nao ser descartado.</summary>
     private double _resultado;
 
     public bool Rodando => _cts is { IsCancellationRequested: false };
@@ -22,7 +13,6 @@ public sealed class StressService : IDisposable
 
     public int ThreadsEmUso { get; private set; }
 
-    /// <summary>Disparado quando o teste para, com o motivo.</summary>
     public event Action<string>? Parou;
 
     public static int ThreadsDisponiveis => Environment.ProcessorCount;
@@ -70,8 +60,6 @@ public sealed class StressService : IDisposable
 
         while (!token.IsCancellationRequested)
         {
-            // Um bloco de voltas entre as checagens: conferir o cancelamento a
-            // cada operacao custaria mais que o proprio calculo.
             for (var i = 0; i < 20_000; i++)
             {
                 soma += Math.Sqrt(x) * Math.Sin(x);
@@ -80,7 +68,6 @@ public sealed class StressService : IDisposable
             }
         }
 
-        // Sem isto o compilador poderia jogar o laco fora por nao ter efeito.
         lock (_threads) _resultado += soma;
     }
 

@@ -9,14 +9,8 @@ public enum PerfilEnergia
     Desempenho
 }
 
-/// <summary>
-/// Troca o plano de energia do Windows pelos perfis do painel.
-/// Usa o powercfg, que e o caminho oficial e nao exige privilegio elevado
-/// para ativar um plano ja existente.
-/// </summary>
 public static class PowerService
 {
-    // GUIDs dos planos padrao do Windows, iguais em todas as instalacoes.
     private const string GuidEconomico = "a1841308-3541-4fab-bc81-f71556f20b4a";
     private const string GuidEquilibrado = "381b4222-f694-41f0-9685-ff5bb260df2e";
     private const string GuidDesempenho = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
@@ -28,18 +22,12 @@ public static class PowerService
         _ => GuidEquilibrado
     };
 
-    /// <summary>
-    /// Aplica o perfil. Devolve falso quando nao foi possivel, caso em que o
-    /// motivo vai para o log — o painel nao deve mostrar um estado que nao vigora.
-    /// </summary>
     public static bool Aplicar(PerfilEnergia perfil)
     {
         var guid = Guid(perfil);
 
         if (Executar($"/setactive {guid}") is null) return true;
 
-        // Em muitas instalacoes recentes o plano de alto desempenho vem oculto.
-        // Duplicar o plano o torna disponivel, e so entao da para ativa-lo.
         var erroDuplicar = Executar($"/duplicatescheme {guid}");
         if (erroDuplicar is not null)
         {
@@ -56,7 +44,6 @@ public static class PowerService
         return false;
     }
 
-    /// <summary>Perfil em vigor agora, ou nulo se for um plano fora dos tres.</summary>
     public static PerfilEnergia? Atual()
     {
         try
@@ -77,9 +64,6 @@ public static class PowerService
         }
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>Devolve nulo em caso de sucesso, ou a mensagem de erro.</summary>
     private static string? Executar(string argumentos)
     {
         try

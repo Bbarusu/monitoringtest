@@ -5,10 +5,6 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Tela da calibracao de ventoinhas. Mostra o que o app ja sabe de cada uma e
-/// de onde sabe, e deixa medir a rotacao maxima de verdade.
-/// </summary>
 public partial class CalibracaoWindow : Window
 {
     private readonly AppConfig _cfg;
@@ -36,26 +32,18 @@ public partial class CalibracaoWindow : Window
             _fechada = true;
             _relogio.Parar();
 
-            // Fechar no meio da calibracao nao pode deixar ventoinha presa em
-            // 100%: cancela, e o finally do servico restaura.
             _cancelamento?.Cancel();
         };
     }
-
-    // ------------------------------------------------------------------
 
     private bool _fechada;
 
     private void Montar()
     {
-        // A calibracao continua rodando depois de a tela fechar, e o Montar do
-        // bloco final cairia numa janela que ja saiu da tela.
         if (_fechada) return;
 
         var canais = _sensores.CanaisDeVentoinha();
 
-        // A lista so e refeita quando a quantidade muda: remontar a cada segundo
-        // enquanto o usuario le seria piscada a toa.
         if (Lista.Children.Count != canais.Count)
         {
             Lista.Children.Clear();
@@ -84,14 +72,8 @@ public partial class CalibracaoWindow : Window
         Reposicionar();
     }
 
-    /// <summary>
-    /// O unico teto digitado a mao hoje e o da ventoinha da placa de video. As do
-    /// gabinete nao tem campo: a calibracao resolve melhor que um numero chutado.
-    /// </summary>
     private double? TetoManual(SensorService.CanalDeVentoinha c) =>
         c.Gpu && _cfg.RotacaoMaximaGpuRpm > 0 ? _cfg.RotacaoMaximaGpuRpm : null;
-
-    // ------------------------------------------------------------------
 
     private async void Calibrar_Click(object sender, RoutedEventArgs e)
     {
@@ -101,8 +83,6 @@ public partial class CalibracaoWindow : Window
             return;
         }
 
-        // A referencia local sobrevive ao campo, que o bloco final zera: e por
-        // ela que se pergunta, depois do await, se houve cancelamento.
         var cancelamento = new CancellationTokenSource();
         _cancelamento = cancelamento;
 
@@ -116,9 +96,6 @@ public partial class CalibracaoWindow : Window
         {
             var resultados = await _calibracao.CalibrarAsync(progresso, cancelamento.Token);
 
-            // Cancelar no meio devolve a lista do jeito que estava, sem
-            // excecao: sem esta conferencia, a tela anunciaria que nada foi
-            // medido, como se a medicao tivesse falhado.
             if (cancelamento.IsCancellationRequested)
                 Estado.Text = "Calibração cancelada. As ventoinhas voltaram ao normal.";
             else
@@ -170,13 +147,6 @@ public partial class CalibracaoWindow : Window
         Estado.Text = texto;
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>
-    /// Apaga tudo que foi medido e projetado. Util depois de trocar um
-    /// ventilador: a curva antiga seguiria valendo para um conector que agora
-    /// tem outra peca.
-    /// </summary>
     private void Esquecer_Click(object sender, RoutedEventArgs e)
     {
         if (_calibracao.Rodando) return;
@@ -194,7 +164,6 @@ public partial class CalibracaoWindow : Window
     private void Reposicionar() => Janelas.Ancorar(this, Owner);
 }
 
-/// <summary>Uma linha da lista: a ventoinha, a rotação de agora e o teto conhecido.</summary>
 internal sealed class LinhaDeVentoinha : Border
 {
     private readonly TextBlock _nome = new() { FontSize = 13, FontWeight = FontWeights.Medium };
@@ -257,14 +226,6 @@ internal sealed class LinhaDeVentoinha : Border
         ToolTip = teto.Explicacao("rpm");
     }
 
-    /// <summary>
-    /// Por que esta ventoinha pode ou não ser calibrada.
-    ///
-    /// São três paradas diferentes no caminho, e juntá-las num recado só
-    /// deixava o usuário sem saber o que fazer: sem leitura de rotação, sem
-    /// canal de PWM, ou com PWM que a peça publica mas não aceita comandar —
-    /// este último é o caso comum das placas de vídeo.
-    /// </summary>
     private static string Procedencia(SensorService.CanalDeVentoinha canal, Teto teto)
     {
         if (!canal.TemLeitura)

@@ -16,12 +16,6 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.55" Color="Black" />
         </Border.Effect>
 
-        <!--
-            Cabeçalho e botões fixos; o meio rola. A janela nunca passa da
-            altura útil do monitor (o código põe o teto), e num notebook de
-            tela baixa é o meio que encolhe e ganha barra de rolagem. Em tela
-            que cabe tudo, a barra nem aparece.
-        -->
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -29,14 +23,8 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Cabecalho -->
             <Grid Grid.Row="0">
                 <StackPanel Orientation="Horizontal">
-                    <!--
-                        O mesmo chip do ícone do app. Os dois quadrados vão de
-                        Rectangle, que arredonda canto sem esforço; os oito
-                        pinos são retas, e para retas o Path é mais curto.
-                    -->
                     <Border Width="44" Height="44" CornerRadius="12"
                             Background="{DynamicResource Acento}" Margin="0,0,14,0">
                         <Grid Width="24" Height="24">
@@ -81,17 +69,10 @@
                 </Button>
             </Grid>
 
-            <!-- A margem negativa põe a barra de rolagem no espaço da borda do
-                 painel: o conteúdo tem a mesma largura com ou sem barra. -->
             <ScrollViewer x:Name="Rolagem" Grid.Row="1" Margin="0,0,-16,0"
                           VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,16,0">
 
-            <!--
-                O que mudou nesta versão. Só aparece na atualização: é quando
-                a pessoa já conhece o app e quer saber o que tem de novo, e é
-                o tempo da barra andar.
-            -->
             <Border x:Name="BlocoNotas" Margin="0,22,0,0" CornerRadius="12" Padding="14"
                     Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}"
                     BorderThickness="1" Visibility="Collapsed">
@@ -105,10 +86,8 @@
                 </StackPanel>
             </Border>
 
-            <!-- ===================== PASSO: OPÇÕES ===================== -->
             <StackPanel x:Name="PassoOpcoes" Margin="0,22,0,0">
 
-              <!-- Some inteiro na desinstalação: não há o que escolher ao sair. -->
               <StackPanel x:Name="BlocoDeOpcoes">
 
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}"
@@ -125,11 +104,6 @@
                 <TextBlock Text="Opções" FontSize="11" Margin="0,16,0,8"
                            Foreground="{DynamicResource TextoFraco}" />
 
-                <!--
-                    A escolha mais consequente vem primeiro, e com o preço dito
-                    por extenso: descobrir que faltam sensores depois de tudo
-                    instalado é o pior jeito de ficar sabendo.
-                -->
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1"
                         Padding="14,12" Margin="0,0,0,8">
@@ -225,7 +199,6 @@
 
               </StackPanel>
 
-                <!-- O que o instalador faz com o driver -->
                 <Border x:Name="CartaoDoDriver" Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource AvisoFundo}"
                         BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1" Padding="14">
                     <Grid>
@@ -246,7 +219,6 @@
 
             </StackPanel>
 
-            <!-- ==================== PASSO: ANDAMENTO ==================== -->
             <StackPanel x:Name="PassoAndamento" Margin="0,22,0,0" Visibility="Collapsed">
                 <TextBlock x:Name="Etapa" FontSize="13" TextWrapping="Wrap"
                            Foreground="{DynamicResource Texto}" Text="Preparando…" />
@@ -262,7 +234,6 @@
                            Text="Não feche esta janela." />
             </StackPanel>
 
-            <!-- ====================== PASSO: FIM ======================= -->
             <StackPanel x:Name="PassoFim" Margin="0,22,0,0" Visibility="Collapsed">
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="14">
@@ -279,8 +250,6 @@
             </StackPanel>
             </ScrollViewer>
 
-            <!-- Botões, fora da rolagem: sempre à vista. Cada par aparece junto
-                 com o passo a que pertence. -->
             <Grid Grid.Row="2">
                 <UniformGrid Columns="2" Margin="0,20,0,0"
                              Visibility="{Binding Visibility, ElementName=PassoOpcoes}">

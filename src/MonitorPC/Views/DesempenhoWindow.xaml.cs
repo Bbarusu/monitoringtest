@@ -19,12 +19,6 @@ public partial class DesempenhoWindow : Window
         MedirTemporarios();
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>
-    /// A varredura dos temporarios percorre a pasta inteira, entao corre fora da
-    /// interface para nao travar a janela ao abrir.
-    /// </summary>
     private async void MedirTemporarios()
     {
         try
@@ -103,8 +97,6 @@ public partial class DesempenhoWindow : Window
         DetalheProcessos.Text = "Nenhum programa aberto para fechar";
     }
 
-    // ------------------------------------------------------------------
-
     private void FecharProcessos_Alterado(object sender, RoutedEventArgs e)
     {
         AreaProcessos.Visibility = FecharProcessos.IsChecked == true
@@ -132,8 +124,6 @@ public partial class DesempenhoWindow : Window
                 ? "Escolha abaixo o que fechar"
                 : $"{escolhidos.Count} programas · {memoria:N0} MB";
     }
-
-    // ------------------------------------------------------------------
 
     private async void Ativar_Click(object sender, RoutedEventArgs e)
     {
@@ -164,10 +154,6 @@ public partial class DesempenhoWindow : Window
             {
                 var (fechados, memoria, semJanela) = PerformanceService.Fechar(pids);
 
-                // Aqui não se força nada, nem com confirmação: isto fecha vários
-                // de uma vez, e uma confirmação só para o conjunto não deixaria
-                // claro o que seria encerrado. Os sem janela são contados e
-                // ditos, para a conta não parecer errada.
                 feito.Add(fechados switch
                 {
                     0 when semJanela > 0 =>
@@ -193,10 +179,8 @@ public partial class DesempenhoWindow : Window
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 
-    /// <summary>A janela e ancorada pela base, para crescer para cima.</summary>
     private void Reposicionar()
     {
         Janelas.Ancorar(this, Owner);
     }
-
 }

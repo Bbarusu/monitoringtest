@@ -35,9 +35,6 @@ public partial class ComponentesWindow : Window
         Atualizar();
     }
 
-    // ------------------------------------------------------------------
-
-    /// <summary>CPU e GPU tem sensor de potencia: nada a configurar aqui.</summary>
     private void MontarMedidos()
     {
         var s = _sensores.Ultimo;
@@ -91,8 +88,6 @@ public partial class ComponentesWindow : Window
         return caixa;
     }
 
-    // ------------------------------------------------------------------
-
     private void MontarQuantidades()
     {
         _ram = new LinhaDeAjuste(LinhaDeAjuste.Modo.Contador, "Módulos de RAM", "",
@@ -111,7 +106,6 @@ public partial class ComponentesWindow : Window
         Quantidades.Children.Add(_discos);
         Quantidades.Children.Add(_ventoinhas);
 
-        // Nenhum sensor informa estes: so o usuario sabe.
         Quantidades.Children.Add(new LinhaDeAjuste(LinhaDeAjuste.Modo.Contador,
             "Peças com LED ou RGB", "Nenhum sensor detecta: informe quantas são",
             _cfg.PecasComLed, 0, 30,
@@ -147,11 +141,6 @@ public partial class ComponentesWindow : Window
             _cfg.WattsOutros, v => _cfg.WattsOutros = v));
     }
 
-    /// <summary>
-    /// Os tetos que viram escala das barras. Cada campo e um atalho opcional: o
-    /// padrao e o app resolver sozinho, e a explicacao de cada linha diz qual
-    /// fonte esta valendo neste PC neste momento.
-    /// </summary>
     private void MontarEscalas()
     {
         _potenciaGpu = new LinhaDeAjuste(LinhaDeAjuste.Modo.Numero,
@@ -197,9 +186,6 @@ public partial class ComponentesWindow : Window
         new(LinhaDeAjuste.Modo.Numero, titulo, explicacao, valor, 0, 200,
             v => { definir(v); Salvar(); }, "W");
 
-    // ------------------------------------------------------------------
-
-    /// <summary>Salva e manda o serviço recalcular, para o painel refletir na hora.</summary>
     private void Salvar()
     {
         _cfg.Salvar();
@@ -239,11 +225,6 @@ public partial class ComponentesWindow : Window
         Reposicionar();
     }
 
-    /// <summary>
-    /// Diz, embaixo de cada campo, qual teto esta valendo agora e de onde ele
-    /// saiu. Sem isso o campo em 0 nao informa nada: o usuario nao tem como
-    /// saber se o app achou a ficha tecnica da peça dele ou nao.
-    /// </summary>
     private void AtualizarEscalas()
     {
         var esp = _sensores.Especificacoes;
@@ -275,7 +256,6 @@ public partial class ComponentesWindow : Window
         return $"Valendo agora: {teto.Valor:F0} {unidade} · {fonte}";
     }
 
-    /// <summary>Se o catalogo reconheceu as pecas deste PC, e de que versao ele é.</summary>
     private string Catalogo()
     {
         var esp = _sensores.Especificacoes;
@@ -299,14 +279,8 @@ public partial class ComponentesWindow : Window
             ? $"Informado à mão · o PC detectou {q.Detectado}"
             : "Detectado no seu hardware";
 
-    /// <summary>
-    /// Ventoinhas de tres pinos nao reportam rotacao, e as de controladora
-    /// externa nao aparecem: por isso vale conferir a conta a olho.
-    /// </summary>
     private string VentoinhasSemLeitura() =>
         _sensores.Ventoinhas.Manual ? "" : " · só conta as que já giraram desde que o app abriu";
-
-    // ------------------------------------------------------------------
 
     private void Redetectar_Click(object sender, RoutedEventArgs e)
     {
@@ -323,10 +297,6 @@ public partial class ComponentesWindow : Window
         Atualizar();
     }
 
-    /// <summary>
-    /// Mede a rotacao maxima das ventoinhas. Fica aqui, junto das escalas, porque
-    /// e disso que se trata: o numero que a barra usa como cheio.
-    /// </summary>
     private void Calibrar_Click(object sender, RoutedEventArgs e)
     {
         new CalibracaoWindow(_cfg, _sensores) { Owner = this }.ShowDialog();
@@ -339,5 +309,4 @@ public partial class ComponentesWindow : Window
     {
         Janelas.Ancorar(this, Owner);
     }
-
 }

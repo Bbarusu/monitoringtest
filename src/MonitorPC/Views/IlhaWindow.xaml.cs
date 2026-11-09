@@ -13,27 +13,12 @@ using WF = System.Windows.Forms;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// A ilha do topo da tela: uma pilula com o que esta tocando, as temperaturas e
-/// o volume, que abre no painel de bolso ao passar o mouse.
-///
-/// Nao le sensor nenhum por conta propria. As temperaturas chegam pela mesma
-/// leitura que alimenta o icone da bandeja; musica e volume chegam por aviso do
-/// Windows.
-/// </summary>
 public partial class IlhaWindow : Window
 {
-    /// <summary>
-    /// Tempo com o cursor em cima antes de abrir, escolhido na Personalizacao.
-    /// Passar de raspao nao abre; e o tempo da para clicar no anel ou num chip
-    /// antes de a Kisland se abrir por cima deles.
-    /// </summary>
     private TimeSpan EsperaParaAbrir => TimeSpan.FromMilliseconds(Math.Clamp(_cfg.IlhaEsperaParaAbrirMs, 150, 10000));
 
-    /// <summary>Tempo com o cursor fora antes de fechar: escapar um pixel nao fecha.</summary>
     private static readonly TimeSpan EsperaParaFechar = TimeSpan.FromMilliseconds(450);
 
-    /// <summary>Pausado ha tanto tempo, o player some da ilha.</summary>
     private static readonly TimeSpan SilencioQueLimpa = TimeSpan.FromMinutes(1);
 
     private readonly AppConfig _cfg;
@@ -62,18 +47,11 @@ public partial class IlhaWindow : Window
     private string? _ultimaFaixa;
     private IntPtr _handle;
 
-    // Contador de FPS: a sessao de rastreamento, o jogo da vez, e se a
-    // Kisland esta no modo enxuto de quando o jogo divide a tela com ela.
     private readonly FpsService _fps = new();
     private Jogo? _jogo;
     private bool _modoJogo;
     private int _tentarFpsEm;
 
-    /// <summary>
-    /// FPS mostrado, levemente suavizado: a media do ultimo segundo ja e
-    /// estavel, mas oscilar um ou dois quadros de um segundo para o outro faz
-    /// o numero tremer a toa. Mudanca grande (cena pesada, menu) passa direto.
-    /// </summary>
     private double _fpsMostrado;
 
     private DateTime _diaDoCalendario;
@@ -81,18 +59,12 @@ public partial class IlhaWindow : Window
     private DateTime? _dentroDesde;
     private DateTime? _foraDesde;
 
-    // Limpeza do player depois de um tempo sem som.
     private DateTime _somDaMidiaEm = DateTime.UtcNow;
     private string? _faixaDispensada;
     private bool _tocandoAoDispensar;
 
-    /// <summary>
-    /// Ligada na Personalizacao. Diferente de IsVisible: escondida por tela
-    /// cheia ela continua ativa, e volta sozinha quando a tela cheia acaba.
-    /// </summary>
     public bool Ativa => _ativa;
 
-    /// <summary>Pedidos que so o painel sabe atender.</summary>
     public event Action? PedirPainel;
     public event Action? PedirPersonalizacao;
     public event Action? PedirDesempenho;
@@ -116,25 +88,17 @@ public partial class IlhaWindow : Window
         {
             NaoRoubarFoco();
 
-            // Roda do mouse, clique do meio e arquivos soltos chegam como
-            // mensagens do Windows, lidas antes do WPF: a Kisland nunca e a
-            // janela ativa, e o WPF nem sempre entrega a roda a quem nao tem
-            // foco.
             HwndSource.FromHwnd(_handle)?.AddHook(Mensagem);
             PrepararBandeja();
         };
         SizeChanged += (_, _) => Posicionar();
         DpiChanged += (_, _) => Posicionar();
 
-        // Monitor ligado, desligado ou com resolucao nova: a ilha volta ao
-        // topo do monitor dela, ou do principal se o dela sumiu.
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += Telas_Mudaram;
         Closed += (_, _) =>
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= Telas_Mudaram;
 
-            // Os servicos vivem mais que a janela: sem soltar, uma janela
-            // fechada continuaria recebendo os avisos.
             _sensores.Atualizado -= Sensores_Atualizados;
             _midia.Mudou -= Midia_Mudou;
             _volume.Mudou -= Volume_Mudou;
@@ -162,9 +126,6 @@ public partial class IlhaWindow : Window
 
     private void Telas_Mudaram(object? sender, EventArgs e) =>
         Dispatcher.BeginInvoke(() => Posicionar());
-
-    // ------------------------------------------------------------------
-    // Ligar, desligar e reagir a Personalizacao
 
     public void Ativar()
     {
@@ -203,20 +164,13 @@ public partial class IlhaWindow : Window
         Hide();
     }
 
-    /// <summary>
-    /// Aplica o que a Personalizacao decide: fundo, transparencia e o que a
-    /// pilula mostra. Chamada a cada mudanca la, para o efeito ser visto na hora.
-    /// </summary>
     public void AplicarConfiguracao()
     {
         AplicarPreta();
 
-        // Mesma regra do painel: a transparencia vai no alpha do fundo, e nao na
-        // opacidade da janela, que desbotaria texto e icones junto.
         var fundo = _cfg.IlhaPreta ? Colors.Black : ThemeService.CorDeFundo;
         if (TransparenciaDaIlha)
         {
-            // A Kisland tem opacidade propria; sem ela definida, segue a do painel.
             var opacidade = _cfg.IlhaOpacidade ?? _cfg.Opacidade;
             var alpha = (byte)(Math.Clamp(opacidade, AppConfig.OpacidadeMinima, 100) * 255 / 100);
             Casca.Background = new SolidColorBrush(Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
@@ -226,16 +180,11 @@ public partial class IlhaWindow : Window
             Casca.Background = new SolidColorBrush(fundo);
         }
 
-        // Tamanho: a Kisland inteira em escala, texto e cantos juntos, para
-        // continuar com as mesmas proporcoes em qualquer tamanho.
         var escala = Math.Clamp(_cfg.IlhaEscala, 70, 100) / 100.0;
         Casca.LayoutTransform = new ScaleTransform(escala, escala);
 
         AplicarContorno();
 
-        // No modo jogo, o FPS, um aviso de temperatura se houver, e o que a
-        // pessoa escolheu para o jogo na aba Kisland. CPU, GPU, RAM, potencia, relogio e musica seguem a lista do modo
-        // jogo quando ele esta ativo; o resto so aparece fora dele.
         var normal = !_modoJogo;
         if (_cfg.IlhaFps && !_fps.Rodando) _tentarFpsEm = 0;
         ChipFps.Visibility = Visivel(_cfg.IlhaFps && _jogo is not null);
@@ -250,7 +199,6 @@ public partial class IlhaWindow : Window
         TextoRelogio.Visibility = Visivel(MostraRelogio);
         TextoData.Visibility = Visivel(data);
         IconeRelogio.Data = Geometry.Parse(MostraRelogio ? DesenhoRelogio : DesenhoCalendario);
-        // O que aparece com ela aberta, como escolhido na aba Kisland.
         BlocoVolume.Visibility = Visivel(_volume.Disponivel && _cfg.IlhaAbertaVolume);
         CartaoCpu.Visibility = Visivel(_cfg.AbertaCpu);
         CartaoGpu.Visibility = Visivel(_cfg.AbertaGpu);
@@ -276,7 +224,6 @@ public partial class IlhaWindow : Window
         AplicarMidia(false);
     }
 
-    // O que a pilula mostra agora: a lista do dia a dia ou a do modo jogo.
     private bool MostraCpuTemp => _modoJogo ? _cfg.IlhaJogoCpu : _cfg.IlhaCpu;
     private bool MostraCpuUso => _modoJogo ? _cfg.IlhaJogoCpuUso : _cfg.IlhaCpuUso;
     private bool MostraGpuTemp => _modoJogo ? _cfg.IlhaJogoGpu : _cfg.IlhaGpu;
@@ -286,15 +233,6 @@ public partial class IlhaWindow : Window
     private bool MostraRelogio => _modoJogo ? _cfg.IlhaJogoRelogio : _cfg.IlhaRelogio;
     private bool MostraMusica => _modoJogo ? _cfg.IlhaJogoMusica : _cfg.IlhaMusica;
 
-    /// <summary>
-    /// Contorno suave, na cor do fundo da Kisland, nos textos que ficam direto
-    /// sobre o fundo dela — titulo da musica, app, tempos, rodape, avisos.
-    ///
-    /// Com transparencia, esse fundo deixa passar o que esta atras, e no tema
-    /// claro um texto cinza sobre uma janela escura atras some. Os cartoes nao
-    /// precisam: sao opacos. O contorno devolve ao texto o fundo que ele
-    /// perdeu, so em volta das letras, sem mudar o visual do resto.
-    /// </summary>
     private void AplicarContorno()
     {
         System.Windows.Media.Effects.Effect? contorno = null;
@@ -323,23 +261,10 @@ public partial class IlhaWindow : Window
 
     private static Visibility Visivel(bool sim) => sim ? Visibility.Visible : Visibility.Collapsed;
 
-    // ------------------------------------------------------------------
-    // Tela OLED
-
-    /// <summary>Transparencia de fato: nem o tema Preto nem a Kisland preta a usam.</summary>
     private bool TransparenciaDaIlha => _cfg.TransparenciaAtiva && !_cfg.IlhaPreta;
 
-    /// <summary>Sombra original da casca, guardada para voltar ao sair da Kisland preta.</summary>
     private System.Windows.Media.Effects.Effect? _sombra;
 
-    /// <summary>
-    /// Kisland preta: a paleta escura com superficies pretas pendurada nos
-    /// recursos desta janela, por cima da do app. Tudo aqui usa
-    /// DynamicResource, entao trocar os recursos repinta a Kisland inteira —
-    /// e o resto do app continua no tema dele, claro ou escuro. Sem borda e
-    /// sem sombra: no AMOLED, preto sobre preto, as duas so marcariam o
-    /// contorno que a ideia e apagar.
-    /// </summary>
     private void AplicarPreta()
     {
         _sombra ??= Casca.Effect;
@@ -362,29 +287,20 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>Passo do deslocamento contra marca; anda a cada 3 minutos.</summary>
     private int _passoDoPixel;
 
-    // Deslocamentos em pixel, pequenos o bastante para ninguem notar e
-    // variados o bastante para nenhum pixel ficar aceso sempre no mesmo ponto.
     private static readonly int[] DeslocamentoX = { 0, 2, -1, 1, -2, 0, 1, -1 };
     private static readonly int[] DeslocamentoY = { 0, 1, 2, 0, 1, 2, 1, 0 };
 
     private bool Mexendo => _cfg.IlhaProtegerTela && _cfg.IlhaMexerPixels;
 
-    /// <summary>Quando o mouse esteve perto da Kisland, ou ela mostrou algo, pela ultima vez.</summary>
     private DateTime _vistaEm = DateTime.UtcNow;
 
     private bool _apagada;
     private bool _escondidaPorInatividade;
 
-    /// <summary>Opacidade da Kisland escurecida: ainda legivel, bem menos acesa.</summary>
     private const double OpacidadeApagada = 0.35;
 
-    /// <summary>
-    /// Escurece sem o mouse por perto ha tantos minutos; volta inteira quando
-    /// ele chega perto, quando ela abre ou mostra um aviso.
-    /// </summary>
     private void ConferirBrilho()
     {
         var minutos = _cfg.IlhaEscurecerMinutos;
@@ -399,22 +315,14 @@ public partial class IlhaWindow : Window
         Casca.BeginAnimation(OpacityProperty, anim);
     }
 
-    /// <summary>Acorda: volta o brilho na hora, sem esperar o proximo segundo.</summary>
     private void Acordar()
     {
         _vistaEm = DateTime.UtcNow;
         if (_apagada) ConferirBrilho();
     }
 
-    /// <summary>
-    /// Some depois de 10 minutos sem teclado nem mouse no PC inteiro, e volta
-    /// no primeiro movimento. O PC parado com a tela acesa e o caso em que a
-    /// Kisland mais marca a tela: horas do mesmo texto no mesmo lugar.
-    /// </summary>
     private void ConferirInatividade()
     {
-        // Com o Kdrop no meio de algo (um pedido esperando, arquivos chegando),
-        // o PC "parado" e so a pessoa no celular: a Kisland fica.
         var kdropOcupado = _pedidoKdrop is not null || _recebendoKdrop is { Estado: EstadoDoPedido.Aceito };
         var parado = _cfg.IlhaProtegerTela && _cfg.IlhaEsconderParado && !kdropOcupado &&
                      TempoParado() >= TimeSpan.FromMinutes(10);
@@ -461,16 +369,6 @@ public partial class IlhaWindow : Window
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetLastInputInfo(ref UltimaEntrada info);
 
-    /// <summary>
-    /// Distribui os cartoes ligados (CPU, GPU, RAM, disco e energia) nas duas
-    /// fileiras conforme quantos sobraram, em vez de cada um ficar preso na
-    /// sua: com CPU e RAM so, antes ficava um embaixo do outro, cada um com a
-    /// linha inteira. Agora:
-    /// - ate 3 ligados: uma fileira so, lado a lado;
-    /// - 4: dois e dois;
-    /// - 5: os dois de temperatura em cima e os tres de sistema embaixo.
-    /// A ordem e sempre a mesma (CPU, GPU, RAM, disco, energia).
-    /// </summary>
     private void OrganizarCartoes()
     {
         var todos = new FrameworkElement[] { CartaoCpu, CartaoGpu, CartaoRam, CartaoDisco, CartaoEnergia };
@@ -484,7 +382,6 @@ public partial class IlhaWindow : Window
         for (var i = 0; i < ligados.Count; i++)
             (i < naPrimeira ? GradeTemperaturas : GradeSistema).Children.Add(ligados[i]);
 
-        // Os desligados ficam guardados no fim, escondidos.
         foreach (var cartao in todos.Except(ligados))
             GradeSistema.Children.Add(cartao);
 
@@ -492,11 +389,6 @@ public partial class IlhaWindow : Window
         AjustarFileira(GradeSistema);
     }
 
-    /// <summary>
-    /// Uma fileira de cartoes com so os escolhidos, dividindo a largura entre
-    /// eles: sobrou um, ele ocupa a linha toda; nenhum, a fileira some. O
-    /// espaco de 12 entre cartoes fica so entre vizinhos, nunca nas pontas.
-    /// </summary>
     private static void AjustarFileira(System.Windows.Controls.Primitives.UniformGrid fileira)
     {
         var visiveis = fileira.Children.OfType<FrameworkElement>()
@@ -510,14 +402,8 @@ public partial class IlhaWindow : Window
             visiveis[i].Margin = new Thickness(i == 0 ? 0 : 6, 0, i == visiveis.Count - 1 ? 0 : 6, 0);
     }
 
-    /// <summary>Margens originais dos blocos da Kisland aberta, lidas do XAML na primeira vez.</summary>
     private Dictionary<FrameworkElement, Thickness>? _margens;
 
-    /// <summary>
-    /// Cada bloco da Kisland aberta tem espaco em cima para se separar do
-    /// anterior. Escondido o primeiro, o seguinte herdaria um espaco sem
-    /// ninguem acima — o primeiro visivel perde o espaco de cima.
-    /// </summary>
     private void AjustarEspacos()
     {
         var blocos = new FrameworkElement[]
@@ -528,8 +414,6 @@ public partial class IlhaWindow : Window
 
         _margens ??= blocos.ToDictionary(b => b, b => b.Margin);
 
-        // Pedido do Kdrop esperando resposta, ou arquivo chegando arrastado:
-        // so a bandeja, onde ele vai cair.
         if (_soBandeja || _soltandoNaBandeja)
             foreach (var bloco in blocos)
                 if (!ReferenceEquals(bloco, BlocoBandeja)) bloco.Visibility = Visibility.Collapsed;
@@ -545,14 +429,6 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>
-    /// Sem nada para mostrar, a pilula vira um circulo com o anel. O botao de
-    /// Personalizacao sai junto: ao lado do anel ele seria o unico conteudo, e
-    /// a ilha aberta continua com ele.
-    ///
-    /// Com um chat de IA escolhido, o anel fica sempre, no comeco da pilula, e
-    /// vira o atalho para ele. No modo jogo nao: la so o FPS.
-    /// </summary>
     private void AtualizarSemItens()
     {
         var algum = MidiaCompacta.Visibility == Visibility.Visible ||
@@ -573,11 +449,9 @@ public partial class IlhaWindow : Window
         BotaoAnel.Visibility = Visivel(!algum || ia is not null);
         BotaoAnel.IsHitTestVisible = ia is not null;
         BotaoAnel.ToolTip = ia is { } escolhida ? $"Abrir {escolhida.Nome}" : null;
-        // A capa da musica nao tem margem propria, os chips tem.
         BotaoAnel.Margin = new Thickness(0, 0, algum && MidiaCompacta.Visibility == Visibility.Visible ? 8 : 0, 0);
 
         BotaoPersonalizarPilula.Visibility = Visivel(comBotao);
-        // Com o anel sozinho, margens iguais: e o que faz a pilula virar circulo.
         Compacta.Margin = comBotao ? new Thickness(6, 0, 7, 0)
                         : algum ? new Thickness(6, 0, 8, 0)
                         : new Thickness(6, 0, 6, 0);
@@ -585,15 +459,6 @@ public partial class IlhaWindow : Window
 
     private void Anel_Click(object sender, RoutedEventArgs e) => AtalhoService.AbrirIa(_cfg);
 
-    // ------------------------------------------------------------------
-    // Posicao, monitor e foco
-
-    /// <summary>
-    /// Centro do topo da area util do monitor escolhido. Em pixels, pelo
-    /// Windows, e nao pelas coordenadas do WPF: com monitores de escalas
-    /// diferentes, as unidades do WPF mudam de tamanho no meio do caminho, e a
-    /// conta de centralizar erraria justamente no monitor de destino.
-    /// </summary>
     private void Posicionar()
     {
         if (_handle == IntPtr.Zero || ActualWidth <= 0 || _arrastando) return;
@@ -628,23 +493,12 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>
-    /// Teto da Kisland aberta: a altura util do monitor, menos a sombra e as
-    /// margens da casca e da rolagem. So muda quando precisa — mudar a altura
-    /// redimensiona a janela, que chama Posicionar de novo.
-    /// </summary>
     private void LimitarAltura(double alturaUtil)
     {
-        // Casca (6 em cima, 28 de sombra embaixo, 2 de borda), rolagem (14 +
-        // 14) e uma folga, para nao encostar na barra de tarefas.
         var teto = Math.Max(200, alturaUtil - 6 - 28 - 2 - 28 - 12);
         if (Math.Abs(RolagemExpandida.MaxHeight - teto) > 0.5) RolagemExpandida.MaxHeight = teto;
     }
 
-    /// <summary>
-    /// A barra de rolagem (8 px) entra na margem direita do conteudo, e nao
-    /// ao lado dele: com ou sem barra, a Kisland tem a mesma largura.
-    /// </summary>
     private void RolagemExpandida_Mudou(object sender, ScrollChangedEventArgs e)
     {
         var comBarra = RolagemExpandida.ComputedVerticalScrollBarVisibility == Visibility.Visible;
@@ -653,7 +507,6 @@ public partial class IlhaWindow : Window
             Expandida.Margin = new Thickness(20, 6, direita, 6);
     }
 
-    /// <summary>O cursor esta em cima do bloco de volume (onde a roda muda o volume)?</summary>
     private bool CursorNoVolume()
     {
         DependencyObject? atual = Mouse.DirectlyOver as DependencyObject;
@@ -671,14 +524,6 @@ public partial class IlhaWindow : Window
 
     private bool _avisouPorCima;
 
-    /// <summary>
-    /// A Kisland e "sempre por cima" (WS_EX_TOPMOST). Durante envios pelo
-    /// Kdrop ela foi vista indo para tras das janelas, visivel so com a area
-    /// de trabalho a mostra — o Windows (ou outro programa) tirou o "sempre
-    /// por cima" dela. A cada 2 s confere e, se perdeu, devolve, sem ativar a
-    /// janela e sem mexer na ordem entre janelas que continuam por cima. A
-    /// primeira vez vai para o log, para descobrir quando acontece.
-    /// </summary>
     private void ConferirPorCima()
     {
         if (_handle == IntPtr.Zero || !_ativa || !IsVisible) return;
@@ -694,14 +539,8 @@ public partial class IlhaWindow : Window
             return;
         }
 
-        // Com o "sempre por cima" intacto, ainda pode haver janela na frente
-        // dela: outra "sempre por cima" que passou a frente. Se ha, volta para
-        // o topo e anota quem era.
         if (QuemCobre() is { } cobre)
         {
-            // Janela do tamanho do monitor inteiro e um jogo ou video em tela
-            // cheia que se pos na frente de proposito: ali vale a opcao de
-            // tela cheia, e a Kisland nao briga. So fica no log.
             if (!cobre.TelaInteira) TrazerParaFrente();
             if (_cobertasAvisadas.Count < 20 && _cobertasAvisadas.Add(cobre.Chave))
                 Log.Nota($"Kisland: estava atrás de {cobre.Descricao}" +
@@ -711,16 +550,12 @@ public partial class IlhaWindow : Window
 
     private readonly HashSet<string> _cobertasAvisadas = new();
 
-    /// <summary>Topo da faixa das janelas "sempre por cima", sem ativar nem mexer.</summary>
     private void TrazerParaFrente()
     {
         if (_handle == IntPtr.Zero) return;
         SetWindowPos(_handle, PorCimaDeTudo, 0, 0, 0, 0, SemTamanho | SemMover | SemAtivarJanela);
     }
 
-    // Janelas do proprio Windows que podem ficar na frente dela de proposito:
-    // menu de contexto, dica, barra de tarefas, Iniciar, Central de
-    // notificacoes, Alt+Tab, area de trabalho.
     private static readonly HashSet<string> FrentePermitida = new(StringComparer.OrdinalIgnoreCase)
     {
         "#32768", "tooltips_class32", "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "NotifyIconOverflowWindow",
@@ -729,12 +564,6 @@ public partial class IlhaWindow : Window
         "TaskSwitcherWnd", "SysShadow", "IME", "MSCTFIME UI"
     };
 
-    /// <summary>
-    /// A primeira janela de outro programa que esta acima da Kisland na
-    /// ordem do Windows, visivel e por cima da area dela. Janelas
-    /// transparentes ao clique (sobreposicoes de jogo, gravadores) e as do
-    /// proprio Windows listadas acima nao contam.
-    /// </summary>
     private (string Chave, string Descricao, bool TelaInteira)? QuemCobre()
     {
         if (!GetWindowRect(_handle, out var minha)) return null;
@@ -778,9 +607,9 @@ public partial class IlhaWindow : Window
         return null;
     }
 
-    private const uint AnteriorNaOrdem = 3; // GW_HWNDPREV
-    private const int Encoberta = 14;       // DWMWA_CLOAKED
-    private const int TransparenteAoClique = 0x20; // WS_EX_TRANSPARENT
+    private const uint AnteriorNaOrdem = 3;
+    private const int Encoberta = 14;
+    private const int TransparenteAoClique = 0x20;
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetWindow(IntPtr janela, uint relacao);
@@ -795,7 +624,6 @@ public partial class IlhaWindow : Window
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(IntPtr janela, int atributo, out int valor, int tamanho);
 
-    /// <summary>WS_EX_TOPMOST.</summary>
     private const int SempreNaFrente = 0x00000008;
 
     private WF.Screen MonitorDaIlha()
@@ -807,11 +635,6 @@ public partial class IlhaWindow : Window
         return escolhido ?? WF.Screen.PrimaryScreen ?? WF.Screen.AllScreens[0];
     }
 
-    /// <summary>
-    /// Arrastar leva a ilha para outro monitor, e ela vai para o topo dele,
-    /// centralizada — e o lugar dela em qualquer tela. Sem arrasto, o toque
-    /// vira clique: abre a ilha.
-    /// </summary>
     private void Casca_Pressionada(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState != MouseButtonState.Pressed) return;
@@ -826,7 +649,6 @@ public partial class IlhaWindow : Window
         }
         catch (InvalidOperationException)
         {
-            // O botao pode ter sido solto antes de o arrasto comecar.
         }
         finally
         {
@@ -849,17 +671,10 @@ public partial class IlhaWindow : Window
         _cfg.IlhaMonitor = tela.Primary ? null : tela.DeviceName;
         _cfg.Salvar();
 
-        // Acabou de soltar com o cursor em cima: abrir agora seria abrir sem
-        // ninguem ter pedido. Abre so depois de o cursor sair e voltar.
         _exigirSaida = true;
         Posicionar();
     }
 
-    /// <summary>
-    /// O clique nasceu dentro de algo que precisa dele: botao, volume, perfil.
-    /// Mesma conferencia do painel, que sobe a arvore visual a partir de onde
-    /// o clique nasceu.
-    /// </summary>
     private static bool EhControle(DependencyObject? origem)
     {
         while (origem is not null)
@@ -877,11 +692,6 @@ public partial class IlhaWindow : Window
         return false;
     }
 
-    /// <summary>
-    /// A ilha nunca toma o foco de quem esta usando o PC: clicar em tocar ou
-    /// mexer no volume nao pode tirar o cursor do documento aberto. Tambem fica
-    /// fora do Alt+Tab, como o painel.
-    /// </summary>
     private void NaoRoubarFoco()
     {
         _handle = new WindowInteropHelper(this).Handle;
@@ -889,20 +699,6 @@ public partial class IlhaWindow : Window
         SetWindowLong(_handle, EstiloEstendido, estilo | SemAtivar | JanelaDeFerramenta);
     }
 
-    // ------------------------------------------------------------------
-    // Abrir e fechar pelo cursor
-
-    /// <summary>
-    /// Onde esta o cursor, conferido dez vezes por segundo pela posicao na
-    /// tela.
-    ///
-    /// Era por MouseEnter e MouseLeave, e nao abria. A ilha nunca e a janela
-    /// ativa, e ao trocar de tamanho o WPF da o cursor como "fora" ate ele se
-    /// mexer de novo — a ilha abria e o fechamento, logo em seguida, achava o
-    /// cursor ausente e a recolhia. A posicao do cursor na tela nao depende de
-    /// nada disso. E uma chamada ao Windows por decimo de segundo, so com a
-    /// ilha visivel.
-    /// </summary>
     private void Cursor_Tick()
     {
         if (!IsVisible || _arrastando) return;
@@ -912,8 +708,6 @@ public partial class IlhaWindow : Window
 
         if (ConferirArrastoDeFora(dentro, agora)) return;
 
-        // Mouse chegando perto (a 60 px) ja acende a Kisland escurecida: ela
-        // fica legivel antes de o cursor chegar em cima.
         if (dentro || CursorEmCima(60)) Acordar();
 
         if (_exigirSaida)
@@ -926,8 +720,6 @@ public partial class IlhaWindow : Window
         {
             _foraDesde = null;
 
-            // No modo jogo ela nao abre sozinha: o mouse passa por ali o tempo
-            // todo durante o jogo.
             if (!_expandida && !_modoJogo && _cfg.IlhaAbrirAoPassarMouse && !BotaoEsquerdoApertado())
             {
                 _dentroDesde ??= agora;
@@ -941,15 +733,12 @@ public partial class IlhaWindow : Window
 
         if (!_expandida) return;
 
-        // Arrastando o volume o cursor pode sair da ilha sem a pessoa ter
-        // terminado: so fecha depois de soltar.
         if (BotaoEsquerdoApertado())
         {
             _foraDesde = null;
             return;
         }
 
-        // Com um pedido do Kdrop na tela, ela so fecha depois da resposta.
         if (_pedidoKdrop is not null)
         {
             _foraDesde = null;
@@ -960,7 +749,6 @@ public partial class IlhaWindow : Window
         if (agora - _foraDesde >= EsperaParaFechar) Recolher();
     }
 
-    /// <param name="folga">Quanto alem da borda ainda conta, em unidades do WPF.</param>
     private bool CursorEmCima(double folga = 0)
     {
         if (!GetCursorPos(out var cursor) || Casca.ActualWidth <= 0) return false;
@@ -975,48 +763,26 @@ public partial class IlhaWindow : Window
         }
         catch (InvalidOperationException)
         {
-            // Sem janela na tela ainda.
             return false;
         }
     }
 
     private static bool BotaoEsquerdoApertado() => (GetAsyncKeyState(TeclaBotaoEsquerdo) & 0x8000) != 0;
 
-    // ------------------------------------------------------------------
-    // Arrastar arquivos de fora ate a bandeja
-
-    /// <summary>Quanto o arrasto precisa ficar em cima da pilula para ela abrir a bandeja.</summary>
     private static readonly TimeSpan EsperaParaSoltar = TimeSpan.FromMilliseconds(250);
 
     private bool _botaoAntes;
     private bool _apertoDeFora;
     private DateTime? _arrastoDentroDesde;
 
-    /// <summary>A Kisland aberta por um arrasto de fora: so a bandeja, esperando o arquivo.</summary>
     private bool _soltandoNaBandeja;
 
     private const string DicaBandejaPadrao = "Arraste arquivos até a Kisland para deixá-los aqui, à mão.";
 
-    /// <summary>
-    /// Arrastar um arquivo do Explorer ate a bandeja: antes, com a Kisland
-    /// aberta, ir buscar o arquivo tirava o mouse dela e ela fechava; fechada,
-    /// ela nao abria com o botao apertado. Agora, quem chega com o botao
-    /// apertado desde fora (arrastando alguma coisa) abre a Kisland na hora,
-    /// so com a bandeja, sem a espera normal de abrir.
-    ///
-    /// O arrastar do Windows nao avisa a Kisland de nada (ela recebe pelo
-    /// caminho antigo, WM_DROPFILES, que so diz o que caiu, quando cai). Por
-    /// isso o que vale e o botao e o cursor: botao apertado longe da Kisland
-    /// e cursor chegando nela com o desenho de arrasto. O desenho separa o
-    /// arquivo de quem so esta arrastando uma janela para o alto da tela (a
-    /// seta comum) ou selecionando texto.
-    /// </summary>
-    /// <returns>Verdadeiro quando o arrasto cuidou deste decimo de segundo.</returns>
     private bool ConferirArrastoDeFora(bool dentro, DateTime agora)
     {
         var apertado = BotaoEsquerdoApertado();
 
-        // O botao desceu agora: conta como "de fora" so se foi longe da Kisland.
         if (apertado && !_botaoAntes) _apertoDeFora = !dentro && !CursorEmCima(20);
         _botaoAntes = apertado;
 
@@ -1052,11 +818,6 @@ public partial class IlhaWindow : Window
         return true;
     }
 
-    /// <summary>
-    /// Botao solto. Caiu na Kisland: ela fica aberta, agora inteira, mostrando
-    /// o arquivo (quem o poe na bandeja e o WM_DROPFILES). Soltou fora,
-    /// desistiu: ela fecha.
-    /// </summary>
     private void TerminarSoltura(bool dentro)
     {
         _soltandoNaBandeja = false;
@@ -1067,12 +828,6 @@ public partial class IlhaWindow : Window
         else MontarBandeja();
     }
 
-    /// <summary>
-    /// O cursor e o de arrastar arquivo? Arrastando, o Windows troca a seta
-    /// pelo desenho de copiar, mover ou "nao pode". Seta comum, texto, mao ou
-    /// as setas de redimensionar sao de outra coisa. Sem conseguir ler o
-    /// cursor, conta como arrasto.
-    /// </summary>
     private static bool CursorDeArrasto()
     {
         var info = new InfoDoCursor { Tamanho = Marshal.SizeOf<InfoDoCursor>() };
@@ -1085,7 +840,6 @@ public partial class IlhaWindow : Window
         return true;
     }
 
-    /// <summary>IDC_ARROW, IBEAM, WAIT, CROSS, SIZENWSE, SIZENESW, SIZEWE, SIZENS, SIZEALL, HAND, APPSTARTING.</summary>
     private static readonly IntPtr[] CursoresComuns =
         new[] { 32512, 32513, 32514, 32515, 32642, 32643, 32644, 32645, 32646, 32649, 32650 }
             .Select(id => (IntPtr)id).ToArray();
@@ -1142,17 +896,12 @@ public partial class IlhaWindow : Window
         MostrarEstado();
     }
 
-    // ------------------------------------------------------------------
-    // Relogio de um segundo
-
     private void Relogio_Tick()
     {
         _segundos++;
 
         if (_segundos % 2 == 0) ConferirPorCima();
 
-        // O aparelho de som pode ter mudado (fone ligado, troca no painel de
-        // som). Conferir e barato, mas nao precisa ser a cada segundo.
         if (_segundos % 5 == 0)
         {
             var antes = _volume.Disponivel;
@@ -1160,8 +909,6 @@ public partial class IlhaWindow : Window
             if (antes != _volume.Disponivel) AplicarConfiguracao();
         }
 
-        // Mixer aberto: acompanha o que muda no Windows (app que abriu ou
-        // fechou, volume mexido no mixer dele).
         if (_segundos % 2 == 0 && _expandida && MixerDeSom.Visibility == Visibility.Visible) MontarMixer();
 
         AtualizarFps();
@@ -1170,15 +917,12 @@ public partial class IlhaWindow : Window
         ConferirBrilho();
         ConferirPedidoKdrop();
 
-        // Contra marca na tela: a cada 3 minutos, um passo de 1 ou 2 px.
         if (Mexendo && _segundos % 180 == 0)
         {
             _passoDoPixel++;
             Posicionar();
         }
 
-        // Quem parou ha mais de um minuto sai daqui: o servico so fica
-        // sabendo que o tempo passou se alguem perguntar.
         _midia.Conferir();
         OuvirSaida();
         ConferirSilencio();
@@ -1200,8 +944,6 @@ public partial class IlhaWindow : Window
         "M6,5 L18,5 A3,3 0 0,1 21,8 L21,18 A3,3 0 0,1 18,21 L6,21 A3,3 0 0,1 3,18 L3,8 A3,3 0 0,1 6,5 Z " +
         "M3,10 L21,10 M8,3 L8,6 M16,3 L16,6";
 
-    // Nomes escritos aqui, e nao pela cultura do Windows: em pt-BR ela abrevia
-    // com ponto ("qui."), em minuscula, e muda conforme a versao do sistema.
     private static readonly string[] Meses =
     {
         "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
@@ -1214,10 +956,6 @@ public partial class IlhaWindow : Window
     private static readonly string[] SemanasCurtas = { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" };
     private static readonly string[] Iniciais = { "D", "S", "T", "Q", "Q", "S", "S" };
 
-    /// <summary>
-    /// O mini calendario da Kisland aberta. Refeito so quando o dia vira: no
-    /// resto do tempo, nada muda nele.
-    /// </summary>
     private void AtualizarCalendario()
     {
         var hoje = DateTime.Today;
@@ -1234,7 +972,6 @@ public partial class IlhaWindow : Window
         grade.RowDefinitions.Clear();
         grade.ColumnDefinitions.Clear();
 
-        // A semana comeca no domingo, como nos calendarios daqui.
         var primeiro = new DateTime(hoje.Year, hoje.Month, 1);
         var vazios = (int)primeiro.DayOfWeek;
         var semanas = (vazios + DateTime.DaysInMonth(hoje.Year, hoje.Month) + 6) / 7;
@@ -1291,7 +1028,6 @@ public partial class IlhaWindow : Window
                 numero.SetResourceReference(TextBlock.ForegroundProperty,
                     dia.Month == hoje.Month ? "Texto" : "TextoMuitoFraco");
 
-            // Dias do mes vizinho, so para fechar a semana: bem apagados.
             if (dia.Month != hoje.Month) numero.Opacity = 0.55;
 
             Grid.SetRow(numero, linha);
@@ -1300,13 +1036,6 @@ public partial class IlhaWindow : Window
         }
     }
 
-    // ------------------------------------------------------------------
-    // Atalhos
-
-    /// <summary>
-    /// Os atalhos da Kisland aberta: o chat de IA primeiro, com o anel no
-    /// lugar do icone, e depois os apps e sites, na ordem escolhida.
-    /// </summary>
     private void MontarAtalhos()
     {
         GradeAtalhos.Children.Clear();
@@ -1317,8 +1046,6 @@ public partial class IlhaWindow : Window
         foreach (var atalho in _cfg.IlhaAtalhos.Take(AtalhoService.Maximo))
             GradeAtalhos.Children.Add(BotaoDeAtalho(atalho.Nome, atalho.Destino, ehIa: false));
 
-        // Pelo menos cinco colunas: com poucos atalhos eles ficam juntos a
-        // esquerda, no tamanho de sempre, em vez de esticados pela largura.
         GradeAtalhos.Columns = Math.Max(GradeAtalhos.Children.Count, 5);
         BlocoAtalhos.Visibility = Visivel(_cfg.IlhaAbertaAtalhos && GradeAtalhos.Children.Count > 0);
     }
@@ -1406,23 +1133,11 @@ public partial class IlhaWindow : Window
         else AtalhoService.Abrir(destino);
     }
 
-    /// <summary>
-    /// Some, fica, ou entra no modo jogo, conforme o que esta em tela cheia e
-    /// onde.
-    ///
-    /// Tela cheia em outro monitor nao e motivo para sumir deste — antes era,
-    /// e um jogo no segundo monitor apagava a Kisland do primeiro. Na mesma
-    /// tela, se e o jogo do contador de FPS em janela sem borda, ela fica,
-    /// enxuta, so com o FPS. Em tela cheia exclusiva nao ha o que fazer: nada
-    /// aparece por cima, e o Windows nem diz em qual monitor ela esta.
-    /// </summary>
     private void ConferirTelaCheia()
     {
         var estado = TelaCheia.Consultar(_handle);
         var meuMonitor = TelaCheia.MonitorDe(_handle);
 
-        // Exclusiva: o Windows nao diz o monitor, mas o jogo do contador tem
-        // janela, e a janela diz. Sem jogo conhecido, vale o lado seguro.
         var aqui = estado.Exclusiva
             ? _jogo is not { } j || TelaCheia.MonitorDe(j.Janela) == meuMonitor
             : estado.Janela != IntPtr.Zero && estado.Monitor == meuMonitor;
@@ -1431,7 +1146,6 @@ public partial class IlhaWindow : Window
         if (!_cfg.IlhaFps || _jogo is not { } jogo)
             ehOJogo = false;
         else if (estado.Exclusiva)
-            // So com a opcao ligada, e so se quem esta na frente e o jogo.
             ehOJogo = _cfg.IlhaFicarEmTelaCheia && ProcessoDaJanela(PrimeiroPlano()) == jogo.Pid;
         else
             ehOJogo = estado.Janela != IntPtr.Zero && ProcessoDaJanela(estado.Janela) == jogo.Pid;
@@ -1439,9 +1153,6 @@ public partial class IlhaWindow : Window
         var modoJogo = aqui && ehOJogo;
         var esconder = aqui && !modoJogo && _cfg.IlhaEsconderEmTelaCheia;
 
-        // O jogo, ao tomar a tela, costuma passar a frente de tudo — inclusive
-        // de janelas "sempre por cima". Reafirmar a cada segundo e o que mantem
-        // a Kisland visivel por cima dele. Sem ativar: o foco continua no jogo.
         if (modoJogo && IsVisible)
             SetWindowPos(_handle, PorCimaDeTudo, 0, 0, 0, 0, SemTamanho | SemMover | SemAtivarJanela);
 
@@ -1459,8 +1170,6 @@ public partial class IlhaWindow : Window
 
         if (esconder && IsVisible)
         {
-            // Cada sumico vai para o log com o que o Windows disse e quem estava
-            // na frente: sem isso, um sumico sem motivo nao tem como ser achado.
             Log.Nota($"Kisland: escondida por tela cheia ({TelaCheia.Descrever(_handle, estado)})");
             _escondidaPorTelaCheia = true;
             _expandida = false;
@@ -1472,8 +1181,6 @@ public partial class IlhaWindow : Window
         {
             _escondidaPorTelaCheia = false;
 
-            // Escondida tambem pelo PC parado: quem a traz de volta e o
-            // primeiro movimento, em ConferirInatividade.
             if (!_escondidaPorInatividade)
             {
                 Show();
@@ -1484,11 +1191,6 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>
-    /// Uma vez por segundo, com o contador ligado: colhe os quadros de cada
-    /// programa e ve se algum deles e um jogo. A sessao do Windows so existe
-    /// enquanto o contador esta ligado.
-    /// </summary>
     private void AtualizarFps()
     {
         if (!_cfg.IlhaFps)
@@ -1502,9 +1204,6 @@ public partial class IlhaWindow : Window
             return;
         }
 
-        // Recusado (sem privilegio, por exemplo), tenta de novo a cada meio
-        // minuto em vez de a cada segundo. Mexer na Personalizacao zera a
-        // espera, para quem acabou de ligar nao ficar esperando.
         if (!_fps.Rodando)
         {
             if (_segundos < _tentarFpsEm) return;
@@ -1551,18 +1250,6 @@ public partial class IlhaWindow : Window
         return pid;
     }
 
-    /// <summary>
-    /// Marca quando a midia foi ouvida pela ultima vez.
-    ///
-    /// Antes valia so o que o player declarava, e isso segurava a ilha: varios
-    /// players — abas de navegador, mensagens de audio, video que terminou —
-    /// continuam dizendo "tocando" muito depois de calar. Agora a prova e o
-    /// som saindo de verdade pela saida de audio, lido no medidor de pico do
-    /// Windows, junto com o player dizer que toca. Faltando um dos dois, conta
-    /// como silencio.
-    ///
-    /// Sem medidor (nenhum aparelho de som), sobra a palavra do player.
-    /// </summary>
     private void OuvirSaida()
     {
         if (_midia.Atual is not { Tocando: true }) return;
@@ -1571,14 +1258,8 @@ public partial class IlhaWindow : Window
         if (pico is null || pico > LimiarDeSom) _somDaMidiaEm = DateTime.UtcNow;
     }
 
-    /// <summary>Abaixo disto e silencio: cerca de -60 dB, o chiado de fundo de uma faixa parada.</summary>
     private const float LimiarDeSom = 0.001f;
 
-    /// <summary>
-    /// Um minuto sem som, o player sai da ilha: musica calada ha tanto tempo
-    /// deixou de ser "tocando agora". Volta quando o player muda de estado
-    /// (pausa vira play, ou o contrario) ou anuncia outra faixa.
-    /// </summary>
     private void ConferirSilencio()
     {
         if (_faixaDispensada is not null) return;
@@ -1590,10 +1271,6 @@ public partial class IlhaWindow : Window
         AplicarMidia(false);
     }
 
-    // ------------------------------------------------------------------
-    // Estados visiveis
-
-    /// <summary>Um estado visivel por vez; a janela se ajusta ao que sobrou.</summary>
     private void MostrarEstado()
     {
         var aviso = _expandida ? Aviso.Nenhum : _aviso;
@@ -1608,7 +1285,6 @@ public partial class IlhaWindow : Window
 
         Casca.CornerRadius = new CornerRadius(_expandida ? 16 : aviso is Aviso.Faixa or Aviso.Texto ? 28 : 22);
 
-        // Animacoes paradas quando ninguem as ve.
         var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && !_escondidaPorInatividade &&
                            Compacta.Visibility == Visibility.Visible;
 
@@ -1637,9 +1313,6 @@ public partial class IlhaWindow : Window
         _aviso = Aviso.Nenhum;
         MostrarEstado();
     }
-
-    // ------------------------------------------------------------------
-    // Sensores
 
     private void AplicarSensores(Snapshot s)
     {
@@ -1670,8 +1343,6 @@ public partial class IlhaWindow : Window
         RotuloCpu.Text = s.CpuUso is { } cpu ? $"CPU · {cpu:F0}% de carga" : "CPU";
         RotuloGpu.Text = s.GpuUso is { } gpu ? $"GPU · {gpu:F0}% de carga" : "GPU";
 
-        // Acima do limite que a pessoa definiu, o numero fica laranja, como o
-        // anel do painel.
         ValorCpu.SetResourceReference(TextBlock.ForegroundProperty,
             s.CpuTemp is { } tc && tc >= _cfg.LimiteCpu ? "Alerta" : "Texto");
         ValorGpu.SetResourceReference(TextBlock.ForegroundProperty,
@@ -1691,7 +1362,6 @@ public partial class IlhaWindow : Window
                     : "Sensores de baixo nível indisponíveis";
     }
 
-    /// <summary>"CPU 62°", "CPU 34%" ou "CPU 62° · 34%", conforme o que esta ligado.</summary>
     private static string Rotulo(string peca, float? temperatura, float? uso)
     {
         var partes = new List<string>(2);
@@ -1701,12 +1371,8 @@ public partial class IlhaWindow : Window
         return partes.Count == 0 ? $"{peca} --" : $"{peca} {string.Join(" · ", partes)}";
     }
 
-    // ------------------------------------------------------------------
-    // Midia
-
     private static string Chave(EstadoDeMidia e) => e.Origem + "\u0001" + e.Titulo + "\u0001" + e.Artista;
 
-    /// <summary>O que a ilha mostra: o que toca, menos o que ja foi dispensado por silencio.</summary>
     private EstadoDeMidia? MidiaVisivel()
     {
         var estado = _midia.Atual;
@@ -1722,9 +1388,6 @@ public partial class IlhaWindow : Window
     {
         var bruto = _midia.Atual;
 
-        // Faixa nova, ou o player mudou de estado depois de dispensado: volta
-        // a aparecer, com mais um minuto de prazo. Aviso repetido do mesmo
-        // estado nao conta — e eles chegam a toda hora.
         if (bruto is null)
         {
             _faixaDispensada = null;
@@ -1771,8 +1434,6 @@ public partial class IlhaWindow : Window
                 : "M7,4 L7,20 L20,12 Z");
         }
 
-        // Faixa nova, tocando, e nao a primeira leitura: a pilula mostra o
-        // nome por tres segundos.
         var chave = estado is null ? null : Chave(estado);
         if (veioDeAviso && chave is not null && _ultimaFaixa is not null && chave != _ultimaFaixa &&
             estado!.Tocando && _cfg.IlhaAvisoDeFaixa)
@@ -1790,15 +1451,6 @@ public partial class IlhaWindow : Window
         MostrarEstado();
     }
 
-    /// <summary>
-    /// Capa no fundo do quadro, pelo pincel: assim o canto arredondado do
-    /// quadro recorta a imagem, o que um Image dentro dele nao faria.
-    /// </summary>
-    /// <summary>
-    /// A capa ocupa o quadro inteiro. Sem capa (guia anonima, video sem arte),
-    /// o icone do app que esta tocando, menor, no meio do quadro; sem nenhum
-    /// dos dois, a nota musical.
-    /// </summary>
     private static void PorCapa(Border quadro, System.Windows.Shapes.Path nota, Image app, EstadoDeMidia? estado)
     {
         if (estado?.Capa is { } capa)
@@ -1851,8 +1503,6 @@ public partial class IlhaWindow : Window
                 RepeatBehavior = RepeatBehavior.Forever
             };
 
-            // Quinze quadros por segundo bastam para barrinhas de 16 px, e
-            // custam um quarto do padrao de sessenta.
             Timeline.SetDesiredFrameRate(anim, 15);
             escala.BeginAnimation(ScaleTransform.ScaleYProperty, anim);
         }
@@ -1868,7 +1518,6 @@ public partial class IlhaWindow : Window
                 escala.BeginAnimation(ScaleTransform.ScaleYProperty, null);
     }
 
-    /// <summary>O anel respira devagar: so estetica, a doze quadros por segundo.</summary>
     private void AndarAnel()
     {
         if (_anelAndando) return;
@@ -1905,12 +1554,6 @@ public partial class IlhaWindow : Window
     private void Proxima_Click(object sender, RoutedEventArgs e) => _ = _midia.Proxima();
     private void Anterior_Click(object sender, RoutedEventArgs e) => _ = _midia.Anterior();
 
-    // ------------------------------------------------------------------
-    // Volume
-
-    // Alto-falante pequeno e bem arredondado, com ondas curtas e leves. O
-    // desenho anterior tinha o corpo grande e ondas largas: em 12 px, com
-    // traco grosso, pesava mais que os outros icones da pilula.
     private const string Corpo =
         "M5,9.9 C5,9.4 5.4,9 5.9,9 L8,9 L11,6.5 C11.6,6 12.5,6.4 12.5,7.2 " +
         "L12.5,16.8 C12.5,17.6 11.6,18 11,17.5 L8,15 L5.9,15 C5.4,15 5,14.6 5,14.1 Z";
@@ -1923,15 +1566,6 @@ public partial class IlhaWindow : Window
         : nivel < 50 ? Corpo + OndaPerto
         : Corpo + OndaPerto + OndaLonge;
 
-    /// <summary>
-    /// Desenha sempre na mesma moldura, sem esticar pelo desenho. Esticado
-    /// (Uniform), o icone mudava de tamanho com o nivel: sem a onda de fora o
-    /// desenho e mais estreito, e o alto-falante crescia para ocupar o espaco.
-    ///
-    /// A moldura e a do icone completo (x de 5 a 20, na grade de 24), e nao a
-    /// grade inteira: com a grade inteira sobrava borda vazia e o icone saia
-    /// bem menor que os outros da Kisland.
-    /// </summary>
     private static void DesenharVolume(System.Windows.Shapes.Path alvo, string desenho)
     {
         var tamanho = double.IsNaN(alvo.Width) ? 16 : alvo.Width;
@@ -1968,8 +1602,6 @@ public partial class IlhaWindow : Window
         SliderVolume.Value = nivel;
         _ajustandoVolume = false;
 
-        // Quem mexeu foi a propria ilha: a pessoa esta olhando o controle, nao
-        // precisa de aviso.
         if (veioDeAviso && _cfg.IlhaAvisoDeVolume && !_volume.UltimaFoiMinha)
             MostrarAviso(Aviso.Volume, TimeSpan.FromSeconds(2));
     }
@@ -1984,12 +1616,8 @@ public partial class IlhaWindow : Window
 
     private void Mudo_Click(object sender, RoutedEventArgs e) => _volume.AlternarMudo();
 
-    // ------------------------------------------------------------------
-    // Roda do mouse e clique do meio
-
     private int _rodaAcumulada;
 
-    /// <summary>Quanto cada "clique" da roda muda o volume: o mesmo passo do Windows.</summary>
     private const int PassoDaRoda = 2;
 
     private IntPtr Mensagem(IntPtr janela, int mensagem, IntPtr w, IntPtr l, ref bool tratada)
@@ -2017,17 +1645,8 @@ public partial class IlhaWindow : Window
         return IntPtr.Zero;
     }
 
-    /// <summary>
-    /// A roda em cima da Kisland muda o volume, de 2 em 2%. O giro chega em
-    /// partes de 120 por clique; touchpads mandam pedacos menores, que se
-    /// somam ate dar um passo. No modo jogo nao: o mouse passa por ali no meio
-    /// da partida.
-    /// </summary>
     private bool GirarRoda(int giro)
     {
-        // Aberta e mais alta que a tela, a roda rola — menos em cima do bloco
-        // de volume e das linhas do mixer, onde continua mudando o volume. Sem
-        // nada para rolar, vale o de sempre: volume em qualquer lugar.
         if (_expandida && RolagemExpandida.ScrollableHeight > 0 && !CursorNoVolume() && LinhaSobOCursor() is null)
         {
             RolagemExpandida.ScrollToVerticalOffset(RolagemExpandida.VerticalOffset - giro * 48.0 / 120);
@@ -2041,17 +1660,14 @@ public partial class IlhaWindow : Window
         if (passos == 0) return true;
         _rodaAcumulada -= passos * 120;
 
-        // Em cima de uma linha do mixer, a roda muda o volume daquele app.
         if (_expandida && LinhaSobOCursor() is { } linha)
         {
             linha.Controle.Value = Math.Clamp(linha.Controle.Value + passos * PassoDaRoda, 0, 100);
             return true;
         }
 
-
         var nivel = Math.Clamp(_volume.Nivel + passos * PassoDaRoda, 0, 100);
 
-        // Subir o volume com o som mudo tira o mudo, como no Windows.
         var mudo = _volume.Mudo;
         if (mudo && passos > 0)
         {
@@ -2061,18 +1677,12 @@ public partial class IlhaWindow : Window
 
         _volume.Definir(nivel);
 
-        // Mudanca feita pela propria Kisland nao vira aviso sozinha. Fechada,
-        // ela mostra o aviso de volume aqui, para a roda ter resposta na hora.
         AplicarVolume(nivel, mudo, false);
         if (!_expandida) MostrarAviso(Aviso.Volume, TimeSpan.FromSeconds(1.5));
 
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // Mixer: o volume de cada app
-
-    /// <summary>Uma linha do mixer, guardada no Tag da grade dela.</summary>
     private sealed record LinhaDoMixer(string Chave, Slider Controle, TextBlock Valor, FrameworkElement Icone, TextBlock Nome);
 
     private readonly Dictionary<string, LinhaDoMixer> _linhasDoMixer = new();
@@ -2087,11 +1697,6 @@ public partial class IlhaWindow : Window
         MontarMixer();
     }
 
-    /// <summary>
-    /// Abre, fecha ou atualiza o mixer. Com os mesmos apps de antes, so os
-    /// valores mudam — refazer as linhas a cada 2 s tiraria o controle da mao
-    /// de quem esta arrastando.
-    /// </summary>
     private void MontarMixer()
     {
         var aberto = _cfg.IlhaMixer && _cfg.IlhaMixerAberto && _volume.Disponivel;
@@ -2128,7 +1733,6 @@ public partial class IlhaWindow : Window
             linha.Icone.Opacity = app.Mudo ? 0.4 : 1;
             linha.Nome.SetResourceReference(TextBlock.ForegroundProperty, app.Ativo ? "Texto" : "TextoFraco");
 
-            // Quem esta arrastando manda no controle ate soltar.
             if (linha.Controle.IsMouseCaptureWithin) continue;
             linha.Controle.Value = app.Nivel;
             linha.Valor.Text = app.Mudo ? "Mudo" : $"{app.Nivel}%";
@@ -2144,7 +1748,6 @@ public partial class IlhaWindow : Window
         grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
 
-        // Icone do app; tocar silencia so ele.
         var quadro = new Border
         {
             Width = 28,
@@ -2212,7 +1815,6 @@ public partial class IlhaWindow : Window
             var nivel = (int)Math.Round(e.NewValue);
             MixerService.Definir(chave, nivel);
 
-            // Subir o volume de um app mudo tira o mudo, como no Windows.
             if (e.NewValue > e.OldValue && _mudoNoMixer.TryGetValue(chave, out var mudo) && mudo)
             {
                 MixerService.DefinirMudo(chave, false);
@@ -2240,7 +1842,6 @@ public partial class IlhaWindow : Window
         return grade;
     }
 
-    /// <summary>O icone do .exe, como o Windows mostra; para os sons do sistema, o alto-falante.</summary>
     private UIElement IconeDoApp(AppDeSom app)
     {
         if (!app.Sistema && app.Caminho is not null && AtalhoService.Icone(app.Caminho) is { } icone)
@@ -2267,7 +1868,6 @@ public partial class IlhaWindow : Window
         return desenho;
     }
 
-    /// <summary>A linha do mixer embaixo do cursor, para a roda do mouse.</summary>
     private LinhaDoMixer? LinhaSobOCursor()
     {
         if (MixerDeSom.Visibility != Visibility.Visible) return null;
@@ -2285,13 +1885,6 @@ public partial class IlhaWindow : Window
         return null;
     }
 
-    // ------------------------------------------------------------------
-    // Saidas de som
-
-    /// <summary>
-    /// Um botao por saida ativa, com a atual marcada como o perfil escolhido
-    /// no painel. So aparece com mais de uma: com uma, nao ha o que trocar.
-    /// </summary>
     private void MontarSaidas()
     {
         SaidasDeSom.Children.Clear();
@@ -2340,7 +1933,6 @@ public partial class IlhaWindow : Window
                 Child = linha
             };
 
-            // As mesmas cores do perfil escolhido no painel.
             fundo.SetResourceReference(Border.BackgroundProperty, saida.Padrao ? "InfoFundo" : "Chip");
             fundo.SetResourceReference(Border.BorderBrushProperty, saida.Padrao ? "Acento" : "Trilho");
             icone.SetResourceReference(Shape.StrokeProperty, saida.Padrao ? "InfoTexto" : "TextoFraco");
@@ -2365,12 +1957,10 @@ public partial class IlhaWindow : Window
 
         _volume.UsarSaida(id);
 
-        // O aparelho novo tem o volume dele.
         AplicarVolume(_volume.Nivel, _volume.Mudo, false);
         MontarSaidas();
     }
 
-    /// <summary>Fone, monitor ou caixa, pelo nome que o Windows da ao aparelho.</summary>
     private static string DesenhoDaSaida(string nome)
     {
         var n = nome.ToLowerInvariant();
@@ -2387,40 +1977,18 @@ public partial class IlhaWindow : Window
         return Corpo + OndaPerto;
     }
 
-    // ------------------------------------------------------------------
-    // Bandeja de arquivos
-
-    /// <summary>Caminhos guardados, do mais antigo ao mais novo. So nesta sessao.</summary>
     private readonly List<string> _bandeja = new();
 
-    /// <summary>Duas fileiras de seis.</summary>
     private const int MaximoNaBandeja = 12;
 
     private Point? _inicioDoArrasto;
     private DispatcherTimer? _fimDoRecado;
 
-    /// <summary>
-    /// Aceitar arquivos soltos em cima da Kisland.
-    ///
-    /// Pelo jeito antigo do Windows (WM_DROPFILES), e nao pelo arrastar do
-    /// WPF, de proposito: o KInfo costuma rodar como administrador, e o
-    /// Windows nao deixa o Explorer, que roda como usuario comum, arrastar
-    /// para um app elevado pelo caminho novo (OLE). Pelo antigo deixa, desde
-    /// que o app libere estas tres mensagens.
-    ///
-    /// O que faltava, e fazia a bandeja nunca receber nada: o WPF registra
-    /// TODA janela que cria como destino OLE, tenha ou nao algum elemento
-    /// com AllowDrop. Com esse registro o Windows nem tenta o caminho
-    /// antigo — entrega ao WPF, que recusa (nada aqui aceita arquivos) ou,
-    /// com o app elevado, nem isso. Cancelar o registro do WPF
-    /// (RevokeDragDrop) deixa so o caminho antigo, que e o que funciona.
-    /// </summary>
     private void PrepararBandeja()
     {
         try
         {
             var revogado = RevokeDragDrop(_handle);
-            // 0 = cancelado; DRAGDROP_E_NOTREGISTERED = ja nao havia registro.
             if (revogado != 0 && revogado != NaoRegistrado)
                 Log.Nota($"Bandeja: RevokeDragDrop devolveu 0x{revogado:X8}");
 
@@ -2464,8 +2032,6 @@ public partial class IlhaWindow : Window
 
         if (!_cfg.IlhaBandeja || novos.Count == 0) return;
 
-        // Soltar de novo o mesmo arquivo so o traz para o fim; passar do
-        // limite tira os mais antigos.
         foreach (var caminho in novos)
         {
             _bandeja.Remove(caminho);
@@ -2477,15 +2043,9 @@ public partial class IlhaWindow : Window
         AtualizarSemItens();
         MostrarEstado();
 
-        // Abre para mostrar onde o arquivo foi parar.
         if (!_expandida && !_modoJogo) Expandir();
     }
 
-    /// <summary>
-    /// Refaz a bandeja. Arquivo apagado ou movido desde que entrou sai dela:
-    /// a bandeja guarda so o caminho, e um caminho que nao leva a nada nao
-    /// serve.
-    /// </summary>
     private void MontarBandeja()
     {
         _bandeja.RemoveAll(c => !TextoNaBandeja.Eh(c) && !System.IO.File.Exists(c) && !System.IO.Directory.Exists(c));
@@ -2503,11 +2063,9 @@ public partial class IlhaWindow : Window
         BlocoBandeja.Visibility = Visivel(_cfg.IlhaBandeja);
         AtualizarChipBandeja();
 
-        // O que entrou ou saiu fica a vista dos outros aparelhos na hora.
         _kdrop?.BandejaMudou();
     }
 
-    /// <summary>O chip da pilula: quantos arquivos, e o progresso do Kdrop quando algo esta chegando.</summary>
     private void AtualizarChipBandeja()
     {
         var quantos = _bandeja.Count;
@@ -2561,8 +2119,6 @@ public partial class IlhaWindow : Window
             circulo.Child = imagem;
         }
 
-        // Foto ou video: a miniatura no lugar do icone, como no Explorer.
-        // Vem depois, sem segurar a bandeja; ate la fica o icone.
         if (!pasta && EhFotoOuVideo(caminho)) _ = PorMiniatura(circulo, caminho);
         else
         {
@@ -2644,7 +2200,6 @@ public partial class IlhaWindow : Window
     {
         if (sender is not Button { Tag: string caminho }) return;
 
-        // Texto: um toque copia; link: um toque abre no navegador.
         if (TextoNaBandeja.Eh(caminho))
         {
             var texto = TextoNaBandeja.De(caminho);
@@ -2664,11 +2219,6 @@ public partial class IlhaWindow : Window
         AtalhoService.Abrir(caminho);
     }
 
-    /// <summary>
-    /// Um texto ou link na bandeja: o mesmo quadrado dos arquivos, com um
-    /// "T" ou um elo no lugar do icone e a borda na cor de destaque, para
-    /// nao se confundir com arquivo.
-    /// </summary>
     private UIElement ItemDeTextoDaBandeja(string item)
     {
         var texto = TextoNaBandeja.De(item);
@@ -2773,7 +2323,6 @@ public partial class IlhaWindow : Window
 
     private static bool EhFotoOuVideo(string caminho) => FotosEVideos.Contains(System.IO.Path.GetExtension(caminho));
 
-    /// <summary>Miniaturas ja feitas, por caminho e data do arquivo (trocado o arquivo, refaz).</summary>
     private readonly Dictionary<string, (DateTime Data, ImageSource? Imagem)> _miniaturas = new(StringComparer.OrdinalIgnoreCase);
 
     private async Task PorMiniatura(Border quadrado, string caminho)
@@ -2792,13 +2341,10 @@ public partial class IlhaWindow : Window
 
         if (guardada.Imagem is null) return;
 
-        // Preenche o quadrado inteiro, cortada no centro, com os cantos
-        // arredondados do proprio quadrado.
         quadrado.Child = null;
         quadrado.Background = new ImageBrush(guardada.Imagem) { Stretch = Stretch.UniformToFill };
     }
 
-    /// <summary>Sem miniatura do Windows: le a imagem direto (JPG, PNG, GIF, BMP, TIFF), pequena.</summary>
     private static ImageSource? MiniaturaPeloWpf(string caminho)
     {
         try
@@ -2819,7 +2365,6 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>Copia um texto; a area de transferencia pode estar presa por outro app.</summary>
     private static bool CopiarTexto(string texto)
     {
         try
@@ -2848,7 +2393,6 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>Um recado curto no titulo da bandeja ("Copiado!"), que volta ao normal sozinho.</summary>
     private void Recado(string texto)
     {
         TituloBandeja.Text = texto;
@@ -2861,7 +2405,6 @@ public partial class IlhaWindow : Window
         _fimDoRecado.Start();
     }
 
-    /// <summary>Poe um texto ou link na bandeja (ou o traz para o fim, se ja estava).</summary>
     private void PorTextoNaBandeja(string texto)
     {
         var item = TextoNaBandeja.Item(texto);
@@ -2876,11 +2419,6 @@ public partial class IlhaWindow : Window
         MostrarEstado();
     }
 
-    /// <summary>
-    /// "Colar texto": o que estiver copiado entra na bandeja. Arquivos
-    /// copiados no Explorer entram como arquivos; texto ou link, como texto
-    /// — e ai o celular e os outros PCs ja o veem.
-    /// </summary>
     private void ColarNaBandeja_Click(object sender, RoutedEventArgs e)
     {
         try
@@ -2912,16 +2450,11 @@ public partial class IlhaWindow : Window
         }
         catch (Exception ex)
         {
-            // A area de transferencia pode estar presa por outro app.
             Log.Erro("Bandeja: colar", ex);
             Recado("Não deu para colar agora");
         }
     }
 
-    /// <summary>
-    /// Arrastar um item leva o arquivo para onde ele for solto: uma pasta, um
-    /// e-mail, um chat. Movido para outro lugar, sai da bandeja.
-    /// </summary>
     private void ItemDaBandeja_Arrastar(object sender, MouseEventArgs e)
     {
         if (e.LeftButton != MouseButtonState.Pressed || _inicioDoArrasto is not { } inicio ||
@@ -2935,7 +2468,6 @@ public partial class IlhaWindow : Window
 
         _inicioDoArrasto = null;
 
-        // Texto sai como texto, solto em qualquer campo que aceite texto.
         if (TextoNaBandeja.Eh(caminho))
         {
             botao.ReleaseMouseCapture();
@@ -2950,9 +2482,6 @@ public partial class IlhaWindow : Window
             return;
         }
 
-        // Com o Kdrop e algum aparelho por perto, o arrasto comeca dentro da
-        // Kisland: soltar num aparelho manda o arquivo; sair da Kisland vira
-        // o arrasto normal, para uma pasta ou outro programa.
         if (_kdrop is { Rodando: true } && _kdrop.Aparelhos().Count > 0)
         {
             ArrastarParaAparelho(botao, caminho);
@@ -2976,25 +2505,18 @@ public partial class IlhaWindow : Window
             Log.Erro("Bandeja: arrastar", ex);
         }
 
-        // Movido (ou apagado): o caminho nao existe mais, e MontarBandeja o tira.
         MontarBandeja();
         AtualizarSemItens();
     }
 
-    // ------------------------------------------------------------------
-    // Kdrop: a bandeja aberta para a casa
-
     private KdropService? _kdrop;
 
-    /// <summary>Pedido esperando resposta; com ele, a Kisland mostra so a bandeja e nao fecha.</summary>
     private PedidoKdrop? _pedidoKdrop;
 
-    /// <summary>Pedido aceito, com arquivos chegando: o progresso vai no titulo e no chip da bandeja.</summary>
     private PedidoKdrop? _recebendoKdrop;
 
     private bool _soBandeja;
 
-    /// <summary>O que cada circulo diz embaixo do nome: "Mandando 42%", "Enviado".</summary>
     private readonly Dictionary<string, string> _estadoDoAparelho = new();
 
     private System.Windows.Media.Imaging.BitmapSource? _qr;
@@ -3009,7 +2531,6 @@ public partial class IlhaWindow : Window
         "M4,4 L10,4 L10,10 L4,10 Z M14,4 L20,4 L20,10 L14,10 Z M4,14 L10,14 L10,20 L4,20 Z " +
         "M14,14 L16,14 M18,14 L20,14 L20,16 M14,18 L14,20 L16,20 M18,18 L20,18 L20,20";
 
-    /// <summary>O Kdrop so existe com a Kisland ativa, a bandeja ligada e ele ligado.</summary>
     private bool KdropLigado => _ativa && _cfg.IlhaBandeja && _cfg.Kdrop;
 
     private void AtualizarKdrop()
@@ -3018,7 +2539,6 @@ public partial class IlhaWindow : Window
         {
             _kdrop = new KdropService(_cfg, () =>
             {
-                // O servidor pergunta de outra thread; a bandeja mora nesta.
                 try { return Dispatcher.Invoke(() => _bandeja.ToList()); }
                 catch { return new List<string>(); }
             });
@@ -3056,10 +2576,6 @@ public partial class IlhaWindow : Window
         AreaKdrop.Visibility = Visibility.Collapsed;
     }
 
-    /// <summary>
-    /// Os aparelhos em circulos, como no AirDrop: PCs com KInfo e celulares
-    /// com a bandeja aberta, e por ultimo o "Celular", que mostra o QR Code.
-    /// </summary>
     private void MontarAparelhos()
     {
         AreaKdrop.Visibility = Visivel(_kdrop is not null);
@@ -3088,14 +2604,8 @@ public partial class IlhaWindow : Window
         MontarBandejasDeFora();
     }
 
-    /// <summary>Itens sendo trazidos de outro PC: "42%", ou "Não veio" quando falha.</summary>
     private readonly Dictionary<string, string> _buscando = new();
 
-    /// <summary>
-    /// As bandejas dos outros PCs da casa, cada uma com o nome do PC em cima.
-    /// Toque num item traz para este PC: vai para a pasta do Kdrop e entra
-    /// nesta bandeja.
-    /// </summary>
     private void MontarBandejasDeFora()
     {
         BandejasDeFora.Children.Clear();
@@ -3200,8 +2710,6 @@ public partial class IlhaWindow : Window
             MontarBandejasDeFora();
         }
 
-        // Texto: busca o texto inteiro (no anuncio ele vem cortado), poe
-        // nesta bandeja e ja copia.
         if (item.Texto is not null)
         {
             Mostrar("0%");
@@ -3252,7 +2760,6 @@ public partial class IlhaWindow : Window
         else
         {
             circulo.SetResourceReference(Border.BackgroundProperty, "Chip");
-            // Mandando: anel na cor de destaque; enviado: anel verde.
             if (estado.StartsWith("Mandando") || estado.StartsWith("Esperando"))
             {
                 circulo.BorderThickness = new Thickness(2);
@@ -3282,7 +2789,6 @@ public partial class IlhaWindow : Window
         dentro.Children.Add(icone);
         if (!ehQr)
         {
-            // Ponto verde de "ligado", no canto do circulo.
             dentro.Children.Add(new Ellipse
             {
                 Width = 12,
@@ -3349,16 +2855,10 @@ public partial class IlhaWindow : Window
             await MandarPeloKdrop(aparelho, _bandeja.ToList());
     }
 
-    /// <summary>
-    /// Manda arquivos da bandeja para um aparelho. Para um PC, pede e envia;
-    /// para um celular, marca os arquivos para ele — a pagina aberta la os
-    /// destaca, prontos para baixar. Pastas ficam de fora: so arquivos viajam.
-    /// </summary>
     private async Task MandarPeloKdrop(AparelhoKdrop aparelho, List<string> caminhos)
     {
         if (_kdrop is null) return;
 
-        // Para o celular, textos tambem: a pagina la os destaca, com Copiar.
         if (!aparelho.EhPc)
         {
             var paraOCelular = caminhos.Where(c => TextoNaBandeja.Eh(c) || System.IO.File.Exists(c)).ToList();
@@ -3373,8 +2873,6 @@ public partial class IlhaWindow : Window
             return;
         }
 
-        // Para outro PC so arquivos viajam: os textos ele ja ve na bandeja
-        // deste PC, logo abaixo da dele.
         var arquivos = caminhos.Where(c => !TextoNaBandeja.Eh(c) && System.IO.File.Exists(c)).ToList();
         if (arquivos.Count == 0)
         {
@@ -3425,8 +2923,6 @@ public partial class IlhaWindow : Window
         ImagemQrKdrop.Source = _qr;
         EnderecoKdrop.Text = endereco.Replace("http://", "").TrimEnd('/');
 
-        // O QR leva ao IP (funciona em qualquer celular); a pagina aberta
-        // por ele ja oferece o endereco fixo, para salvar nos favoritos.
         var fixo = _kdrop?.EnderecoFixo;
         FixoKdrop.Text = fixo is null ? "" : $"Endereço fixo, para salvar nos favoritos: {fixo.Replace("http://", "").TrimEnd('/')}";
         FixoKdrop.Visibility = Visivel(fixo is not null);
@@ -3436,13 +2932,6 @@ public partial class IlhaWindow : Window
         MontarAparelhos();
     }
 
-    /// <summary>
-    /// Com o QR aberto, confere do PC o que pode impedir o celular de abrir a
-    /// pagina (rede Publica, Firewall bloqueando tudo, firewall de antivirus,
-    /// servidor sem responder) e avisa logo abaixo do QR. Sem nada disso, a
-    /// causa esta fora do PC (outra rede, Wi-Fi de convidados), e o aviso nao
-    /// aparece.
-    /// </summary>
     private async Task ConferirRedePublica()
     {
         var d = await Task.Run(() => KdropService.Diagnosticar());
@@ -3478,7 +2967,6 @@ public partial class IlhaWindow : Window
         BotaoRedePrivada.Content = "Tornar a rede Privada";
         if (deu)
         {
-            // Confere de novo: pode haver outro bloqueio alem da rede Publica.
             RedePublicaKdrop.Visibility = Visibility.Collapsed;
             await ConferirRedePublica();
             return;
@@ -3511,11 +2999,6 @@ public partial class IlhaWindow : Window
         }
     }
 
-    /// <summary>
-    /// Chegou um pedido: a Kisland abre so na bandeja, com Aceitar e Recusar,
-    /// e nao fecha ate a resposta (ou o prazo). Escondida por tela cheia ou
-    /// com o PC parado, o pedido espera; quem manda ve "esperando".
-    /// </summary>
     private void MostrarPedido(PedidoKdrop pedido)
     {
         _pedidoKdrop = pedido;
@@ -3543,8 +3026,6 @@ public partial class IlhaWindow : Window
 
         if (!_ativa || _escondidaPorTelaCheia) return;
 
-        // Escondida pelo PC parado: o pedido a traz de volta. Quem esta
-        // mandando esta no celular, e o PC ficou parado justamente por isso.
         if (_escondidaPorInatividade)
         {
             _escondidaPorInatividade = false;
@@ -3576,7 +3057,6 @@ public partial class IlhaWindow : Window
         AplicarConfiguracao();
     }
 
-    /// <summary>Prazo do pedido vencido sem resposta: conta como recusado.</summary>
     private void ConferirPedidoKdrop()
     {
         if (_pedidoKdrop is { } pedido && DateTime.UtcNow - pedido.CriadoEm > KdropService.PrazoDoPedido)
@@ -3585,7 +3065,6 @@ public partial class IlhaWindow : Window
 
     private void PedidoMudou(PedidoKdrop pedido)
     {
-        // Respondido por outro caminho (prazo no servidor, aparelho confiavel).
         if (_pedidoKdrop?.Id == pedido.Id && pedido.Estado != EstadoDoPedido.Esperando)
             FecharPedido();
 
@@ -3598,7 +3077,6 @@ public partial class IlhaWindow : Window
         MostrarEstado();
     }
 
-    /// <summary>Um arquivo chegou inteiro: entra na bandeja, como se tivesse sido arrastado.</summary>
     private void ReceberDoKdrop(string caminho)
     {
         _bandeja.Remove(caminho);
@@ -3610,15 +3088,9 @@ public partial class IlhaWindow : Window
         MostrarEstado();
     }
 
-    /// <summary>O texto mostrado no aviso e no cartao, para Copiar e Abrir.</summary>
     private string? _textoKdrop;
     private DispatcherTimer? _fimDoTextoKdrop;
 
-    /// <summary>
-    /// Chegou um texto ou link (aceito, ou de aparelho confiavel): entra na
-    /// bandeja e aparece no topo dela, com Copiar e, se for link, Abrir. Com
-    /// a Kisland fechada, vem antes um aviso rapido na pilula.
-    /// </summary>
     private void ReceberTextoDoKdrop(PedidoKdrop pedido)
     {
         if (pedido.Texto is not { } texto) return;
@@ -3643,7 +3115,6 @@ public partial class IlhaWindow : Window
         IconeAvisoTexto.Data = desenho;
         CopiarAvisoTexto.Content = "Copiar";
 
-        // O cartao sai sozinho depois de um tempo; o texto fica na bandeja.
         _fimDoTextoKdrop?.Stop();
         _fimDoTextoKdrop = Temporizador(TimeSpan.FromSeconds(20), FecharTextoKdrop);
         _fimDoTextoKdrop.Start();
@@ -3668,7 +3139,6 @@ public partial class IlhaWindow : Window
         CopiarTextoKdrop.Content = "Copiado";
         CopiarAvisoTexto.Content = "Copiado";
 
-        // No aviso da pilula, copiar e o fim: ele some logo depois.
         if (_aviso == Aviso.Texto)
         {
             _fimDoAviso.Stop();
@@ -3694,11 +3164,6 @@ public partial class IlhaWindow : Window
         _ => $"{bytes / (1024.0 * 1024 * 1024):0.#} GB"
     };
 
-    // Arrastar um arquivo da bandeja ate um aparelho, sem sair da Kisland.
-    // O arrasto do Windows (OLE) nao serve aqui: a Kisland cancelou o
-    // registro dela como destino, para a bandeja receber do Explorer. Entao o
-    // arrasto interno e feito a mao, com o mouse preso ao item.
-
     private void ArrastarParaAparelho(Button botao, string caminho)
     {
         _arrastandoParaAparelho = caminho;
@@ -3713,7 +3178,6 @@ public partial class IlhaWindow : Window
     {
         if (_arrastandoParaAparelho is not { } caminho || sender is not Button botao) return;
 
-        // Saiu da Kisland: vira o arrasto normal, para uma pasta ou programa.
         if (!CursorEmCima())
         {
             EncerrarArrastoInterno(botao);
@@ -3728,7 +3192,6 @@ public partial class IlhaWindow : Window
         var alvo = AparelhoSob(e.GetPosition(Casca));
         EncerrarArrastoInterno(botao);
 
-        // Sem isso o soltar viraria clique, e o arquivo abriria.
         e.Handled = true;
 
         if (alvo is not null) _ = MandarPeloKdrop(alvo, new List<string> { caminho });
@@ -3751,7 +3214,6 @@ public partial class IlhaWindow : Window
         if (botao.IsMouseCaptured) botao.ReleaseMouseCapture();
     }
 
-    /// <summary>O aparelho (circulo) que esta embaixo de um ponto da Kisland, se houver.</summary>
     private AparelhoKdrop? AparelhoSob(Point ponto)
     {
         var no = Casca.InputHitTest(ponto) as DependencyObject;
@@ -3773,19 +3235,12 @@ public partial class IlhaWindow : Window
         AtualizarSemItens();
     }
 
-    /// <summary>
-    /// Copia todos para a area de transferencia, como um Ctrl+C no Explorer:
-    /// colar numa pasta copia os arquivos para la. Funciona tambem com o app
-    /// elevado, onde arrastar para fora pode nao funcionar.
-    /// </summary>
     private void CopiarBandeja_Click(object sender, RoutedEventArgs e)
     {
         if (_bandeja.Count == 0) return;
 
         try
         {
-            // Arquivos vao como arquivos; se so ha textos, vao os textos,
-            // um por linha.
             var arquivos = _bandeja.Where(c => !TextoNaBandeja.Eh(c)).ToArray();
             if (arquivos.Length > 0)
             {
@@ -3802,7 +3257,6 @@ public partial class IlhaWindow : Window
         }
         catch (Exception ex)
         {
-            // A area de transferencia pode estar presa por outro app.
             Log.Erro("Bandeja: copiar", ex);
         }
     }
@@ -3814,10 +3268,6 @@ public partial class IlhaWindow : Window
         AtualizarSemItens();
     }
 
-    // ------------------------------------------------------------------
-    // Perfis e atalhos para o painel
-
-    /// <summary>O plano pode ter mudado fora do app; vale o que esta em vigor.</summary>
     private void SincronizarPerfil()
     {
         var atual = PowerService.Atual();
@@ -3833,8 +3283,6 @@ public partial class IlhaWindow : Window
     {
         if (_trocandoPerfil) return;
 
-        // Desempenho nao e so um plano: e a tela que pergunta o que fechar e
-        // limpar. Essa tela mora no painel.
         if (ReferenceEquals(sender, PerfilDesempenho))
         {
             Recolher();
@@ -3861,8 +3309,6 @@ public partial class IlhaWindow : Window
         Recolher();
         PedirPersonalizacao?.Invoke();
     }
-
-    // ------------------------------------------------------------------
 
     private const int RodaDoMouse = 0x020A;
     private const int BotaoDoMeioSolto = 0x0208;
@@ -3911,7 +3357,6 @@ public partial class IlhaWindow : Window
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ChangeWindowMessageFilterEx(IntPtr janela, uint mensagem, uint acao, IntPtr extra);
 
-    /// <summary>DRAGDROP_E_NOTREGISTERED: a janela nao tinha destino OLE.</summary>
     private const int NaoRegistrado = unchecked((int)0x80040100);
 
     [DllImport("ole32.dll")]

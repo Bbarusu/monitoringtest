@@ -4,12 +4,6 @@
              StartupUri="SetupWindow.xaml">
     <Application.Resources>
 
-        <!--
-            A paleta escura do painel, repetida aqui. O instalador nao
-            referencia o projeto do app de proposito: ele precisa compilar e
-            rodar sozinho, e amarrar os dois faria uma mudanca na interface do
-            app quebrar o instalador.
-        -->
         <SolidColorBrush x:Key="Fundo" Color="#15171C" />
         <SolidColorBrush x:Key="Borda" Color="#262A32" />
         <SolidColorBrush x:Key="Cartao" Color="#1A1D23" />
@@ -28,7 +22,6 @@
 
         <FontFamily x:Key="FonteUI">Segoe UI Variable Display, Segoe UI</FontFamily>
 
-        <!-- Botao principal, no acento -->
         <Style x:Key="BotaoPrincipal" TargetType="Button">
             <Setter Property="Height" Value="44" />
             <Setter Property="FontSize" Value="14" />
@@ -54,7 +47,6 @@
             </Setter>
         </Style>
 
-        <!-- Botao secundario, do mesmo formato do BotaoLargo do app -->
         <Style x:Key="BotaoSecundario" TargetType="Button">
             <Setter Property="Height" Value="44" />
             <Setter Property="FontSize" Value="13" />
@@ -82,7 +74,6 @@
             </Setter>
         </Style>
 
-        <!-- Caixa de selecao, igual a da tela de ajustes do app -->
         <Style x:Key="CaixaDeSelecao" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -112,9 +103,6 @@
             </Setter>
         </Style>
 
-
-        <!-- Barra de rolagem fina, no tom do painel. O WPF so usa esta se o
-             estilo for aplicado por tipo, sem chave. -->
         <Style TargetType="ScrollBar">
             <Setter Property="Width" Value="8" />
             <Setter Property="Background" Value="Transparent" />
@@ -148,7 +136,6 @@
                                         </Thumb.Template>
                                     </Thumb>
                                 </Track.Thumb>
-                                <!-- Os botoes de seta somem: a area clicavel do trilho basta. -->
                                 <Track.IncreaseRepeatButton>
                                     <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0"
                                                   Focusable="False" />

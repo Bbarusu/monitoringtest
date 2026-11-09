@@ -6,21 +6,8 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Quem esta usando a CPU, e como fechar.
-///
-/// Irma da tela de memoria, com uma diferenca que decide o desenho: memoria e
-/// um valor que existe agora, e uso de CPU so existe entre duas leituras. Por
-/// isso esta tela se atualiza sozinha e a de memoria nao precisa — e por isso
-/// a primeira lista demora um instante para ter numero de verdade.
-/// </summary>
 public partial class ProcessadorWindow : Window
 {
-    /// <summary>
-    /// Intervalo entre leituras. Curto demais mede ruido — qualquer processo
-    /// parece disparar entre dois instantes muito proximos —, e longo demais
-    /// atrasa demais o reflexo de fechar um programa.
-    /// </summary>
     private static readonly TimeSpan Intervalo = TimeSpan.FromSeconds(2);
 
     private readonly SensorService _sensores;
@@ -35,9 +22,6 @@ public partial class ProcessadorWindow : Window
         _rodape = new RodapeComPrazo(Rodape);
         _rodape.Venceu += () => _forcarPendente = null;
 
-        // Primeira leitura sem numero: ela existe para a proxima ter de onde
-        // tirar a diferenca. Dizer isso e melhor que mostrar uma lista inteira
-        // zerada, que o usuario leria como "nada usando a CPU".
         PerformanceService.PorCpu();
         Subtitulo.Text = "Medindo o uso da CPU…";
 
@@ -66,10 +50,6 @@ public partial class ProcessadorWindow : Window
 
         var processos = PerformanceService.PorCpu();
 
-        // Remontar a lista inteira a cada dois segundos troca os controles
-        // debaixo do cursor e faria o clique de fechar errar o alvo quando a
-        // ordem mudasse. Só refaz quando a quantidade muda; o resto é
-        // atualização no lugar.
         if (Lista.Children.Count != processos.Count)
         {
             Lista.Children.Clear();
@@ -84,16 +64,6 @@ public partial class ProcessadorWindow : Window
 
     private void Reposicionar() => Janelas.Ancorar(this, Owner);
 
-    // ------------------------------------------------------------------
-
-    /// <summary>
-    /// Qual programa está com a pergunta de forçar em aberto, e até quando.
-    ///
-    /// Mesmo desenho da tela de memória: sem janela, não existe pedido gentil,
-    /// e forçar pede confirmação por um segundo clique. O prazo importa mais
-    /// aqui, porque esta lista se reordena sozinha a cada leitura — a linha
-    /// que estava sob o cursor pode não ser mais a mesma.
-    /// </summary>
     private string? _forcarPendente;
     private DateTime _forcarAte;
     private readonly RodapeComPrazo _rodape;
@@ -146,13 +116,6 @@ public partial class ProcessadorWindow : Window
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 }
 
-/// <summary>
-/// Uma linha da lista: o programa, quanto da CPU ele usa e o botão de fechar.
-///
-/// Reaproveitada entre leituras em vez de recriada, porque esta tela se
-/// atualiza sozinha: recriar tudo a cada dois segundos trocaria os botões
-/// debaixo do cursor no meio de um clique.
-/// </summary>
 internal sealed class LinhaDeProcessoCpu : Grid
 {
     private readonly ProcessadorWindow _tela;
@@ -243,8 +206,6 @@ internal sealed class LinhaDeProcessoCpu : Grid
             ? "sistema ou segurança"
             : p.TemJanela ? "com janela aberta" : "em segundo plano";
 
-        // Protegidos ficam na lista, para o quadro não parecer incompleto, mas
-        // sem botão: fechar um deles deixaria o PC inutilizável ou desprotegido.
         _fechar.Visibility = p.Protegido ? Visibility.Collapsed : Visibility.Visible;
 
         _fechar.ToolTip = p.TemJanela

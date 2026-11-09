@@ -2,7 +2,6 @@ using MonitorPC.Models;
 
 namespace MonitorPC.Services;
 
-/// <summary>Um momento em que um processo passou do limite de registro.</summary>
 public sealed record EventoDeDisco(
     DateTime Hora,
     int Pid,
@@ -14,19 +13,11 @@ public sealed record EventoDeDisco(
 {
     public double TotalMbs => LeituraMbs + EscritaMbs;
 
-    /// <summary>Leitura ou escrita, conforme o que dominou o momento.</summary>
     public string Tipo => LeituraMbs >= EscritaMbs ? "Leitura" : "Escrita";
 
     public bool Alto => TotalMbs >= DiskLogService.LimiteDeAlto;
 }
 
-/// <summary>
-/// Registra quem passou do limite de uso de disco, enquanto a tela do log
-/// estiver aberta. Guarda os ultimos 15 minutos e exporta em texto.
-///
-/// Isto ve processos, nao arquivos: saber qual arquivo cada um abriu exige
-/// rastreamento de eventos do Windows, com custo bem maior.
-/// </summary>
 public sealed class DiskLogService : IDisposable
 {
     public const double LimiteDeAlto = 50;
@@ -35,11 +26,6 @@ public sealed class DiskLogService : IDisposable
 
     private readonly DiskProcessService _medidor = new();
 
-    /// <summary>
-    /// Preenchido pelo painel a cada leitura. Os contadores por processo nao
-    /// dizem em qual unidade o acesso ocorreu, entao o log registra qual estava
-    /// mais ativa no momento — e uma pista, nao a atribuicao exata.
-    /// </summary>
     public string? DiscoMaisAtivo { get; set; }
     private readonly List<EventoDeDisco> _eventos = new();
     private readonly AppConfig _cfg;
@@ -69,7 +55,6 @@ public sealed class DiskLogService : IDisposable
 
         Task.Run(async () =>
         {
-            // A primeira amostra so serve de referencia.
             try { await Task.Delay(1000, token); } catch { return; }
 
             while (!token.IsCancellationRequested)

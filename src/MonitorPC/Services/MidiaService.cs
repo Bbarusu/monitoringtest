@@ -7,7 +7,6 @@ using GerenciadorDeMidia = Windows.Media.Control.GlobalSystemMediaTransportContr
 
 namespace MonitorPC.Services;
 
-/// <summary>O que esta tocando agora, num instante.</summary>
 public sealed record EstadoDeMidia(
     string Origem,
     string Titulo,
@@ -20,11 +19,6 @@ public sealed record EstadoDeMidia(
     TimeSpan Duracao,
     DateTimeOffset PosicaoLidaEm)
 {
-    /// <summary>
-    /// Posicao estimada agora. O Windows so atualiza a linha do tempo quando o
-    /// player avisa, o que alguns fazem a cada poucos segundos e outros so ao
-    /// pausar: tocando, a posicao anda pelo relogio desde a ultima leitura.
-    /// </summary>
     public TimeSpan PosicaoAgora()
     {
         if (!Tocando) return Posicao;
@@ -36,32 +30,17 @@ public sealed record EstadoDeMidia(
     }
 }
 
-/// <summary>
-/// Le e controla a midia pelo controle de transporte do proprio Windows — o
-/// mesmo que poe a musica no painel de volume e na tela de bloqueio.
-///
-/// Acompanha todas as sessoes, e nao so a que o Windows chama de "atual". A
-/// atual e a ultima que se anunciou, e o Windows a mantem ali mesmo pausada:
-/// uma mensagem de audio parada no WhatsApp continuava sendo "o que esta
-/// tocando" por horas, com a mesma foto, enquanto o som vinha de outro app.
-/// Agora a escolha e de quem toca de fato; ninguem tocando, de quem tocou por
-/// ultimo — e so ate um minuto depois de parar.
-/// </summary>
 public sealed class MidiaService : IDisposable
 {
-    /// <summary>Parado ha mais que isto, o player deixa de ser "o que esta tocando".</summary>
     public static readonly TimeSpan Validade = TimeSpan.FromMinutes(1);
 
-    /// <summary>O que se sabe de cada sessao, pelo id do app.</summary>
     private sealed class Registro
     {
         public required SessaoDeMidia Sessao { get; init; }
         public bool Tocando { get; set; }
 
-        /// <summary>Quando comecou a tocar desta vez: entre dois tocando, vence o mais recente.</summary>
         public DateTime ComecouEm { get; set; } = DateTime.MinValue;
 
-        /// <summary>A ultima vez em que estava tocando. Parado ha muito, sai da disputa.</summary>
         public DateTime TocouEm { get; set; } = DateTime.MinValue;
     }
 
@@ -71,10 +50,6 @@ public sealed class MidiaService : IDisposable
     private string? _escolhida;
     private int _geracao;
 
-    /// <summary>
-    /// Disparado em thread qualquer, com nulo quando nada toca nem tocou nos
-    /// ultimos minutos.
-    /// </summary>
     public event Action<EstadoDeMidia?>? Mudou;
 
     public EstadoDeMidia? Atual { get; private set; }
@@ -89,21 +64,11 @@ public sealed class MidiaService : IDisposable
         }
         catch (Exception ex)
         {
-            // Sem o controle de midia a ilha so mostra sensores. Nao e motivo
-            // para derrubar nada.
             Log.Erro("Mídia: iniciar", ex);
         }
     }
 
-    /// <summary>
-    /// Chamada a cada segundo pela ilha. E o que tira da tela um player que
-    /// parou ha mais de um minuto: nenhum aviso do Windows chega nessa
-    /// hora, porque nada mudou — so o tempo passou.
-    /// </summary>
     public void Conferir() => Escolher();
-
-    // ------------------------------------------------------------------
-    // Sessoes
 
     private void Sincronizar()
     {
@@ -130,9 +95,6 @@ public sealed class MidiaService : IDisposable
                         Sessao = sessao,
                         Tocando = tocando,
 
-                        // Pausada quando o app a encontrou: sem como saber ha
-                        // quanto tempo, conta como antiga. Quem abre o PC nao
-                        // quer ver a musica que pausou ontem.
                         ComecouEm = tocando ? agora : DateTime.MinValue,
                         TocouEm = tocando ? agora : DateTime.MinValue
                     };
@@ -182,15 +144,11 @@ public sealed class MidiaService : IDisposable
 
             if (tocando && !registro.Tocando) registro.ComecouEm = agora;
 
-            // Tocando agora, ou parando agora: nos dois casos, este foi o
-            // ultimo instante em que estava tocando.
             if (tocando || registro.Tocando) registro.TocouEm = agora;
 
             registro.Tocando = tocando;
         }
 
-        // Mudou de estado a que esta na tela: relê para o icone de play e
-        // pausa acompanharem. Outra sessao: pode ter passado a frente.
         if (!Escolher() && id == _escolhida) _ = LerAsync();
     }
 
@@ -199,11 +157,6 @@ public sealed class MidiaService : IDisposable
         if ((sessao.SourceAppUserModelId ?? "") == _escolhida) _ = LerAsync();
     }
 
-    /// <summary>
-    /// Quem aparece: entre as que tocam, a que comecou por ultimo; nenhuma
-    /// tocando, a que tocou por ultimo, se faz menos de um minuto.
-    /// Devolve verdadeiro quando a escolha mudou (e ja mandou ler).
-    /// </summary>
     private bool Escolher()
     {
         string? nova;
@@ -249,18 +202,9 @@ public sealed class MidiaService : IDisposable
         }
         catch
         {
-            // Sessao que ja sumiu do lado do Windows.
         }
     }
 
-    // ------------------------------------------------------------------
-    // Leitura
-
-    /// <summary>
-    /// Le a sessao escolhida inteira. Os avisos chegam em rajada — trocar de
-    /// faixa dispara os tres de uma vez — e cada leitura carrega a capa: a
-    /// geracao faz so a ultima leitura publicar o resultado.
-    /// </summary>
     private async Task LerAsync()
     {
         var minha = Interlocked.Increment(ref _geracao);
@@ -291,8 +235,6 @@ public sealed class MidiaService : IDisposable
             var tocando = info?.PlaybackStatus ==
                           GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
 
-            // A capa so e reaproveitada se for do mesmo app e da mesma faixa.
-            // Pelo titulo apenas, a foto de um app ia parar em outro.
             var capa = Atual is { } anterior && anterior.Origem == origem &&
                        anterior.Titulo == titulo && anterior.Artista == artista
                 ? anterior.Capa
@@ -302,8 +244,6 @@ public sealed class MidiaService : IDisposable
             var posicao = linha is null ? TimeSpan.Zero : linha.Position - linha.StartTime;
             var lidaEm = linha?.LastUpdatedTime ?? DateTimeOffset.Now;
 
-            // Um player que nunca atualizou a linha do tempo devolve a data
-            // zero, e a posicao estimada viraria decadas.
             if (lidaEm.Year < 2000) lidaEm = DateTimeOffset.Now;
 
             Publicar(minha, new EstadoDeMidia(
@@ -320,7 +260,6 @@ public sealed class MidiaService : IDisposable
         }
         catch (Exception ex)
         {
-            // Player fechando no meio da leitura e o caso comum aqui.
             Log.Erro("Mídia: ler", ex);
         }
     }
@@ -346,10 +285,6 @@ public sealed class MidiaService : IDisposable
             await origem.CopyToAsync(copia);
             copia.Position = 0;
 
-            // Miniatura pequena nao e capa: e o icone do site (o navegador
-            // manda o favicon quando a pagina nao tem arte, e numa guia
-            // anonima ele nao repassa a arte da pagina). Esticada para 72 px,
-            // virava um borrao qualquer; sem capa, entra o icone do app.
             var quadro = BitmapDecoder.Create(copia, BitmapCreateOptions.None, BitmapCacheOption.OnLoad).Frames[0];
             if (quadro.PixelWidth < 64 || quadro.PixelHeight < 64) return null;
             copia.Position = 0;
@@ -358,14 +293,10 @@ public sealed class MidiaService : IDisposable
             imagem.BeginInit();
             imagem.CacheOption = BitmapCacheOption.OnLoad;
 
-            // A capa aparece com 72 px no maximo; decodificar a imagem inteira
-            // guardaria um bitmap de 1000 px na memoria a troco de nada.
             imagem.DecodePixelWidth = 144;
             imagem.StreamSource = copia;
             imagem.EndInit();
 
-            // Criada fora da thread da interface: sem congelar, a interface nao
-            // poderia usa-la.
             imagem.Freeze();
             return imagem;
         }
@@ -378,12 +309,6 @@ public sealed class MidiaService : IDisposable
 
     private static readonly Dictionary<string, ImageSource?> Icones = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// O icone do app que esta tocando, para quando nao ha capa: o Chrome numa
-    /// guia anonima, um video sem arte. Pela lista de apps do Windows (a do
-    /// menu Iniciar), que conhece tanto os apps da loja quanto os instalados
-    /// pelo jeito antigo; sem ele la, pelo .exe do processo. Guardado por id.
-    /// </summary>
     private static ImageSource? IconeDoAppDe(string origem)
     {
         if (string.IsNullOrWhiteSpace(origem)) return null;
@@ -396,7 +321,6 @@ public sealed class MidiaService : IDisposable
         return icone;
     }
 
-    /// <summary>"chrome.exe" ou "Spotify": o icone do .exe de um processo aberto com esse nome.</summary>
     private static ImageSource? IconeDoProcesso(string origem)
     {
         try
@@ -417,7 +341,6 @@ public sealed class MidiaService : IDisposable
                     }
                     catch
                     {
-                        // Processo protegido: tenta o proximo.
                     }
                 }
             }
@@ -430,11 +353,6 @@ public sealed class MidiaService : IDisposable
         return null;
     }
 
-    /// <summary>
-    /// O Windows identifica o player pelo id de app, que para quem usa e ruido:
-    /// "Spotify.exe", "MSEdge", "308046B0AF4A39CB". Os conhecidos ganham nome;
-    /// o resto perde so o ".exe".
-    /// </summary>
     private static string NomeDoApp(string? id)
     {
         if (string.IsNullOrWhiteSpace(id)) return "";
@@ -459,16 +377,12 @@ public sealed class MidiaService : IDisposable
         if (exclamacao > 0) nome = nome[..exclamacao];
         if (nome.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) nome = nome[..^4];
 
-        // Ids de pacote da loja ("Fabricante.App_hash"): fica o meio.
         var ponto = nome.IndexOf('.');
         var traco = ponto > 0 ? nome.IndexOf('_', ponto + 1) : -1;
         if (traco > ponto + 1) nome = nome[(ponto + 1)..traco];
 
         return nome;
     }
-
-    // ------------------------------------------------------------------
-    // Controles. Cada player decide se aceita; recusar nao e erro.
 
     public Task TocarPausar() => Comando(s => s.TryTogglePlayPauseAsync().AsTask());
     public Task Proxima() => Comando(s => s.TrySkipNextAsync().AsTask());

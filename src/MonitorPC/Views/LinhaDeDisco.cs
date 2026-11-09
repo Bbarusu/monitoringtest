@@ -6,11 +6,6 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma linha da lista da aba Disco: nome em cima, detalhe embaixo, valor a
-/// direita e uma barra fina indicando a proporcao. Serve tanto para processos
-/// quanto para unidades.
-/// </summary>
 public sealed class LinhaDeDisco : StackPanel
 {
     private readonly TextBlock _nome;
@@ -29,9 +24,6 @@ public sealed class LinhaDeDisco : StackPanel
 
         var textos = new StackPanel();
 
-        // Referencia viva em vez de pincel capturado: estas linhas sao criadas
-        // quando a aba Disco aparece pela primeira vez e sobrevivem a troca de
-        // tema.
         _nome = new TextBlock
         {
             FontSize = 13,
@@ -87,10 +79,6 @@ public sealed class LinhaDeDisco : StackPanel
         Children.Add(trilho);
     }
 
-    /// <summary>
-    /// Mantem a linha ocupando o mesmo espaco quando nao ha o que mostrar, para
-    /// a lista nao mudar de altura a cada leitura.
-    /// </summary>
     public void Vazia(string texto)
     {
         _nome.Text = texto;
@@ -103,10 +91,8 @@ public sealed class LinhaDeDisco : StackPanel
         ToolTip = null;
     }
 
-    /// <summary>PID do processo desta linha, quando houver. Nulo para unidades.</summary>
     public int? Pid { get; set; }
 
-    /// <summary>Nome do processo desta linha, para a tela de arquivos.</summary>
     public string? NomeDoProcesso { get; set; }
 
     public void Atualizar(string nome, string detalhe, string valor, double porcentagem)

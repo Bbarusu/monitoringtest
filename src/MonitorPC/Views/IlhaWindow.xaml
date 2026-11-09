@@ -8,20 +8,6 @@
         ShowActivated="False" Focusable="False"
         FontFamily="{StaticResource FonteUI}">
 
-    <!--
-        A ilha do topo da tela. Mesma paleta, mesmos cartões e mesmos botões do
-        painel: é o painel em tamanho de bolso, não um app à parte.
-
-        Quatro estados, um visível por vez: a pílula (Compacta), os dois avisos
-        rápidos (volume e troca de faixa) e a ilha aberta (Expandida). A janela
-        tem SizeToContent e se recentraliza a cada mudança de tamanho, então a
-        troca de estado é só trocar o que está visível.
-
-        As margens da Casca são o espaço da sombra. A janela é transparente ali,
-        e pixel transparente não recebe clique: a área em volta da ilha continua
-        sendo do que estiver atrás.
-    -->
-
     <Window.Resources>
         <Style x:Key="ChipIlha" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource Chip}" />
@@ -59,9 +45,6 @@
             <Setter Property="Fill" Value="{DynamicResource Acento}" />
             <Setter Property="RenderTransformOrigin" Value="0.5,1" />
         </Style>
-        <!-- Botao redondo pequeno, para o mudo e a Personalizacao na pilula:
-             o quadrado de cantos 10 do rodape do painel destoava dentro de uma
-             ilha toda arredondada. -->
         <Style x:Key="BotaoRedondoPequeno" TargetType="Button">
             <Setter Property="Width" Value="36" />
             <Setter Property="Height" Value="36" />
@@ -81,8 +64,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Botao sem moldura: o desenho e o proprio conteudo. Usado no anel
-             (quando ha um chat de IA escolhido) e nas saidas de som. -->
         <Style x:Key="BotaoSemMoldura" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
@@ -96,7 +77,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Atalho da Kisland aberta: icone redondo e o nome embaixo. -->
         <Style x:Key="BotaoAtalho" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
@@ -115,9 +95,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Barra de volume no desenho da Kisland: trilho fino de 6 px, a
-             parte cheia na cor de destaque e uma bolinha branca, como no
-             canvas. O Slider padrao do Windows destoava do resto. -->
         <Style x:Key="TrechoCheio" TargetType="RepeatButton">
             <Setter Property="Focusable" Value="False" />
             <Setter Property="IsTabStop" Value="False" />
@@ -184,7 +161,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Botao de acao principal (Aceitar do Kdrop): cheio, na cor de destaque. -->
         <Style x:Key="BotaoPrincipalIlha" TargetType="Button">
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontSize" Value="13" />
@@ -206,7 +182,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-        <!-- Pilula com icone e texto: "Colar texto" na bandeja, "Copiar" no aviso de texto. -->
         <Style x:Key="BotaoPilula" TargetType="Button">
             <Setter Property="Height" Value="30" />
             <Setter Property="Padding" Value="10,0" />
@@ -250,16 +225,8 @@
 
         <Grid>
 
-            <!-- ========================= PÍLULA ========================= -->
             <StackPanel x:Name="Compacta" Orientation="Horizontal" Height="44" Margin="6,0,8,0">
 
-                <!--
-                    O anel. Aparece sozinho quando não há nada para mostrar, e a
-                    pílula vira um círculo com ele dentro. Com um chat de IA
-                    escolhido na Personalização, fica sempre aqui, no começo, e
-                    um clique nele abre o chat. Sem chat, não é clicável: o
-                    clique passa para a Kisland, que abre.
-                -->
                 <Button x:Name="BotaoAnel" Style="{StaticResource BotaoSemMoldura}" VerticalAlignment="Center"
                         Visibility="Collapsed" IsHitTestVisible="False" Click="Anel_Click">
                     <Grid x:Name="SemItens" Width="32" Height="32">
@@ -296,7 +263,6 @@
                     </Grid>
                 </StackPanel>
 
-                <!-- Aviso de temperatura: some quando o limite volta a ser respeitado. -->
                 <Border x:Name="ChipAlerta" Style="{StaticResource ChipIlha}" Visibility="Collapsed"
                         Background="{DynamicResource AvisoChip}" BorderBrush="{DynamicResource AvisoBorda}">
                     <StackPanel Orientation="Horizontal">
@@ -307,8 +273,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- FPS do jogo rodando, em qualquer monitor. Só existe com um
-                     jogo aberto e o contador ligado. -->
                 <Border x:Name="ChipFps" Style="{StaticResource ChipIlha}" Visibility="Collapsed">
                     <StackPanel Orientation="Horizontal">
                         <Path Style="{StaticResource IconeChip}" Stroke="{DynamicResource Acento}"
@@ -363,8 +327,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Data e hora no mesmo chip, como na tela de espera do iPhone:
-                     a data na cor de destaque, a hora logo depois. -->
                 <Border x:Name="ChipRelogio" Style="{StaticResource ChipIlha}">
                     <StackPanel Orientation="Horizontal">
                         <Path x:Name="IconeRelogio" Style="{StaticResource IconeChip}"
@@ -375,7 +337,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Arquivos na bandeja: so aparece com algum guardado. -->
                 <Border x:Name="ChipBandeja" Style="{StaticResource ChipIlha}" Visibility="Collapsed"
                         ToolTip="Arquivos na bandeja">
                     <StackPanel Orientation="Horizontal">
@@ -395,7 +356,6 @@
 
             </StackPanel>
 
-            <!-- ===================== AVISO: VOLUME ====================== -->
             <StackPanel x:Name="AvisoVolume" Orientation="Horizontal" Height="44" Margin="6,0,16,0"
                         Visibility="Collapsed">
                 <Border Width="32" Height="32" CornerRadius="16" Background="{DynamicResource Chip}">
@@ -416,7 +376,6 @@
                            VerticalAlignment="Center" MinWidth="32" TextAlignment="Right" />
             </StackPanel>
 
-            <!-- ================= AVISO: TROCA DE FAIXA ================== -->
             <StackPanel x:Name="AvisoFaixa" Orientation="Horizontal" Height="56" Margin="6,0,18,0"
                         Visibility="Collapsed">
                 <Border x:Name="CapaAviso" Width="44" Height="44" CornerRadius="22"
@@ -437,12 +396,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- ================= AVISO: TEXTO DO KDROP ================== -->
-            <!--
-                Um texto ou link chegou pelo Kdrop com a Kisland fechada: aviso
-                rápido, como o da troca de música, com Copiar ali mesmo. O
-                texto também fica na bandeja, para pegar depois.
-            -->
             <StackPanel x:Name="AvisoTexto" Orientation="Horizontal" Height="52" Margin="6,0,8,0"
                         Visibility="Collapsed">
                 <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource InfoFundo}">
@@ -461,22 +414,12 @@
                         Click="CopiarTextoKdrop_Click" />
             </StackPanel>
 
-            <!-- ======================= ILHA ABERTA ====================== -->
-            <!--
-                Com muitos blocos ligados (calendário, cartões, mixer, bandeja,
-                QR do Kdrop), a Kisland aberta passava da altura da tela e o fim
-                era cortado. A altura agora tem teto (a área útil do monitor,
-                no código), e o que não cabe rola. As margens somam as mesmas
-                20 px de antes; a barra, quando aparece, ocupa parte da margem
-                direita, para a largura não mudar.
-            -->
             <ScrollViewer x:Name="RolagemExpandida" Visibility="Collapsed" Margin="0,14,4,14"
                           VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                           Focusable="False" PanningMode="VerticalOnly"
                           ScrollChanged="RolagemExpandida_Mudou">
             <StackPanel x:Name="Expandida" Width="480" Margin="20,6,16,6" Visibility="Collapsed">
 
-                <!-- Tocando agora -->
                 <Grid x:Name="BlocoMidia">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -556,12 +499,6 @@
                     </StackPanel>
                 </Border>
 
-                <!--
-                    Calendário do mês, no jeito do widget da tela de espera do
-                    iPhone: à esquerda o mês, o dia da semana e o dia grande; à
-                    direita o mês inteiro, com hoje marcado na cor de destaque.
-                    Os dias são montados no código, e refeitos na virada do dia.
-                -->
                 <Border x:Name="BlocoCalendario" Margin="0,16,0,0" CornerRadius="12" Padding="16,14"
                         Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                     <Grid>
@@ -588,7 +525,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Temperaturas -->
                 <UniformGrid x:Name="GradeTemperaturas" Columns="2" Margin="0,16,0,0">
                     <Border x:Name="CartaoCpu" Margin="0,0,6,0" CornerRadius="12" Padding="12"
                             Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
@@ -616,7 +552,6 @@
                     </Border>
                 </UniformGrid>
 
-                <!-- Memoria, disco e energia -->
                 <UniformGrid x:Name="GradeSistema" Columns="3" Margin="0,12,0,0">
                     <Border x:Name="CartaoRam" Style="{StaticResource MiniCartao}" Margin="0,0,6,0">
                         <StackPanel>
@@ -654,7 +589,6 @@
                     </Border>
                 </UniformGrid>
 
-                <!-- Volume -->
                 <Border x:Name="BlocoVolume" Margin="0,12,0,0" CornerRadius="12" Padding="12"
                         Background="{DynamicResource Cartao}" BorderBrush="{DynamicResource Borda}" BorderThickness="1">
                     <StackPanel>
@@ -668,7 +602,6 @@
                                 </Button>
                                 <TextBlock Text="Volume" FontSize="13" FontWeight="Medium" Margin="10,0,0,0"
                                            VerticalAlignment="Center" Foreground="{DynamicResource Texto}" />
-                                <!-- Mixer: o volume de cada app, como o do Windows. -->
                                 <Button x:Name="BotaoMixer" Style="{StaticResource BotaoRedondoPequeno}" Width="28" Height="28"
                                         Margin="8,0,0,0" VerticalAlignment="Center"
                                         ToolTip="Mixer" Click="Mixer_Click">
@@ -687,13 +620,6 @@
                                 IsMoveToPointEnabled="True" IsSnapToTickEnabled="True" TickFrequency="1"
                                 ValueChanged="SliderVolume_Alterado" />
 
-                        <!--
-                            Mixer: uma linha por app com som na saída atual —
-                            ícone (toque silencia só ele), nome, controle e
-                            porcentagem. Montado no código; lido de novo a cada
-                            2 s enquanto aberto, para acompanhar o mixer do
-                            Windows.
-                        -->
                         <StackPanel x:Name="MixerDeSom" Visibility="Collapsed" Margin="0,12,0,0">
                             <Border Height="1" Margin="0,0,0,4" Background="{DynamicResource Borda}" />
                             <StackPanel x:Name="AppsDoMixer" />
@@ -702,13 +628,10 @@
                                        Text="Nenhum app usando o som agora." />
                         </StackPanel>
 
-                        <!-- Saídas de som ativas, com a atual marcada. Só com mais
-                             de uma: com uma só não há o que trocar. -->
                         <WrapPanel x:Name="SaidasDeSom" Margin="0,12,0,-6" Visibility="Collapsed" />
                     </StackPanel>
                 </Border>
 
-                <!-- Perfis de energia, os mesmos do painel -->
                 <UniformGrid x:Name="GradePerfis" Columns="3" Margin="0,12,0,0">
                     <RadioButton x:Name="PerfilEconomico" Style="{StaticResource Perfil}" GroupName="PerfilDaIlha"
                                  Content="Econômico" Margin="0,0,6,0" Click="Perfil_Click" />
@@ -718,18 +641,10 @@
                                  Content="Desempenho" Margin="6,0,0,0" Click="Perfil_Click" />
                 </UniformGrid>
 
-                <!-- Atalhos: o chat de IA e os apps e sites escolhidos na
-                     Personalização. Montados no código. -->
                 <Border x:Name="BlocoAtalhos" Style="{StaticResource MiniCartao}" Margin="0,12,0,0" Padding="6,4">
                     <UniformGrid x:Name="GradeAtalhos" Rows="1" />
                 </Border>
 
-                <!--
-                    Bandeja: arquivos arrastados até a Kisland, à mão até serem
-                    usados. Clique abre, arrastar leva para outro lugar, e o
-                    botão de copiar põe todos na área de transferência, para
-                    colar com Ctrl+V numa pasta.
-                -->
                 <Border x:Name="BlocoBandeja" Style="{StaticResource MiniCartao}" Margin="0,12,0,0" Padding="12,10">
                     <StackPanel>
                         <Grid>
@@ -741,7 +656,6 @@
                                            Margin="8,0,0,0" Foreground="{DynamicResource Texto}" />
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <!-- Põe na bandeja o que está copiado: texto, link ou arquivos. -->
                             <Button x:Name="BotaoColar" Style="{StaticResource BotaoPilula}" Margin="0,0,6,0"
                                     ToolTip="Põe na bandeja o texto, link ou arquivos que você copiou" Click="ColarNaBandeja_Click">
                                 <StackPanel Orientation="Horizontal">
@@ -769,12 +683,6 @@
                             </StackPanel>
                             </StackPanel>
                         </Grid>
-                        <!--
-                            Kdrop: um texto ou link que chegou. Fica no topo da
-                            bandeja com Copiar e, se for link, Abrir; some
-                            sozinho depois de um tempo (o item continua na
-                            bandeja).
-                        -->
                         <Border x:Name="TextoKdrop" Visibility="Collapsed" Margin="0,10,0,0" CornerRadius="12" Padding="12"
                                 Background="{DynamicResource InfoFundo}" BorderBrush="{DynamicResource Acento}" BorderThickness="1">
                             <StackPanel>
@@ -816,11 +724,6 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-                        <!--
-                            Kdrop: um pedido chegando. Fica no topo da bandeja,
-                            na cor de destaque, até ser respondido ou o prazo
-                            acabar; enquanto isso a Kisland mostra só a bandeja.
-                        -->
                         <Border x:Name="PedidoKdrop" Visibility="Collapsed" Margin="0,10,0,0" CornerRadius="12" Padding="12"
                                 Background="{DynamicResource InfoFundo}" BorderBrush="{DynamicResource Acento}" BorderThickness="1">
                             <StackPanel>
@@ -863,12 +766,6 @@
                                    Text="Arraste arquivos até a Kisland para deixá-los aqui, à mão." />
                         <UniformGrid x:Name="GradeBandeja" Columns="6" Margin="0,8,0,0" />
 
-                        <!--
-                            Kdrop: os aparelhos da casa em círculos, como no
-                            AirDrop. Toque manda a bandeja inteira; arrastar um
-                            arquivo até um deles manda só aquele. O último,
-                            "Celular", mostra o QR Code ali mesmo.
-                        -->
                         <StackPanel x:Name="AreaKdrop" Visibility="Collapsed">
                             <Border Height="1" Margin="0,10,0,10" Background="{DynamicResource Borda}" />
                             <StackPanel Orientation="Horizontal">
@@ -886,12 +783,6 @@
                             <TextBlock x:Name="MotivoKdrop" Visibility="Collapsed" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
                                        Foreground="{DynamicResource AvisoIcone}" />
 
-                            <!--
-                                O que os outros PCs da casa puseram na bandeja
-                                deles: chega junto com o anúncio de cada um.
-                                Toque traz para a pasta do Kdrop e para esta
-                                bandeja, sem pedido de aceite.
-                            -->
                             <StackPanel x:Name="BandejasDeFora" Visibility="Collapsed" />
 
                             <Border x:Name="QrKdrop" Visibility="Collapsed" Margin="0,8,0,0" CornerRadius="12" Padding="10"
@@ -912,17 +803,11 @@
                                                    Text="Abre esta bandeja no navegador do celular, na mesma rede Wi-Fi. Ou digite:" />
                                         <TextBlock x:Name="EnderecoKdrop" FontSize="13" FontWeight="Medium" Margin="0,6,0,0"
                                                    TextWrapping="Wrap" Foreground="{DynamicResource Acento}" />
-                                        <!-- O endereço fixo: favoritado no celular, dispensa o QR Code. -->
                                         <TextBlock x:Name="FixoKdrop" Visibility="Collapsed" FontSize="11.5" Margin="0,8,0,0"
                                                    TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
-                            <!--
-                                Rede marcada como Pública no Windows: o Firewall
-                                barra o celular e a página nunca carrega. Avisa e
-                                oferece passar para Privada com um clique.
-                            -->
                             <Border x:Name="RedePublicaKdrop" Visibility="Collapsed" Margin="0,8,0,0" CornerRadius="12" Padding="12"
                                     Background="{DynamicResource AvisoFundo}" BorderBrush="{DynamicResource AvisoBorda}" BorderThickness="1">
                                 <StackPanel>
@@ -939,7 +824,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Rodapé -->
                 <Grid x:Name="BlocoRodape" Margin="0,14,0,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Path Data="M12,3 L20,6 L20,12 C20,17 16.5,20 12,21 C7.5,20 4,17 4,12 L4,6 Z"

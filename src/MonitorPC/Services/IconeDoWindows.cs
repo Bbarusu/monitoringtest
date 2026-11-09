@@ -5,24 +5,8 @@ using System.Windows.Media.Imaging;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// O icone de um app como o menu Iniciar mostra, pelo id de app do Windows
-/// (o mesmo que o controle de midia informa: "Chrome", "MSEdge",
-/// "SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify").
-///
-/// Pelo IShellItemImageFactory, que desenha o icone de qualquer item do
-/// shell — inclusive apps da loja, que nao tem .exe para tirar icone. O
-/// bitmap vem com transparencia; e copiado pixel a pixel (GetDIBits), porque
-/// o caminho pronto do WPF (CreateBitmapSourceFromHBitmap) a perde e o icone
-/// sai com fundo preto.
-/// </summary>
 public static class IconeDoWindows
 {
-    /// <returns>O icone em 64 px, congelado; nulo se o Windows nao conhece o app.</returns>
-    /// <remarks>
-    /// O shell prefere ser chamado de uma thread STA; quem chama daqui pode
-    /// estar em qualquer thread, entao a leitura roda numa propria, com prazo.
-    /// </remarks>
     public static ImageSource? DoApp(string idDoApp, int tamanho = 64)
     {
         if (string.IsNullOrWhiteSpace(idDoApp)) return null;
@@ -30,16 +14,10 @@ public static class IconeDoWindows
         return NumaThreadSta(() => Ler(@"shell:AppsFolder\" + idDoApp, tamanho, SoIcone | MaiorServe), TimeSpan.FromSeconds(3));
     }
 
-    /// <summary>
-    /// A miniatura de uma foto ou video, como o Explorer mostra (o mesmo
-    /// cache do Windows). Nulo se o Windows nao sabe fazer miniatura do tipo
-    /// (HEIC sem a extensao da loja, por exemplo) — quem chama fica com o icone.
-    /// </summary>
     public static ImageSource? Miniatura(string caminho, int tamanho = 96)
     {
         if (string.IsNullOrWhiteSpace(caminho) || !System.IO.File.Exists(caminho)) return null;
 
-        // Video grande pode levar alguns segundos na primeira vez.
         return NumaThreadSta(() => Ler(caminho, tamanho, SoMiniatura | MaiorServe), TimeSpan.FromSeconds(8));
     }
 
@@ -96,9 +74,9 @@ public static class IconeDoWindows
 
         var cabecalho = new CabecalhoDib
         {
-            Tamanho = 40, // sizeof(BITMAPINFOHEADER), sem o espaco de cores
+            Tamanho = 40,
             Largura = largura,
-            Altura = -altura, // negativo: linhas de cima para baixo
+            Altura = -altura,
             Planos = 1,
             Bits = 32
         };
@@ -114,9 +92,6 @@ public static class IconeDoWindows
             ReleaseDC(IntPtr.Zero, tela);
         }
 
-        // Miniatura de foto costuma vir sem transparencia, com o canal alfa
-        // todo zerado: lida como transparente, sumiria. Sem nenhum pixel com
-        // alfa, a imagem e opaca.
         var temAlfa = false;
         for (var i = 3; i < pixels.Length; i += 4)
         {
@@ -134,9 +109,9 @@ public static class IconeDoWindows
         return imagem;
     }
 
-    private const int MaiorServe = 0x1; // SIIGBF_BIGGERSIZEOK
-    private const int SoIcone = 0x4;    // SIIGBF_ICONONLY
-    private const int SoMiniatura = 0x8; // SIIGBF_THUMBNAILONLY
+    private const int MaiorServe = 0x1;
+    private const int SoIcone = 0x4;
+    private const int SoMiniatura = 0x8;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Tamanho
@@ -145,7 +120,6 @@ public static class IconeDoWindows
         public int Altura;
     }
 
-    /// <summary>BITMAP: so os campos lidos aqui, na ordem do Windows.</summary>
     [StructLayout(LayoutKind.Sequential)]
     private struct InfoDoBitmap
     {
@@ -158,7 +132,6 @@ public static class IconeDoWindows
         public IntPtr Bits;
     }
 
-    /// <summary>BITMAPINFOHEADER, seguido do espaco de cores (que 32 bits sem compressao nao usa).</summary>
     [StructLayout(LayoutKind.Sequential)]
     private struct CabecalhoDib
     {

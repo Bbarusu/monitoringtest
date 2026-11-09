@@ -15,37 +15,16 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
-        <!--
-            Duas faixas: o conteúdo rola, o rodapé fica.
-
-            O painel cresce com o conteúdo, e num notebook de tela baixa a aba
-            Disco passava do fim da tela. A rolagem resolve o alcance, mas se o
-            rodapé rolasse junto, a tela cortada levaria embora justamente
-            Ajustes, Personalização e Todos os sensores — que são as saídas.
-            Por isso ele fica numa faixa própria, sempre visível.
-
-            O teto de altura que faz a barra aparecer vem de
-            Janelas.LimitarAltura: sem ele a janela pede a altura inteira do
-            conteúdo, o ScrollViewer recebe tudo que pediu e nunca rola.
-
-            O conteúdo abaixo manteve a indentação de antes, de propósito:
-            reindentar setecentas linhas esconderia a mudança de verdade no
-            meio de um diff ilegível.
-        -->
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-        <!-- A barra de rolagem fica na margem interna do painel, com 6 px de
-             folga do conteúdo e da borda: o conteúdo tem a mesma largura com
-             ou sem barra, e ela não encosta em nada. -->
             <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
         <StackPanel Margin="0,0,14,0">
 
-            <!-- Cabecalho: o titulo e os chips mudam conforme a aba -->
             <Grid>
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
@@ -98,7 +77,6 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Aviso: driver de sensores -->
             <Border x:Name="AvisoDriver" Visibility="Collapsed" Margin="0,16,0,0"
                     CornerRadius="12" Background="{DynamicResource AvisoFundo}" BorderBrush="{DynamicResource AvisoBorda}"
                     BorderThickness="1" Padding="12">
@@ -106,8 +84,6 @@
                     <TextBlock x:Name="AvisoDriverTexto"
                                Foreground="{DynamicResource AlertaTexto}" FontSize="12" TextWrapping="Wrap" />
 
-                    <!-- Só aparece quando elevar não é a resposta: sem isso o
-                         usuário não tem como nos dizer o que o Windows recusou. -->
                     <Button x:Name="BotaoDiagnostico" Visibility="Collapsed"
                             Style="{StaticResource BotaoLargo}" Margin="0,10,0,0"
                             Content="Salvar relatório do problema"
@@ -116,86 +92,12 @@
                 </StackPanel>
             </Border>
 
-            <!--
-                Convite para conhecer a Kisland. Aparece uma vez só, na
-                primeira abertura de uma versão que tem o guia; qualquer um dos
-                dois botões o encerra para sempre. Depois, o guia fica na
-                Personalização.
-            -->
-            <Border x:Name="ConviteKisland" Visibility="Collapsed" Margin="0,16,0,0"
-                    CornerRadius="12" Background="{DynamicResource InfoFundo}"
-                    BorderBrush="{DynamicResource Acento}" BorderThickness="1" Padding="14">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <!-- A Kisland em miniatura, no topo de uma "tela". -->
-                        <Border Width="56" Height="36" CornerRadius="10" Background="#0C0D10"
-                                VerticalAlignment="Top" Margin="0,2,12,0">
-                            <Border Width="34" Height="10" CornerRadius="5" Margin="0,5,0,0"
-                                    HorizontalAlignment="Center" VerticalAlignment="Top"
-                                    Background="{DynamicResource Fundo}" BorderBrush="#3A4150" BorderThickness="1">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Rectangle Width="2" Height="4" Fill="{DynamicResource Acento}" Margin="0,0,2,0" VerticalAlignment="Bottom" />
-                                    <Rectangle Width="2" Height="6" Fill="{DynamicResource Acento}" Margin="0,0,2,0" VerticalAlignment="Bottom" />
-                                    <Rectangle Width="2" Height="3" Fill="{DynamicResource Acento}" VerticalAlignment="Bottom" />
-                                </StackPanel>
-                            </Border>
-                        </Border>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="Novidade" FontSize="11" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource InfoTexto}" />
-                            <TextBlock Text="Conheça a Kisland" FontSize="13" FontWeight="SemiBold" Margin="0,3,0,0"
-                                       Foreground="{DynamicResource Texto}" />
-                            <TextBlock FontSize="12" Margin="0,3,0,0" TextWrapping="Wrap" LineHeight="17"
-                                       Foreground="{DynamicResource Icone}"
-                                       Text="Inspirada na ilha flutuante dos novos iOS: visualização em tempo real de temperaturas, consumo, player de música e controle de volume, entre outras opções, tudo no topo da tela com acesso fácil e rápido. Vamos conhecer?" />
-                        </StackPanel>
-                    </Grid>
-                    <UniformGrid Columns="2" Margin="0,12,0,0">
-                        <Button Style="{StaticResource BotaoLargo}" Margin="0,0,4,0"
-                                Content="Depois" Click="ConviteDepois_Click" />
-                        <Button Margin="4,0,0,0" Height="44" Cursor="Hand" Click="ConviteVer_Click">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="bg" CornerRadius="12" Background="{DynamicResource Acento}">
-                                        <TextBlock Text="Vamos lá" FontSize="13" FontWeight="SemiBold" Foreground="White"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="bg" Property="Opacity" Value="0.88" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </UniformGrid>
-                </StackPanel>
-            </Border>
-
-            <!-- Aviso: versão nova disponível.
-                 Cores de cartão, e não de alerta: atualização é notícia, não
-                 problema, e gastar o vermelho nela baratearia o vermelho. -->
             <Border x:Name="AvisoAtualizacao" Visibility="Collapsed" Margin="0,16,0,0"
                     CornerRadius="12" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
-                <!--
-                    Quatro camadas, da mais importante para a menos: o que é,
-                    o que muda, o estado da ação, e a letra miúda.
-
-                    Antes era um parágrafo só, com versão atual, explicação de
-                    SHA-256, aviso do Windows e as novidades tudo junto. Quem
-                    lê um aviso desses quer saber duas coisas — o que é novo e
-                    se clica — e tinha que garimpar as duas no meio do resto.
-                -->
                 <StackPanel>
                     <TextBlock x:Name="AtualizacaoTitulo" FontSize="13" FontWeight="Medium"
                                TextWrapping="Wrap" Foreground="{DynamicResource Texto}" />
-                    <!-- As novidades, uma por linha. Preenchido no código a
-                         partir das notas da versão. -->
                     <Border x:Name="CaixaDeNovidades" Visibility="Collapsed"
                             Margin="0,10,0,0" CornerRadius="10" Padding="11,9"
                             Background="{DynamicResource Chip}">
@@ -207,22 +109,10 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Só aparece durante o download ou quando algo falha. -->
                     <TextBlock x:Name="AtualizacaoEstado" Visibility="Collapsed"
                                FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource Texto}" />
 
-                    <!--
-                        Aqui havia duas linhas que saíram: a versão instalada e
-                        um aviso sobre o executável não ser assinado.
-
-                        A versão instalada não ajuda a decidir nada — quem lê
-                        quer saber o que é novo e se clica. E o aviso do Windows
-                        era informação certa na hora errada: ele vale no momento
-                        em que o Windows vai de fato perguntar, não enquanto a
-                        pessoa lê as novidades. Mudou para a linha de estado,
-                        logo antes de o instalador abrir.
-                    -->
                     <UniformGrid Columns="2" Margin="0,10,0,0">
                         <Button x:Name="BotaoAtualizar" Style="{StaticResource BotaoLargo}"
                                 Margin="0,0,4,0" Content="Baixar e instalar"
@@ -234,8 +124,6 @@
                 </StackPanel>
             </Border>
 
-
-            <!-- Aviso de temperatura -->
             <Border x:Name="AvisoTemperatura" Visibility="Collapsed" Margin="0,16,0,0"
                     CornerRadius="12" Background="{DynamicResource AvisoFundo}" BorderBrush="{DynamicResource AvisoBorda}"
                     BorderThickness="1" Padding="12">
@@ -297,16 +185,7 @@
                 </StackPanel>
             </Border>
 
-            <!-- ======================= TOPO: GERAL ======================= -->
             <StackPanel x:Name="TopoGeral">
-                <!--
-                    O anel é um botão: clicar abre quem está usando a CPU, do
-                    mesmo jeito que o cartão de RAM abre quem está usando
-                    memória. Botão, e não um clique no Grid, porque o painel
-                    inteiro arrasta por qualquer ponto vazio — e o arrasto
-                    reconhece controle e sai do caminho, mas não reconheceria
-                    um Grid com evento de mouse.
-                -->
                 <Button x:Name="BotaoProcessador" Margin="0,16,0,0"
                         HorizontalAlignment="Center" Cursor="Hand"
                         Template="{StaticResource AnelClicavel}"
@@ -330,8 +209,6 @@
                 </Grid>
                 </Button>
 
-                <!-- As duas colunas se dividem pela carga: o preenchimento acompanha a
-                     largura real do painel, sem conta em pixels que possa dar negativa. -->
                 <Grid Margin="0,8,0,0">
                     <Border Height="6" CornerRadius="3" Background="{DynamicResource Trilho}"
                             VerticalAlignment="Center" />
@@ -354,7 +231,6 @@
                 </Grid>
             </StackPanel>
 
-            <!-- ======================== TOPO: CPU ======================== -->
             <StackPanel x:Name="TopoCpu" Visibility="Collapsed" Margin="0,16,0,0">
                 <Grid Height="150">
                     <Grid.ColumnDefinitions>
@@ -414,7 +290,6 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Historico da carga -->
                 <Grid Margin="0,16,0,0">
                     <TextBlock Text="Carga · últimos 5 min" FontSize="11"
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Left" />
@@ -430,8 +305,6 @@
                 </Grid>
             </StackPanel>
 
-
-            <!-- ======================== TOPO: GPU ======================== -->
             <StackPanel x:Name="TopoGpu" Visibility="Collapsed" Margin="0,16,0,0">
                 <Grid Height="150">
                     <Grid.ColumnDefinitions>
@@ -506,8 +379,6 @@
                 </Grid>
             </StackPanel>
 
-
-            <!-- ======================= TOPO: DISCO ======================= -->
             <StackPanel x:Name="TopoDisco" Visibility="Collapsed" Margin="0,16,0,0">
                 <Grid Height="150">
                     <Grid.ColumnDefinitions>
@@ -582,8 +453,6 @@
                 </Grid>
             </StackPanel>
 
-
-            <!-- ====================== TOPO: ENERGIA ====================== -->
             <StackPanel x:Name="TopoEnergia" Visibility="Collapsed" Margin="0,16,0,0">
                 <Grid Height="150">
                     <Grid.ColumnDefinitions>
@@ -608,11 +477,6 @@
                         </StackPanel>
                     </Grid>
 
-                    <!--
-                        Cinco linhas em 150 px: 29 de altura cada, mais os
-                        separadores de 1. "Hoje" acompanha "Sessão" porque
-                        sozinha a sessão não responde quanto o PC gastou no dia.
-                    -->
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Center">
                         <Grid Height="29">
                             <TextBlock Text="Sessão" FontSize="12" VerticalAlignment="Center"
@@ -656,7 +520,6 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- A ressalva fica colada no número, não escondida num tooltip. -->
                 <TextBlock x:Name="LegendaDoConsumo" FontSize="11" Margin="0,12,0,0"
                            TextWrapping="Wrap" Foreground="{DynamicResource TextoMuitoFraco}" />
 
@@ -675,7 +538,6 @@
                 </Grid>
             </StackPanel>
 
-            <!-- ========================== ABAS =========================== -->
             <Border Margin="0,16,0,0" CornerRadius="14" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="4">
                 <UniformGrid Columns="5">
@@ -692,7 +554,6 @@
                 </UniformGrid>
             </Border>
 
-            <!-- ======================= BASE: GERAL ======================= -->
             <StackPanel x:Name="BaseGeral">
                 <UniformGrid Columns="2" Margin="0,16,0,0">
                     <Button Margin="0,0,6,0" Cursor="Hand" Click="CardGpu_Click"
@@ -725,8 +586,6 @@
                                   HorizontalAlignment="Right" VerticalAlignment="Center" />
                         </Grid>
                     </Button>
-                    <!-- O conteudo fica fora do template: x:Name dentro de um
-                         ControlTemplate nao vira campo no codigo. -->
                     <Button Margin="6,0,0,0" Cursor="Hand" Click="CardRam_Click"
                             ToolTip="Utilização da RAM">
                         <Button.Template>
@@ -770,7 +629,6 @@
                 </UniformGrid>
             </StackPanel>
 
-            <!-- ======================== BASE: CPU ======================== -->
             <StackPanel x:Name="BaseCpu" Visibility="Collapsed">
                 <Grid x:Name="RotuloBarrasCpu" Margin="0,16,0,10">
                     <TextBlock Text="Potência e resfriamento" FontSize="11"
@@ -785,7 +643,6 @@
                                Foreground="{DynamicResource TextoFraco}" HorizontalAlignment="Right" />
                 </Grid>
 
-                <!-- A grade e montada em codigo: a contagem vem do hardware -->
                 <UniformGrid x:Name="GradeNucleos" Columns="2" />
 
                 <Button Style="{StaticResource BotaoLargo}" Height="40" Margin="0,10,0,0"
@@ -816,8 +673,6 @@
                 </Grid>
             </StackPanel>
 
-
-            <!-- ======================== BASE: GPU ======================== -->
             <StackPanel x:Name="BaseGpu" Visibility="Collapsed">
                 <Border x:Name="AvisoHotSpot" Visibility="Collapsed" Margin="0,16,0,0"
                         CornerRadius="12" Background="{DynamicResource AvisoFundo}" BorderBrush="{DynamicResource AvisoBorda}"
@@ -833,8 +688,6 @@
                 <StackPanel x:Name="BarrasGpu" />
             </StackPanel>
 
-
-            <!-- ======================= BASE: DISCO ======================= -->
             <StackPanel x:Name="BaseDisco" Visibility="Collapsed">
                 <Grid Margin="0,16,0,10">
                     <TextBlock Text="Taxas e temperatura" FontSize="11"
@@ -870,8 +723,6 @@
                 </Button>
             </StackPanel>
 
-
-            <!-- ====================== BASE: ENERGIA ====================== -->
             <StackPanel x:Name="BaseEnergia" Visibility="Collapsed">
                 <Grid Margin="0,16,0,10">
                     <TextBlock Text="Para onde vai a energia" FontSize="11"
@@ -927,7 +778,6 @@
         </StackPanel>
             </ScrollViewer>
 
-            <!-- ========================= RODAPE ========================== -->
             <Grid Grid.Row="1" Margin="0,16,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -955,9 +805,6 @@
                     </Button>
                 </StackPanel>
 
-                <!-- A versão em uso, discreta, bem embaixo do botão de Ajustes.
-                     A caixa tem 48 px para "v0.1.26" caber, e a margem de -6
-                     põe o centro dela no centro do botão, que tem 36. -->
                 <TextBlock x:Name="VersaoDoApp" Grid.Row="1" Width="48" Margin="0,4,-6,0"
                            HorizontalAlignment="Right" TextAlignment="Center"
                            FontSize="10" Foreground="{DynamicResource TextoMuitoFraco}"

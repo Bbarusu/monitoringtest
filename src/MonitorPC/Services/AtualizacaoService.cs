@@ -7,13 +7,6 @@ using MonitorPC.Comum;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// O que a release publicada diz sobre a versao mais nova.
-///
-/// Tudo opcional de proposito: um manifesto malformado ou de uma versao futura
-/// do formato nao pode derrubar a verificacao. Campo que falta vira "nao sei",
-/// e nao sei resulta em nao oferecer nada.
-/// </summary>
 public sealed record Manifesto
 {
     public string? Versao { get; init; }
@@ -22,7 +15,6 @@ public sealed record Manifesto
     public string? Notas { get; init; }
     public string? Data { get; init; }
 
-    /// <summary>Tem o minimo para valer uma oferta de atualizacao.</summary>
     public bool Utilizavel =>
         !string.IsNullOrWhiteSpace(Versao)
         && !string.IsNullOrWhiteSpace(Url)
@@ -31,61 +23,19 @@ public sealed record Manifesto
         && Sha256.Trim().Length == 64;
 }
 
-/// <summary>
-/// O que uma procura por atualizacao descobriu.
-///
-/// Tres estados, e nao dois, porque "nao ha nada novo" e "nao deu para saber"
-/// sao respostas diferentes e a primeira versao disto as juntava num <c>null</c>.
-/// O resultado era o app dizer "você já tem a versão mais recente" quando na
-/// verdade nem tinha conseguido perguntar — afirmacao confiante sobre o que nao
-/// se sabe, que e o pior defeito que um aviso pode ter.
-/// </summary>
 public sealed record Procura(Manifesto? Manifesto, bool Verificou, string? Motivo)
 {
-    /// <summary>Ha versao nova.</summary>
     public static Procura Encontrou(Manifesto manifesto) => new(manifesto, true, null);
 
-    /// <summary>Perguntou e nao ha nada novo.</summary>
     public static Procura JaEstaAtualizado() => new(null, true, null);
 
-    /// <summary>Nao deu para perguntar. <paramref name="motivo"/> completa
-    /// "Não foi possível verificar: …".</summary>
     public static Procura Impedida(string motivo) => new(null, false, motivo);
 
     public bool TemNovidade => Manifesto is not null;
 }
 
-/// <summary>
-/// Procura, baixa e confere uma versao nova do KInfo.
-///
-/// O instalador do projeto ja sabe atualizar: ele fecha o app aberto,
-/// sobrescreve os arquivos e registra a tarefa de novo. Entao atualizar aqui e
-/// baixar o instalador novo e executa-lo — nao ha um segundo mecanismo de
-/// atualizacao para dar manutencao.
-///
-/// O que importa neste servico e o que ele se recusa a fazer:
-///
-/// Nao executa nada sem conferir o SHA-256 declarado no manifesto. O projeto
-/// nao assina o executavel — assinatura exige certificado pago e pessoa
-/// juridica —, entao o hash publicado e a unica integridade real que temos. Sem
-/// ele, baixar e rodar seria executar o que viesse pelo fio.
-///
-/// Nao instala sozinho. A verificacao pode ser automatica; executar o
-/// instalador e sempre uma decisao de quem esta na frente do PC, porque custa
-/// uma confirmacao do Windows e fecha o app no meio.
-///
-/// Nao reclama quando falha sozinho. Uma verificacao automatica que nao
-/// completou e silenciosa: avisar todo dia que a internet caiu transforma o
-/// aviso em ruido, e aviso que virou ruido nao e lido quando importa.
-/// </summary>
 public sealed class AtualizacaoService
 {
-    /// <summary>
-    /// A release publica do projeto. O codigo-fonte fica em repositorio
-    /// privado; aqui so moram o instalador, este manifesto e o catalogo de
-    /// especificacoes. O caminho <c>latest</c> sempre aponta para a release mais
-    /// nova, entao publicar nao exige mexer no app.
-    /// </summary>
     private const string UrlDoManifesto =
         "https://github.com/Bbarusu/kinfo-releases/releases/latest/download/atualizacao.json";
 
@@ -94,13 +44,8 @@ public sealed class AtualizacaoService
         PropertyNameCaseInsensitive = true
     };
 
-    /// <summary>A versao que esta rodando agora.</summary>
     public static string VersaoAtual => Versao.Texto;
 
-    /// <summary>
-    /// Devolve o manifesto quando ha versao mais nova, ou <c>null</c> quando
-    /// nao ha, quando nao deu para saber, ou quando o manifesto nao serve.
-    /// </summary>
     public async Task<Procura> ProcurarAsync(CancellationToken ct = default)
     {
         try
@@ -110,9 +55,6 @@ public sealed class AtualizacaoService
 
             using var resposta = await http.GetAsync(UrlDoManifesto, ct);
 
-            // 404 e o caso de nao haver release publicada, que e diferente de
-            // estar atualizado e diferente de falha de rede. Quem testa precisa
-            // dessa distincao: foi exatamente ela que faltou da primeira vez.
             if (resposta.StatusCode == HttpStatusCode.NotFound)
                 return Procura.Impedida(
                     "não há nenhuma versão publicada no repositório de releases");
@@ -153,14 +95,6 @@ public sealed class AtualizacaoService
         }
     }
 
-    /// <summary>
-    /// Baixa o instalador e confere o hash. Devolve o caminho do arquivo
-    /// conferido, ou <c>null</c> com o motivo em <paramref name="problema"/>.
-    ///
-    /// O arquivo so passa a existir no destino final depois de conferido: baixa
-    /// para um nome temporario e renomeia. Sem isso, um download interrompido
-    /// deixaria meio instalador com nome de instalador pronto.
-    /// </summary>
     public async Task<string?> BaixarAsync(
         Manifesto manifesto,
         IProgress<double>? progresso,
@@ -169,11 +103,6 @@ public sealed class AtualizacaoService
     {
         var pasta = Path.Combine(Path.GetTempPath(), "KInfo-atualizacao");
 
-        // Nome unico por tentativa. Antes o nome vinha so da versao, e a
-        // primeira coisa que o metodo fazia era apagar o arquivo anterior —
-        // que falhava com "acesso negado" quando o instalador daquela mesma
-        // versao ainda estava aberto, derrubando a atualizacao inteira por
-        // causa de uma sobra. Com nome unico nao ha o que apagar.
         var marca = DateTime.Now.ToString("yyyyMMdd-HHmmss");
         var parcial = Path.Combine(pasta, $"KInfo-Setup-{manifesto.Versao}-{marca}.parcial");
         var destino = Path.Combine(pasta, $"KInfo-Setup-{manifesto.Versao}-{marca}.exe");
@@ -243,15 +172,6 @@ public sealed class AtualizacaoService
         }
     }
 
-    /// <summary>
-    /// Apaga instaladores de tentativas anteriores, e nunca lanca.
-    ///
-    /// Limpeza e cortesia, nao requisito: um arquivo que nao sai — porque
-    /// aquele instalador ainda esta aberto, ou porque o antivirus o segura —
-    /// nao pode impedir a atualizacao de hoje. Era isso que acontecia: o metodo
-    /// comecava apagando o arquivo da mesma versao e morria com acesso negado
-    /// antes de baixar qualquer coisa.
-    /// </summary>
     private static void LimparSobras(string pasta, string? versao)
     {
         try
@@ -260,8 +180,6 @@ public sealed class AtualizacaoService
             {
                 try
                 {
-                    // Sobra de hoje da mesma versao pode estar em uso; as
-                    // outras ja nao servem para nada.
                     if (DateTime.UtcNow - File.GetLastWriteTimeUtc(velho) < TimeSpan.FromHours(1)
                         && versao is not null
                         && Path.GetFileName(velho).Contains(versao, StringComparison.Ordinal))
@@ -271,13 +189,11 @@ public sealed class AtualizacaoService
                 }
                 catch
                 {
-                    // Em uso ou sem permissao: segue para o proximo.
                 }
             }
         }
         catch
         {
-            // Pasta ilegivel nao impede baixar.
         }
     }
 
@@ -288,18 +204,6 @@ public sealed class AtualizacaoService
         return Convert.ToHexString(bytes);
     }
 
-    /// <summary>
-    /// Executa o instalador conferido, em modo de atualizacao.
-    ///
-    /// <c>UseShellExecute</c> de proposito: o instalador pede elevacao pelo
-    /// manifesto dele, e so por essa via o Windows mostra a confirmacao em vez
-    /// de recusar a execucao. Com o app ja elevado, nao ha confirmacao: o
-    /// filho herda a elevacao.
-    ///
-    /// Os argumentos dizem ao instalador que e uma atualizacao — ele repete as
-    /// opcoes da instalacao anterior em vez de pergunta-las — e com que cor e
-    /// tema se vestir, os mesmos do app agora.
-    /// </summary>
     public static bool Executar(string instalador)
     {
         try
@@ -331,17 +235,11 @@ public sealed class AtualizacaoService
         }
         catch
         {
-            // Sem a cor, o instalador fica no azul de sempre.
         }
 
         return argumentos;
     }
 
-    /// <summary>
-    /// O app esta rodando elevado: o instalador abre sem a confirmacao do
-    /// Windows. A tela de atualizacao usa isto para nao anunciar um aviso que
-    /// nao vai aparecer.
-    /// </summary>
     public static bool Elevado()
     {
         try

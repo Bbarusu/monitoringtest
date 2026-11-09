@@ -4,21 +4,11 @@ using System.Windows.Input;
 using System.Windows.Media;
 using MonitorPC.Models;
 
-// System.Windows.Shapes nao entra como using: Path colidiria com System.IO.Path,
-// que vem dos usings implicitos. Os dois tipos daqui ficam escritos por extenso.
 using Forma = System.Windows.Shapes.Shape;
 using Desenho = System.Windows.Shapes.Path;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma linha da lista de GPU por programa: nome, de que jeito ele usa a placa, a
-/// ocupacao e o botao de fechar.
-///
-/// Os elementos sao reaproveitados entre as leituras — so os textos mudam —
-/// porque a lista se refaz a cada segundo e recriar o botao embaixo do cursor
-/// faria o clique cair no vazio.
-/// </summary>
 internal sealed class LinhaDeProcessoGpu : Border
 {
     private readonly TextBlock _nome = new()
@@ -46,7 +36,6 @@ internal sealed class LinhaDeProcessoGpu : Border
 
     private readonly Button _fechar;
 
-    /// <summary>Quem a linha mostra agora. Nulo quando ela esta vazia.</summary>
     public ProcessoGpu? Processo { get; private set; }
 
     public event Action<ProcessoGpu>? PediuParaFechar;
@@ -109,8 +98,6 @@ internal sealed class LinhaDeProcessoGpu : Border
     {
         Processo = p;
 
-        // A linha pode ter sido usada como vazia antes, e ali o nome fica
-        // apagado de propósito.
         _nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
         _nome.Text = p.Nome;
         _valor.Text = p.UsoPct >= 0.1 ? $"{p.UsoPct:0.0}%" : "—";
@@ -122,16 +109,10 @@ internal sealed class LinhaDeProcessoGpu : Border
 
         _detalhe.Text = string.Join(" · ", partes);
 
-        // Protegidos aparecem na lista, para a conta fechar, mas sem botao:
-        // fechar um deles deixaria o PC inutilizavel ou desprotegido.
         _fechar.Visibility = protegido ? Visibility.Hidden : Visibility.Visible;
         _fechar.ToolTip = $"Pedir para {p.Nome} fechar";
     }
 
-    /// <summary>
-    /// Deixa a linha ocupando o mesmo espaco quando nao ha o que mostrar, para
-    /// a lista nao mudar de altura a cada leitura.
-    /// </summary>
     public void Vazia(string texto)
     {
         Processo = null;

@@ -14,21 +14,10 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
-        <!--
-            Rolagem para tela baixa. Esta janela cresce com o conteúdo, e num
-            notebook o conteúdo passa da altura útil; Janelas.LimitarAltura põe
-            o teto, e sem rolagem o teto cortaria em vez de passar da tela —
-            troca de um problema por outro. Aqui o conteúdo rola inteiro,
-            botões incluídos: são poucas linhas e todas alcançáveis.
-        -->
-        <!-- A barra de rolagem fica na margem interna do painel, com 6 px de
-             folga do conteúdo e da borda: o conteúdo tem a mesma largura com
-             ou sem barra, e ela não encosta em nada. -->
         <ScrollViewer x:Name="Rolagem" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
         <StackPanel x:Name="Conteudo" Margin="0,0,14,0">
 
-            <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
@@ -44,11 +33,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <!--
-                Duas abas: o painel e a Kisland. Cada uma com tudo o que é seu,
-                para a lista não virar um corredor onde as opções de uma coisa
-                se misturam com as da outra.
-            -->
             <Border CornerRadius="14" Margin="0,18,0,0" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="4">
                 <UniformGrid Columns="2">
@@ -59,10 +43,8 @@
                 </UniformGrid>
             </Border>
 
-            <!-- ========================= ABA PAINEL ========================= -->
             <StackPanel x:Name="AbaPainel">
 
-            <!-- Tema -->
             <TextBlock Text="Tema" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -81,7 +63,6 @@
                 </UniformGrid>
             </Border>
 
-            <!-- Cor de destaque -->
             <TextBlock Text="Cor de destaque" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -106,7 +87,6 @@
                        Foreground="{DynamicResource TextoMuitoFraco}"
                        Text="Desligar o acompanhamento" />
 
-            <!-- Transparencia -->
             <TextBlock Text="Transparência" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -153,12 +133,6 @@
 
             </StackPanel>
 
-            <!-- ======================== ABA KISLAND ======================== -->
-            <!--
-                Tudo da Kisland. Ela segue a cor e o tema do painel; o resto —
-                opacidade, tamanho, o que mostra fechada e aberta, como abre,
-                tela cheia, avisos e o guia — mora aqui.
-            -->
             <StackPanel x:Name="AbaKisland" Visibility="Collapsed">
             <TextBlock x:Name="SecaoIlha" Text="Kisland" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
@@ -181,7 +155,6 @@
 
             <StackPanel x:Name="OpcoesIlha">
 
-                <!-- Opacidade própria. Vale com a transparência ligada, na aba Painel. -->
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
                     <StackPanel>
@@ -202,7 +175,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Tamanho: só da Kisland, o painel não muda. -->
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12">
                     <StackPanel>
@@ -225,12 +197,6 @@
                     </StackPanel>
                 </Border>
 
-                <!--
-                    Telas OLED: a Kisland preta e a proteção contra marca. A
-                    proteção vem ligada para todo mundo — em tela comum nenhum
-                    dos três cuidados aparece, e em OLED são eles que evitam a
-                    pílula ficar gravada no topo da tela.
-                -->
                 <TextBlock Text="Tela OLED" FontSize="11" Margin="0,12,0,8"
                            Foreground="{DynamicResource TextoFraco}" />
 
@@ -406,11 +372,6 @@
                     </StackPanel>
                 </Border>
 
-                <!--
-                    Modo jogo: o jogo do contador de FPS em tela cheia no mesmo
-                    monitor. Lista própria, separada da do dia a dia. Só vale
-                    com o contador ligado: é ele que diz qual janela é o jogo.
-                -->
                 <Border x:Name="CartaoModoJogo" CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">
                     <StackPanel>
@@ -478,8 +439,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- O que aparece com ela aberta. O rodapé fica sempre: é ele
-                     que leva ao painel e de volta para cá. -->
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,8">
                     <StackPanel>
@@ -591,16 +550,6 @@
                     </StackPanel>
                 </Border>
 
-                <!--
-                    Atalhos. O chat de IA mora no anel pulsante da Kisland
-                    fechada; os apps e sites aparecem com ela aberta, junto do
-                    chat. A lista é montada no código.
-                -->
-                <!--
-                    Kdrop: a bandeja aberta para o celular e os outros PCs da
-                    casa. Fica logo depois da bandeja, porque é parte dela, e
-                    só vale com ela ligada.
-                -->
                 <TextBlock Text="Kdrop" FontSize="11" Margin="0,12,0,8"
                            Foreground="{DynamicResource TextoFraco}" />
 
@@ -676,7 +625,6 @@
                                       SelectionChanged="Ia_Escolhida" />
                         </Grid>
 
-                        <!-- App instalado: some com "Nenhum" e com "Outro". -->
                         <Grid x:Name="LinhaIaApp" Margin="0,10,0,0" Visibility="Collapsed">
                             <StackPanel VerticalAlignment="Center" Margin="0,0,40,0">
                                 <TextBlock Text="Abrir o app, se estiver instalado" FontSize="13" FontWeight="Medium"
@@ -718,7 +666,6 @@
 
                         <StackPanel x:Name="ListaAtalhos" Margin="0,6,0,0" />
 
-                        <!-- Site novo: nome e endereço, e só então entra na lista. -->
                         <StackPanel x:Name="NovoSite" Visibility="Collapsed" Margin="0,8,0,0">
                             <Border CornerRadius="10" Background="{DynamicResource Chip}"
                         BorderBrush="{DynamicResource Trilho}" BorderThickness="1" Padding="10,0">
@@ -776,8 +723,6 @@
                     </UniformGrid>
                 </Border>
 
-                <!-- Quanto o mouse precisa ficar em cima. Só vale abrindo ao
-                     passar o mouse. -->
                 <Border x:Name="CartaoEspera" CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                     <Grid>
@@ -794,11 +739,6 @@
                     </Grid>
                 </Border>
 
-                <!--
-                    Tela cheia num cartão só: a regra (esconder) e a exceção a
-                    ela (o FPS do jogo). A exceção fica logo abaixo, recuada,
-                    e só vale com a regra ligada e o contador de FPS ligado.
-                -->
                 <Border CornerRadius="12" Background="{DynamicResource Cartao}" Margin="0,10,0,0"
                         BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="12,10">
                     <StackPanel>
@@ -885,8 +825,6 @@
                            Text="A Kisland segue a cor e o tema escolhidos na aba Painel." />
             </StackPanel>
 
-            <!-- Fora do bloco de opções, que fica apagado com a Kisland
-                 desligada: o guia serve justamente a quem ainda não ligou. -->
             <UniformGrid Columns="2" Margin="0,12,0,0">
                 <Button Style="{StaticResource BotaoLargo}" Margin="0,0,5,0"
                         Content="Ver o guia da Kisland" Click="GuiaKisland_Click" />

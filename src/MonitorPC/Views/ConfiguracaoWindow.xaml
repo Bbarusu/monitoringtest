@@ -15,13 +15,6 @@
             <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.32" Color="Black" />
         </Border.Effect>
 
-        <!--
-            Cabeçalho e botão fixos, o meio rola. A janela nunca passa da
-            altura útil da tela (Janelas.LimitarAltura); numa tela baixa é o
-            meio que encolhe, e o botão de concluir continua à vista. Por isso
-            o painel tem Tag="RolagemPropria": a rolagem geral das janelas
-            rolaria o botão junto.
-        -->
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -30,7 +23,6 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Cabecalho -->
             <StackPanel Grid.Row="0" Orientation="Horizontal">
                 <Button x:Name="BotaoVoltar" Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
@@ -48,14 +40,9 @@
                 </StackPanel>
             </StackPanel>
 
-            <!--
-                O miolo rola: com a lista de ventoinhas aberta, a tela passa de
-                900 px e nao cabe num notebook.
-            -->
             <ScrollViewer Grid.Row="1" MaxHeight="560" VerticalScrollBarVisibility="Auto" Margin="0,0,-14,4">
               <StackPanel Margin="0,0,14,0">
 
-            <!-- Limites -->
             <TextBlock Text="Limites de temperatura" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -143,7 +130,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Ao ultrapassar -->
             <TextBlock Text="Ao ultrapassar" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -175,7 +161,6 @@
                 </Grid>
             </Border>
 
-            <!-- No painel -->
             <TextBlock Text="No painel" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 
@@ -197,12 +182,6 @@
                                   Unchecked="MostrarVentoinhas_Alterado" />
                     </Grid>
 
-                    <!--
-                        A escolha de quais ventoinhas so faz sentido com a chave
-                        ligada, entao ela aparece junto. A rotacao de cada uma
-                        atualiza aqui dentro: "Fan #3" nao diz nada, mas o numero
-                        que muda quando o usuario encosta a mao na ventoinha diz.
-                    -->
                     <StackPanel x:Name="BlocoVentoinhas" Visibility="Collapsed" Margin="0,12,0,0">
                         <Border Height="1" Background="{DynamicResource Borda}" />
                         <TextBlock x:Name="AjudaVentoinhas" FontSize="11" Margin="0,10,0,6"
@@ -215,8 +194,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- Atualizações: a busca sozinha, ao abrir o app. Desligada, ainda
-                 dá para procurar pelo menu do ícone da bandeja. -->
             <TextBlock Text="Atualizações" FontSize="11" Margin="0,20,0,8"
                        Foreground="{DynamicResource TextoFraco}" />
 

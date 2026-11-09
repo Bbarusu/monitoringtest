@@ -33,8 +33,6 @@ public partial class ArquivosWindow : Window
         Lista.Children.Clear();
         Contagem.Text = "";
 
-        // A consulta varre a tabela de descritores do sistema inteiro: pesada
-        // demais para a interface, leve o bastante para rodar sob demanda.
         var arquivos = await Task.Run(() => OpenFilesService.Listar(_pid));
 
         foreach (var caminho in arquivos)
@@ -125,5 +123,4 @@ public partial class ArquivosWindow : Window
     {
         Janelas.Ancorar(this, Owner);
     }
-
 }

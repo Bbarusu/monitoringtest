@@ -16,15 +16,12 @@ Escreve src/MonitorPC/kinfo.ico e arte/previa.png.
 import pathlib
 from PIL import Image, ImageDraw
 
-AZUL = (59, 130, 246, 255)      # #3B82F6, o acento padrão do app
+AZUL = (59, 130, 246, 255)
 BRANCO = (255, 255, 255, 255)
 
-# Fator de desenho: tudo é desenhado grande e reduzido no fim, que é como se
-# consegue antisserrilhado sem biblioteca de vetor.
 ESCALA = 8
 
 TAMANHOS = [16, 20, 24, 32, 48, 64, 128, 256]
-
 
 def proporcoes(lado):
     """Proporções do desenho, em fração do lado, por faixa de tamanho."""
@@ -35,11 +32,7 @@ def proporcoes(lado):
     if lado >= 24:
         return dict(corpo=0.50, traco=0.085, pino=0.075, pinos=4, miolo=0.16, cheio=True, raio=0.13)
 
-    # Abaixo de 24 px o miolo sai de cena. Com ele, sobra cerca de um pixel de
-    # folga entre o contorno e o centro, e um pixel de folga não se enxerga:
-    # o desenho inteiro fecha e vira mancha.
     return dict(corpo=0.50, traco=0.105, pino=0.075, pinos=4, miolo=0, cheio=True, raio=0.08)
-
 
 def desenhar(lado):
     s = lado * ESCALA
@@ -48,7 +41,6 @@ def desenhar(lado):
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
 
-    # A placa: quadrado arredondado de borda a borda, como no cabeçalho do app.
     d.rounded_rectangle([0, 0, s - 1, s - 1], radius=s * 0.22, fill=AZUL)
 
     traco = max(1, round(s * p["traco"]))
@@ -56,7 +48,6 @@ def desenhar(lado):
     corpo = s * p["corpo"]
     c0, c1 = meio - corpo / 2, meio + corpo / 2
 
-    # Os pinos saem de trás do corpo, então vêm primeiro.
     comprimento = s * p["pino"]
     desloc = corpo * (0.26 if p["pinos"] == 8 else 0)
     posicoes = [meio - desloc, meio + desloc] if p["pinos"] == 8 else [meio]
@@ -70,8 +61,6 @@ def desenhar(lado):
     d.rounded_rectangle([c0, c0, c1, c1], radius=corpo * p["raio"],
                         outline=BRANCO, width=traco)
 
-    # O miolo: vazado nos tamanhos grandes, sólido nos pequenos, onde um
-    # contorno de um pixel dentro de outro vira uma mancha cinza.
     m = s * p["miolo"]
     if m <= 0:
         return img.resize((lado, lado), Image.LANCZOS)
@@ -85,7 +74,6 @@ def desenhar(lado):
 
     return img.resize((lado, lado), Image.LANCZOS)
 
-
 def quadro_dib(img):
     """
     Um quadro do .ico no formato DIB, que é o que o Windows espera nos
@@ -98,12 +86,12 @@ def quadro_dib(img):
     px = img.load()
 
     cabecalho = bytearray()
-    cabecalho += (40).to_bytes(4, "little")        # tamanho do cabeçalho
+    cabecalho += (40).to_bytes(4, "little")
     cabecalho += l.to_bytes(4, "little", signed=True)
-    cabecalho += (a * 2).to_bytes(4, "little", signed=True)  # XOR + AND
-    cabecalho += (1).to_bytes(2, "little")         # planos
-    cabecalho += (32).to_bytes(2, "little")        # bits por pixel
-    cabecalho += (0).to_bytes(4, "little") * 6     # compressão e o resto
+    cabecalho += (a * 2).to_bytes(4, "little", signed=True)
+    cabecalho += (1).to_bytes(2, "little")
+    cabecalho += (32).to_bytes(2, "little")
+    cabecalho += (0).to_bytes(4, "little") * 6
 
     cores = bytearray()
     for y in range(a - 1, -1, -1):
@@ -111,11 +99,10 @@ def quadro_dib(img):
             r, g, b, al = px[x, y]
             cores += bytes((b, g, r, al))
 
-    linha = ((l + 31) // 32) * 4                   # máscara alinhada em 4 bytes
+    linha = ((l + 31) // 32) * 4
     mascara = bytes(linha * a)
 
     return bytes(cabecalho) + bytes(cores) + mascara
-
 
 def escrever_ico(caminho, quadros):
     """
@@ -145,13 +132,11 @@ def escrever_ico(caminho, quadros):
 
     caminho.write_bytes(cabecalho + bytes(entradas) + b"".join(corpos))
 
-
 def _png(img):
     import io
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
-
 
 def main():
     raiz = pathlib.Path(__file__).resolve().parent.parent
@@ -161,7 +146,6 @@ def main():
     escrever_ico(destino, quadros)
     print("ícone:", destino)
 
-    # Prévia lado a lado, para conferir o desenho sem abrir o Windows.
     largura = sum(t for t in TAMANHOS) + 16 * len(TAMANHOS)
     previa = Image.new("RGBA", (largura, 300), (12, 13, 16, 255))
     x = 8
@@ -175,7 +159,6 @@ def main():
     saida = raiz / "arte" / "previa.png"
     previa.save(saida)
     print("prévia:", saida)
-
 
 if __name__ == "__main__":
     main()

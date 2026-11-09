@@ -7,11 +7,6 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma linha de ajuste: titulo, explicacao e um controle a direita. Montada em
-/// codigo porque a tela de componentes tem uma duzia delas, todas iguais exceto
-/// pelos rotulos e pelos limites.
-/// </summary>
 public sealed class LinhaDeAjuste : Border
 {
     private readonly TextBlock _explicacao;
@@ -26,10 +21,8 @@ public sealed class LinhaDeAjuste : Border
 
     public enum Modo
     {
-        /// <summary>Menos e mais, para contagens.</summary>
         Contador,
 
-        /// <summary>Campo de texto, para watts e capacidades.</summary>
         Numero
     }
 
@@ -154,7 +147,6 @@ public sealed class LinhaDeAjuste : Border
 
     public double Valor => _valor;
 
-    /// <summary>Troca a explicacao sem disparar a mudanca, para mostrar a origem do valor.</summary>
     public void Explicar(string texto) => _explicacao.Text = texto;
 
     public void Definir(double valor)
@@ -189,7 +181,6 @@ public sealed class LinhaDeAjuste : Border
     {
         if (_campo is null) return;
 
-        // Aceita virgula e ponto: o teclado numerico do Windows manda virgula.
         var texto = _campo.Text.Replace(',', '.');
 
         if (double.TryParse(texto, NumberStyles.Any, CultureInfo.InvariantCulture, out var v))

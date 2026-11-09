@@ -6,10 +6,6 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma linha da legenda da aba Energia: quadradinho colorido, nome, valor e de
-/// onde o numero veio — medido por sensor ou estimado.
-/// </summary>
 public sealed class LinhaDeLegenda : Grid
 {
     private readonly Border _cor;
@@ -35,8 +31,6 @@ public sealed class LinhaDeLegenda : Grid
         SetColumn(_cor, 0);
         Children.Add(_cor);
 
-        // Referencia viva, para a legenda nao ficar presa ao tema em que foi
-        // montada quando o usuario alterna claro e escuro.
         _nome = new TextBlock
         {
             FontSize = 12,
@@ -69,7 +63,6 @@ public sealed class LinhaDeLegenda : Grid
         Children.Add(_origem);
     }
 
-    /// <param name="cor">Uma chave de recurso, como "Acento", ou um hexadecimal.</param>
     public void Atualizar(string cor, string nome, string valor, string origem)
     {
         if (cor.StartsWith('#'))

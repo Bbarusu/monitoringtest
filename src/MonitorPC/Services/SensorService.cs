@@ -4,10 +4,6 @@ using MonitorPC.Models;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// Le os sensores em intervalo adaptativo e publica um <see cref="Snapshot"/> a cada leitura.
-/// Ponto unico de contato com a LibreHardwareMonitorLib.
-/// </summary>
 public sealed class SensorService : IDisposable
 {
     private readonly AppConfig _cfg;
@@ -15,9 +11,6 @@ public sealed class SensorService : IDisposable
     private readonly UpdateVisitor _visitor = new();
     private readonly CancellationTokenSource _cts = new();
 
-    // Fixadas por nome, e nao por posicao: a ordem dos sensores nao e estavel e
-    // as colunas trocariam entre leituras. Quem alimenta esta lista e
-    // AnotarVentoinhasConectadas, conforme os canais giram.
     private List<string> _nomesVentoinhas = new();
 
     private int _ramDetectado, _discosDetectado, _ventoinhasDetectado;
@@ -35,30 +28,16 @@ public sealed class SensorService : IDisposable
 
     public Snapshot? Ultimo { get; private set; }
 
-    /// <summary>Quantidades em uso, com a origem (detectada ou manual).</summary>
     public (int Valor, bool Manual, int Detectado) ModulosRam { get; private set; }
     public (int Valor, bool Manual, int Detectado) Discos { get; private set; }
     public (int Valor, bool Manual, int Detectado) Ventoinhas { get; private set; }
 
-    /// <summary>
-    /// Tetos de escala e curvas aprendidas. Fica aqui porque so este servico
-    /// toca na biblioteca de sensores, e e dela que vem a materia-prima.
-    /// </summary>
     public EspecificacaoService Especificacoes { get; }
 
-    /// <summary>
-    /// Registro de consumo por dia, em arquivo. Fica aqui porque e aqui que o
-    /// intervalo entre duas leituras e conhecido, e e dele que sai o watt-hora.
-    /// </summary>
     public ConsumoService Consumo { get; } = new();
 
     private CalibracaoService? _calibracao;
 
-    /// <summary>
-    /// Medicao da rotacao maxima das ventoinhas. Fica pendurada aqui para que o
-    /// descarte do servico — que acontece no fechamento do app — tambem desfaca
-    /// qualquer comando de PWM que tenha ficado pelo caminho.
-    /// </summary>
     public CalibracaoService Calibracao => _calibracao ??= new CalibracaoService(this);
 
     public SensorService(AppConfig cfg)
@@ -75,30 +54,8 @@ public sealed class SensorService : IDisposable
         };
     }
 
-    /// <summary>
-    /// Grava o relatorio de diagnostico e devolve o caminho.
-    ///
-    /// Mora aqui porque o <c>Computer</c> da biblioteca nao sai desta classe: o
-    /// relatorio dele e a unica fonte que diz o erro exato do carregamento do
-    /// driver, e expor o objeto inteiro so para isso abriria caminho para o
-    /// resto do app mexer no estado dos sensores por fora.
-    /// </summary>
     public string SalvarDiagnostico() => Diagnostico.Salvar(_pc);
 
-    /// <summary>
-    /// Sem temperatura de CPU na primeira leitura, grava o diagnostico sozinho.
-    ///
-    /// A biblioteca nao lanca excecao quando o driver nao sobe: ela devolve a
-    /// lista de sensores vazia e segue. Por isso o erro.log de uma maquina que
-    /// falha nao tinha uma linha sobre o driver — nao havia o que registrar, e
-    /// o motivo ficava preso dentro do relatorio interno dela, que ninguem
-    /// pedia.
-    ///
-    /// Agora o arquivo passa a existir sozinho em qualquer maquina onde a
-    /// leitura falha, pronto para ser enviado, sem depender de alguem achar o
-    /// botao no painel. Numa maquina que le normalmente isto nao custa nada:
-    /// sai na primeira linha.
-    /// </summary>
     private void GravarDiagnosticoSeFaltamSensores()
     {
         try
@@ -115,27 +72,14 @@ public sealed class SensorService : IDisposable
         }
         catch (Exception ex)
         {
-            // Gravar o diagnostico nao pode impedir o app de abrir: sem driver
-            // ainda restam GPU, disco, RAM e uso de CPU.
             Log.Erro("Gravar diagnóstico inicial", ex);
         }
     }
 
     public void Iniciar()
     {
-        // Antes de abrir a biblioteca, e nao depois: o PawnIO fica registrado
-        // e parado ate alguem pedir para carregar, e a biblioteca nao pede —
-        // ela tenta usar e falha calada. Aberta com o driver parado, ela cria
-        // os sensores vazios e nao os preenche nunca mais, nem quando o driver
-        // sobe depois.
-        //
-        // Foi o que fez a leitura inteira morrer no primeiro reinicio de uma
-        // maquina onde ela funcionava: logo apos instalar, o PawnIO fica
-        // rodando; depois do reboot, volta parado.
         var pawnIo = Diagnostico.GarantirPawnIo();
 
-        // "Ja estava rodando" e o caso normal e nao merece uma linha por
-        // abertura. O resto merece: ou o app fez algo, ou nao conseguiu.
         if (pawnIo != "já estava rodando") Log.Nota($"PawnIO: {pawnIo}.");
 
         _pc.Open();
@@ -152,13 +96,6 @@ public sealed class SensorService : IDisposable
         Task.Run(LacoAsync);
     }
 
-    /// <summary>
-    /// Tudo que os sensores reportam agora, agrupado por componente.
-    ///
-    /// O painel mostra o que cabe nas abas, mas o hardware expoe bem mais:
-    /// temperaturas e tensoes da placa-mae, potencia por nucleo, horas de disco.
-    /// Isto entrega a lista inteira, sem escolher por voce.
-    /// </summary>
     public List<GrupoDeSensores> Tudo()
     {
         var grupos = new List<GrupoDeSensores>();
@@ -186,7 +123,6 @@ public sealed class SensorService : IDisposable
         return grupos;
     }
 
-    /// <summary>A unidade que a biblioteca usa para cada tipo de sensor.</summary>
     private static string Unidade(SensorType tipo) => tipo switch
     {
         SensorType.Voltage => "V",
@@ -212,28 +148,16 @@ public sealed class SensorService : IDisposable
         _ => ""
     };
 
-    /// <summary>
-    /// Relê as quantidades e refaz a estimativa. Chamada quando a configuracao
-    /// muda, para o painel nao esperar o proximo ciclo de sensores lentos.
-    /// </summary>
     public void AplicarConfiguracao()
     {
         DetectarQuantidades();
         RecalcularEstimativa();
     }
 
-    /// <summary>O painel aberto le a cada 1 s; fechado, a cada 3 s.</summary>
     public void DefinirPainelAberto(bool aberto) => _painelAberto = aberto;
 
     private int _rapido;
 
-    /// <summary>
-    /// Leitura no intervalo curto enquanto o retorno nao for descartado, mesmo
-    /// com o painel fechado. A calibracao precisa disso: medir a aceleracao de
-    /// uma ventoinha de 3 em 3 segundos perderia o momento em que ela estabiliza.
-    /// E um contador, e nao uma chave, para dois pedidos simultaneos nao se
-    /// desligarem um ao outro.
-    /// </summary>
     public IDisposable ModoRapido()
     {
         Interlocked.Increment(ref _rapido);
@@ -250,11 +174,8 @@ public sealed class SensorService : IDisposable
         }
     }
 
-    // ------------------------------------------------------------------
-
     private async Task LacoAsync()
     {
-        // A segunda leitura e o que gera o delta das taxas de disco.
         await Task.Delay(500);
         _pc.Accept(_visitor);
 
@@ -269,7 +190,6 @@ public sealed class SensorService : IDisposable
             }
             catch
             {
-                // Uma leitura que falha nao pode parar o laco.
             }
 
             var intervalo = _painelAberto || Volatile.Read(ref _rapido) > 0
@@ -289,11 +209,6 @@ public sealed class SensorService : IDisposable
         var cpuW = Pegar(h => h == HardwareType.Cpu, SensorType.Power, "Package");
         var gpuW = Pegar(EhGpu, SensorType.Power, "Package", "Board", "GPU");
 
-        // O clock medio da CPU tinha uma fonte so: um sensor chamado
-        // "Cores (Average)", que nem todo processador publica. Faltando ele, a
-        // media dos nucleos responde a mesma pergunta e com o mesmo
-        // significado — e e o que salva um Intel, onde esse sensor nao existe
-        // e a tela de CPU ficava sem clock nenhum.
         var clocksPorNucleo = ClocksPorNucleo();
 
         var clockMedio = Pegar(h => h == HardwareType.Cpu, SensorType.Clock, "Cores (Average)")
@@ -301,10 +216,6 @@ public sealed class SensorService : IDisposable
                              ? clocksPorNucleo.Average()
                              : (float?)null);
 
-        // Placa dedicada publica "GPU Memory Used/Total". Video integrado nao
-        // tem memoria propria: ele publica "D3D Shared Memory Used/Total", que
-        // e um pedaco da RAM do sistema cedido a GPU. A ordem importa — numa
-        // placa dedicada os dois conjuntos existem, e o dedicado e o certo.
         var vramUsada = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Used");
         var vramTotal = Pegar(EhGpu, SensorType.SmallData, "GPU Memory Total");
         var vramCompartilhada = vramUsada is null || vramTotal is null;
@@ -326,24 +237,17 @@ public sealed class SensorService : IDisposable
             Consumo.Somar(total, dt);
         }
 
-        // Sensores lentos: vida util e espaco livre nao precisam de 1 s.
         if ((agora - _ultimoLento).TotalMilliseconds > _cfg.IntervaloSensoresLentos)
         {
             _ultimoLento = agora;
             DetectarQuantidades();
             RecalcularEstimativa();
 
-            // Grava junto com os sensores lentos, nao a cada leitura: um arquivo
-            // de poucos kilobytes reescrito de 30 em 30 segundos nao se nota, e
-            // uma queda de energia perde no maximo meio minuto de registro.
             Consumo.Gravar();
         }
 
         var pares = ParesDeVentoinha();
 
-        // Cada par rotacao/PWM melhora a estimativa da rotacao maxima. E a unica
-        // forma de saber o teto de um ventilador: nenhuma tabela sabe qual
-        // modelo esta espetado em qual conector da placa.
         foreach (var p in pares)
             Especificacoes.ObservarVentoinha(p.Chave, p.Rpm, p.Pwm);
 
@@ -407,9 +311,6 @@ public sealed class SensorService : IDisposable
 
             Ventoinhas = ventoinhas,
             ControlesDeVentoinha = controles,
-            // Agrupado por nome porque duas controladoras podem expor sensores
-            // homonimos ("Fan #1" em cada uma), e um dicionario com chave
-            // repetida derrubaria a leitura inteira.
             ChavesDeVentoinha = pares.Where(p => !p.Gpu)
                                      .GroupBy(p => p.Nome)
                                      .ToDictionary(g => g.Key, g => g.First().Chave),
@@ -425,35 +326,12 @@ public sealed class SensorService : IDisposable
             Discos2 = Discos.Valor,
             VentoinhasAtivas = Ventoinhas.Valor,
 
-            // Sem o driver, a temperatura da CPU volta zerada e o chip da placa-mae
-            // nem aparece. E assim que a falha se manifesta.
             SensoresDeBaixoNivel = cpuTemp is > 0
         };
     }
 
-    // ------------------------------------------------------------------
-    // Quais ventoinhas existem de verdade
-
-    /// <summary>
-    /// Canais que ja giraram desde que o app abriu. Um conector vazio nunca
-    /// entra; uma ventoinha que esta parada agora continua dentro.
-    /// </summary>
     private readonly HashSet<string> _ventoinhasConectadas = new(StringComparer.Ordinal);
 
-    /// <summary>
-    /// Decide quais canais sao ventoinhas de verdade, pelo que giraram.
-    ///
-    /// A deteccao antiga olhava a leitura do momento e congelava: rodava pela
-    /// primeira vez logo depois de abrir a biblioteca, que e justamente a
-    /// leitura menos confiavel de um chip de placa-mae — canais sem nada
-    /// espetado podem devolver lixo ali — e depois refazia a lista a cada 30
-    /// segundos, com a mesma regra. Isso trazia conector vazio para dentro e
-    /// fazia a contagem oscilar quando uma ventoinha parava.
-    ///
-    /// Girar e a unica prova de que ha ventoinha no conector, e ela nao
-    /// expira: o conjunto so cresce, e por isso uma ventoinha em modo
-    /// silencioso entra assim que acorda e nao sai quando volta a parar.
-    /// </summary>
     private void AnotarVentoinhasConectadas(List<ParDeVentoinha> pares)
     {
         var novidade = false;
@@ -474,9 +352,6 @@ public sealed class SensorService : IDisposable
         RecalcularEstimativa();
     }
 
-    // ------------------------------------------------------------------
-    // Quantidades e estimativa
-
     private void DetectarQuantidades()
     {
         _ramDetectado = _pc.Hardware.Count(h =>
@@ -485,14 +360,11 @@ public sealed class SensorService : IDisposable
 
         _discosDetectado = _pc.Hardware.Count(h => h.HardwareType == HardwareType.Storage);
 
-        // As ventoinhas nao sao contadas aqui: quem decide quais existem e o
-        // laco de leitura, em AnotarVentoinhasConectadas.
         ModulosRam = (_cfg.ModulosRamManual ?? _ramDetectado, _cfg.ModulosRamManual.HasValue, _ramDetectado);
         Discos = (_cfg.DiscosManual ?? _discosDetectado, _cfg.DiscosManual.HasValue, _discosDetectado);
         Ventoinhas = (_cfg.VentoinhasManual ?? _ventoinhasDetectado, _cfg.VentoinhasManual.HasValue, _ventoinhasDetectado);
     }
 
-    /// <summary>Soma o que nenhum sensor mede. CPU e GPU ficam de fora: sao medidas.</summary>
     public void RecalcularEstimativa() => _wattsEstimados =
         ModulosRam.Valor * _cfg.WattsPorModuloRam +
         Discos.Valor * _cfg.WattsPorDisco +
@@ -501,9 +373,6 @@ public sealed class SensorService : IDisposable
         (_cfg.TemWaterCooler ? _cfg.WattsBombaWaterCooler : 0) +
         _cfg.WattsPlacaMae +
         _cfg.WattsOutros;
-
-    // ------------------------------------------------------------------
-    // Leitura
 
     private IEnumerable<(IHardware Hardware, ISensor Sensor)> Todos()
     {
@@ -516,21 +385,6 @@ public sealed class SensorService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Uso da GPU, incluindo o caminho das integradas.
-    ///
-    /// NVIDIA e AMD publicam uma carga chamada "GPU Core", e era a unica que
-    /// este app lia. GPU integrada da Intel nao tem esse sensor: ela publica
-    /// uma carga por motor do D3D — "D3D 3D", "D3D Video Decode", "D3D Copy" e
-    /// outros. Por isso, num PC de video integrado, a peca aparecia na aba de
-    /// todos os sensores mas o uso vinha vazio, e com ele vazio o cartao da aba
-    /// Geral mostrava "--" como se nao houvesse GPU.
-    ///
-    /// Sem "GPU Core", vale o motor mais ocupado. E o que o Gerenciador de
-    /// Tarefas do Windows chama de porcentagem de GPU, entao o numero bate com
-    /// o que o usuario ja conhece de outro lugar. Somar os motores passaria de
-    /// 100% e nao significaria nada.
-    /// </summary>
     private float? UsoDeGpu()
     {
         if (Pegar(EhGpu, SensorType.Load, "GPU Core") is { } core) return core;
@@ -563,51 +417,23 @@ public sealed class SensorService : IDisposable
         return null;
     }
 
-    /// <summary>Uma ventoinha e o canal de PWM que a comanda, quando existe.</summary>
     public sealed record ParDeVentoinha(
         string Chave, string Nome, string Peca, bool Gpu, float Rpm, float? Pwm);
 
-    /// <summary>
-    /// Casa cada sensor de rotacao com o sensor de controle correspondente.
-    ///
-    /// A placa reporta os dois separados, e nada na biblioteca os liga. O que os
-    /// liga e o sufixo: "Fan #2" e "Fan Control #2" sao o mesmo conector. Em
-    /// placas de video os dois tem o mesmo nome. Quando nem um nem outro resolve,
-    /// vale a posicao, mas so com a mesma quantidade dos dois lados — parear na
-    /// marra daria um PWM de outro conector, e a extrapolacao sairia errada sem
-    /// dar sinal de que errou.
-    /// </summary>
-    /// <summary>
-    /// Inclui os canais parados: uma ventoinha ja reconhecida que esta a zero
-    /// agora continua sendo uma ventoinha, e o painel precisa do PWM e da chave
-    /// dela para desenhar "parada" com a escala certa.
-    /// </summary>
     public List<ParDeVentoinha> ParesDeVentoinha() => Canais()
         .Select(c => new ParDeVentoinha(
             Chave(c.Peca, c.Rotacao), c.Rotacao.Name, c.Peca.Name.Trim(),
             EhGpu(c.Peca.HardwareType), c.Rotacao.Value!.Value, c.Controle?.Value))
         .ToList();
 
-    /// <summary>
-    /// Uma ventoinha e o canal que a comanda, para a calibracao. Diferente dos
-    /// pares, inclui as que estao paradas: uma placa de video em modo silencioso
-    /// marca 0 rpm, e e justamente ela que mais precisa ser calibrada.
-    /// </summary>
     public sealed record CanalDeVentoinha(
         string Chave, string Nome, string Peca, bool Gpu,
         ISensor Rotacao, IControl? Comando, bool TemControle)
     {
         public float Rpm => Rotacao.Value ?? 0;
 
-        /// <summary>A peca reporta rotacao agora. Zero conta; ausencia de leitura nao.</summary>
         public bool TemLeitura => Rotacao.Value.HasValue;
 
-        /// <summary>
-        /// Da para mandar nela. Diferente de <see cref="TemControle"/>: muita
-        /// placa de video publica o PWM e nao aceita comando nenhum, e separar
-        /// as duas coisas e o que permite dizer ao usuario onde a corrente
-        /// arrebenta.
-        /// </summary>
         public bool Comandavel => Comando is not null;
     }
 
@@ -618,16 +444,6 @@ public sealed class SensorService : IDisposable
             TemControle: c.Controle is not null))
         .ToList();
 
-    /// <summary>
-    /// Casa cada sensor de rotacao com o de controle, uma vez so, para os dois
-    /// usos: aprender a curva e comandar a ventoinha.
-    /// </summary>
-    /// <param name="incluirSemLeitura">
-    /// Traz tambem os canais de rotacao que nao estao reportando nada. Para
-    /// aprender a curva eles sao inuteis, mas na tela de calibracao sumir em
-    /// silencio e pior que aparecer como "sem leitura": o usuario fica
-    /// procurando uma ventoinha que o app nunca mostrou.
-    /// </param>
     private List<(IHardware Peca, ISensor Rotacao, ISensor? Controle)> Canais(
         bool incluirSemLeitura = false)
     {
@@ -659,7 +475,6 @@ public sealed class SensorService : IDisposable
         return lista;
     }
 
-    /// <summary>Identidade estavel de uma ventoinha entre sessoes.</summary>
     private static string Chave(IHardware peca, ISensor fan) =>
         $"{peca.Name.Trim()}/{fan.Name.Trim()}";
 
@@ -667,7 +482,6 @@ public sealed class SensorService : IDisposable
     {
         if (controles.Count == 0) return null;
 
-        // 1. Mesmo sufixo numerico: "Fan #2" com "Fan Control #2".
         var sufixo = Sufixo(fan.Name);
         if (sufixo is not null)
         {
@@ -675,27 +489,19 @@ public sealed class SensorService : IDisposable
             if (igual is not null) return igual;
         }
 
-        // 2. Mesmo nome, como nas placas de video.
         var nome = controles.FirstOrDefault(c =>
             string.Equals(c.Name, fan.Name, StringComparison.OrdinalIgnoreCase));
         if (nome is not null) return nome;
 
-        // 3. Mesma posicao, e so com a mesma quantidade dos dois lados.
         return controles.Count == total ? controles[i] : null;
     }
 
-    /// <summary>O "#2" de "Fan Control #2". Nulo quando o sensor nao e numerado.</summary>
     private static string? Sufixo(string nome)
     {
         var corte = nome.LastIndexOf('#');
         return corte >= 0 ? nome[corte..].Trim() : null;
     }
 
-    /// <summary>
-    /// Maior temperatura entre os discos, descartando os limiares do fabricante
-    /// (Warning/Critical) e os sensores secundarios do controlador, que retornam
-    /// valores fixos e altos.
-    /// </summary>
     private float? TemperaturaDeDisco() => Todos()
         .Where(x => x.Hardware.HardwareType == HardwareType.Storage
                     && x.Sensor.SensorType == SensorType.Temperature
@@ -716,11 +522,6 @@ public sealed class SensorService : IDisposable
         .DefaultIfEmpty(null)
         .Max();
 
-    /// <summary>
-    /// Tensao do nucleo. O sensor SVI2 fica travado num valor fixo em parte dos
-    /// Ryzen, entao a preferencia e o maior VID entre os nucleos, que acompanha
-    /// a carga. Vcore da placa-mae e a ultima opcao.
-    /// </summary>
     private float? TensaoDoNucleo()
     {
         var vids = Todos()
@@ -734,21 +535,10 @@ public sealed class SensorService : IDisposable
 
         return vids
                ?? Pegar(h => h == HardwareType.Cpu, SensorType.Voltage, "SVI2 TFN")
-               // A propria CPU informa a tensao do pacote, e em Intel e a
-               // melhor fonte disponivel. Antes a busca pulava daqui direto
-               // para o Vcore da placa-mae, que passa por divisor resistivo e
-               // se move em degraus de 8 a 16 mV — parecia um valor travado.
                ?? PegarExato(h => h == HardwareType.Cpu, SensorType.Voltage, "CPU Core")
                ?? Pegar(_ => true, SensorType.Voltage, "Vcore");
     }
 
-    /// <summary>
-    /// Primeiro sensor com o nome exato.
-    ///
-    /// Diferente de <see cref="Pegar"/>, que casa por trecho: "CPU Core" por
-    /// trecho acharia "CPU Core #1" antes do sensor do pacote, e sao valores
-    /// diferentes — um e a tensao do conjunto, o outro de um nucleo so.
-    /// </summary>
     private float? PegarExato(Func<HardwareType, bool> filtro, SensorType tipo, string nome)
     {
         foreach (var (hardware, sensor) in Todos())
@@ -761,7 +551,6 @@ public sealed class SensorService : IDisposable
         return null;
     }
 
-    /// <summary>Taxas vem em bytes por segundo; o painel mostra em MB/s.</summary>
     private float? SomaDeDiscos(SensorType tipo, string nome)
     {
         var valores = Todos()
@@ -791,8 +580,6 @@ public sealed class SensorService : IDisposable
                 return null;
             }
 
-            // Descarta os limiares do fabricante e os sensores secundarios do
-            // controlador, que sao valores fixos e altos.
             var temp = h.Sensors
                 .Where(s => s.SensorType == SensorType.Temperature && s.Value.HasValue
                             && !s.Name.Contains("Warning", StringComparison.OrdinalIgnoreCase)
@@ -817,8 +604,6 @@ public sealed class SensorService : IDisposable
                 Sensor(SensorType.Data, "Free Space"),
                 Sensor(SensorType.Data, "Total Space"),
 
-                // Os mesmos limiares que a leitura de temperatura descarta.
-                // Como temperatura atual enganam; como escala, vem do fabricante.
                 Limiar(h, "Warning"),
                 Limiar(h, "Critical")));
         }
@@ -826,11 +611,6 @@ public sealed class SensorService : IDisposable
         return lista;
     }
 
-    /// <summary>
-    /// Limiar termico publicado pela unidade. No NVMe sao o WCTEMP e o CCTEMP do
-    /// proprio controlador; valores plausiveis so para nao deixar um sensor
-    /// zerado ou absurdo virar escala.
-    /// </summary>
     private static float? Limiar(IHardware h, string tipo) => h.Sensors
         .Where(s => s.SensorType == SensorType.Temperature
                     && s.Name.Contains(tipo, StringComparison.OrdinalIgnoreCase)
@@ -846,19 +626,6 @@ public sealed class SensorService : IDisposable
         return usada.HasValue && livre.HasValue ? usada + livre : null;
     }
 
-    /// <summary>
-    /// Clocks por nucleo fisico. A contagem vem do hardware, nunca fixa.
-    ///
-    /// O filtro aceita os dois nomes porque a biblioteca usa dois: na AMD o
-    /// sensor de clock se chama "Core #1", na Intel "CPU Core #1". Este codigo
-    /// exigia <c>StartsWith("Core #")</c> e portanto so via a AMD — num Intel
-    /// as barras de clock por nucleo vinham vazias, embora os sensores
-    /// estivessem todos ali na aba de todos os sensores.
-    ///
-    /// Vale notar a assimetria da propria biblioteca: a carga por nucleo se
-    /// chama "CPU Core #1" nas duas marcas, e so o clock muda de nome. Foi o
-    /// que fez este defeito passar — a carga funcionava.
-    /// </summary>
     private List<float> ClocksPorNucleo() => Todos()
         .Where(x => x.Hardware.HardwareType == HardwareType.Cpu
                     && x.Sensor.SensorType == SensorType.Clock
@@ -867,15 +634,10 @@ public sealed class SensorService : IDisposable
         .Select(x => x.Sensor.Value!.Value)
         .ToList();
 
-    /// <summary>
-    /// O sensor e o clock de um nucleo, e nao "Bus Speed" nem a variante
-    /// efetiva — que mede outra coisa e apareceria como nucleo extra.
-    /// </summary>
     private static bool EhClockDeNucleo(string nome) =>
         nome.Contains("Core #", StringComparison.OrdinalIgnoreCase)
         && !nome.Contains("Effective", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Cargas por thread logica. Idem: a contagem vem do hardware.</summary>
     private List<float> CargasPorThread() => Todos()
         .Where(x => x.Hardware.HardwareType == HardwareType.Cpu
                     && x.Sensor.SensorType == SensorType.Load
@@ -888,8 +650,6 @@ public sealed class SensorService : IDisposable
     {
         _cts.Cancel();
 
-        // Antes de fechar a biblioteca: depois dela, o comando de PWM nao chega
-        // mais a placa, e uma ventoinha ficaria em 100% ate o proximo boot.
         try { _calibracao?.Restaurar(); } catch { }
 
         try { _pc.Close(); } catch { }

@@ -6,11 +6,6 @@ using MonitorPC.Services;
 
 namespace MonitorPC.Views;
 
-/// <summary>
-/// Uma barra rotulada com valor a direita, como as de VRAM, potencia e
-/// ventilador na aba GPU. O preenchimento usa colunas proporcionais, entao
-/// acompanha a largura do painel sem conta em pixels.
-/// </summary>
 public sealed class BarraDeMetrica : StackPanel
 {
     private readonly TextBlock _rotulo;
@@ -24,10 +19,6 @@ public sealed class BarraDeMetrica : StackPanel
 
         var topo = new Grid();
 
-        // SetResourceReference, e nao ThemeService.Pincel: o pincel pego no
-        // construtor congela o tema daquele instante, e estas barras sao criadas
-        // na primeira vez que a aba aparece. Trocar para o tema claro depois
-        // disso deixava o trilho preto e o rotulo quase invisivel.
         _rotulo = new TextBlock
         {
             FontSize = 12,

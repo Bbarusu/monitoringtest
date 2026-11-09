@@ -7,7 +7,6 @@ namespace MonitorPC.Views;
 
 public partial class PersonalizacaoWindow : Window
 {
-    /// <summary>Paleta oferecida quando o usuario nao acompanha a cor do sistema.</summary>
     private static readonly (string Nome, string Hex)[] Paleta =
     {
         ("Azul", "#3B82F6"),
@@ -22,10 +21,6 @@ public partial class PersonalizacaoWindow : Window
     private readonly Action _aoMudar;
     private bool _carregando = true;
 
-    /// <param name="irParaIlha">
-    /// Aberta pela propria Kisland: a tela ja comeca na aba dela, e nao na do
-    /// painel, que nao e o que a pessoa veio mudar.
-    /// </param>
     public PersonalizacaoWindow(AppConfig cfg, Action aoMudar, bool irParaIlha = false)
     {
         InitializeComponent();
@@ -68,8 +63,6 @@ public partial class PersonalizacaoWindow : Window
         }
     }
 
-    // ------------------------------------------------------------------
-
     private void Cor_Escolhida(object sender, RoutedEventArgs e)
     {
         if (_carregando) return;
@@ -97,7 +90,6 @@ public partial class PersonalizacaoWindow : Window
         if (_carregando) return;
         _cfg.AcompanharCorDoSistema = SeguirSistema.IsChecked == true;
 
-        // Acompanhar o sistema vale para o conjunto: cor de destaque e tema.
         if (_cfg.AcompanharCorDoSistema)
         {
             _cfg.Tema = Tema.Sistema;
@@ -118,11 +110,6 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
-    /// <summary>
-    /// Troca entre as abas Painel e Kisland. Dispara tambem durante o
-    /// InitializeComponent, pela aba marcada no XAML, antes de as abas
-    /// existirem — dai a conferencia.
-    /// </summary>
     private void Aba_Alterada(object sender, RoutedEventArgs e)
     {
         if (AbaPainel is null || AbaKisland is null) return;
@@ -151,10 +138,6 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
-    /// <summary>
-    /// Poe na tela o que esta na configuracao. Tambem roda na volta do guia
-    /// da Kisland, que muda a configuracao por conta propria.
-    /// </summary>
     private void Carregar()
     {
         TemaEscuro.IsChecked = _cfg.Tema == Tema.Escuro;
@@ -220,9 +203,6 @@ public partial class PersonalizacaoWindow : Window
         IlhaFps.IsChecked = _cfg.IlhaFps;
         IlhaFicarEmTelaCheia.IsChecked = _cfg.IlhaFicarEmTelaCheia;
 
-        // A contagem usa o rastreamento de eventos do Windows, que exige o app
-        // elevado. Sem isso a caixa fica apagada e diz por quê, em vez de
-        // ligar algo que nunca vai mostrar nada.
         if (!AtualizacaoService.Elevado())
         {
             IlhaFps.IsEnabled = false;
@@ -270,11 +250,6 @@ public partial class PersonalizacaoWindow : Window
         AplicarFundo();
     }
 
-    /// <summary>
-    /// Todas as opcoes da ilha passam por aqui: sao muitas e independentes, e
-    /// ler o conjunto inteiro a cada mudanca e mais simples que um handler por
-    /// caixa — e nao ha como uma ficar fora de sincronia com a tela.
-    /// </summary>
     private void Ilha_Alterada(object sender, RoutedEventArgs e)
     {
         if (_carregando) return;
@@ -335,10 +310,6 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
-    // ------------------------------------------------------------------
-    // Kdrop
-
-    /// <summary>Pasta, endereco e aparelhos confiaveis, como estao agora.</summary>
     private void AtualizarKdropTela()
     {
         DicaKdropNome.Text = Environment.MachineName;
@@ -415,13 +386,8 @@ public partial class PersonalizacaoWindow : Window
         AtualizarKdropTela();
     }
 
-    // ------------------------------------------------------------------
-    // Tela OLED
-
-    /// <summary>Opcoes de "Esperar antes de abrir", em milissegundos.</summary>
     private static readonly int[] TemposDeEspera = { 500, 1000, 2000, 3000, 5000 };
 
-    /// <summary>Minutos de cada opcao de "Escurecer sem uso"; zero e nunca.</summary>
     private static readonly int[] TemposDeEscurecer = { 2, 5, 10, 0 };
 
     private void MontarTemposDeEscurecer()
@@ -430,10 +396,6 @@ public partial class PersonalizacaoWindow : Window
             IlhaEscurecer.Items.Add(minutos == 0 ? "Nunca" : $"{minutos} min");
     }
 
-    // ------------------------------------------------------------------
-    // Atalhos da Kisland
-
-    /// <summary>Id de cada linha do seletor de chat, na mesma ordem dos itens.</summary>
     private readonly List<string> _idsDeIa = new();
 
     private void MontarIas()
@@ -459,8 +421,6 @@ public partial class PersonalizacaoWindow : Window
         if (LinhaIaEndereco is not null)
             LinhaIaEndereco.Visibility = id == AtalhoService.IaOutra ? Visibility.Visible : Visibility.Collapsed;
 
-        // Com um chat conhecido, a opcao do app aparece e diz se ele esta
-        // instalado aqui; com nenhum ou com um endereco proprio, nao se aplica.
         if (LinhaIaApp is not null)
         {
             var conhecido = id.Length > 0 && id != AtalhoService.IaOutra;
@@ -477,10 +437,6 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
-    /// <summary>
-    /// As dicas dentro das caixas de texto somem quando ha texto. O endereco
-    /// do chat proprio vale a cada letra, como o resto da Personalizacao.
-    /// </summary>
     private void Texto_Alterado(object sender, TextChangedEventArgs e)
     {
         if (DicaIaEndereco is not null) DicaIaEndereco.Visibility = Dica(IlhaIaEndereco);
@@ -506,7 +462,6 @@ public partial class PersonalizacaoWindow : Window
     private static Visibility Dica(TextBox? caixa) =>
         caixa is null || caixa.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    /// <summary>Uma linha por atalho: icone, nome, destino e o botao de tirar.</summary>
     private void MontarListaDeAtalhos()
     {
         ListaAtalhos.Children.Clear();
@@ -609,7 +564,6 @@ public partial class PersonalizacaoWindow : Window
         return letra == default ? "?" : char.ToUpperInvariant(letra).ToString();
     }
 
-    /// <summary>"youtube.com" para um site, "Spotify.exe" para um app.</summary>
     private static string Resumo(string destino) =>
         Uri.TryCreate(destino, UriKind.Absolute, out var uri) && !uri.IsFile
             ? AtalhoService.Host(uri)
@@ -633,11 +587,6 @@ public partial class PersonalizacaoWindow : Window
         Confirmar();
     }
 
-    /// <summary>
-    /// Escolher um app. Comeca no menu Iniciar, onde estao os atalhos de tudo
-    /// o que foi instalado; escolhido um atalho, vale o app para onde ele
-    /// aponta, com o icone e o nome dele.
-    /// </summary>
     private void AdicionarApp_Click(object sender, RoutedEventArgs e)
     {
         var dialogo = new Microsoft.Win32.OpenFileDialog
@@ -675,7 +624,6 @@ public partial class PersonalizacaoWindow : Window
         var nome = NomeDoSite.Text.Trim();
         if (nome.Length == 0)
         {
-            // "youtube.com" vira "Youtube": a primeira parte do endereco.
             var host = AtalhoService.Host(new Uri(endereco));
             var parte = host.Split('.')[0];
             nome = parte.Length == 0 ? host : char.ToUpperInvariant(parte[0]) + parte[1..];
@@ -731,9 +679,6 @@ public partial class PersonalizacaoWindow : Window
 
     private void Voltar_Click(object sender, RoutedEventArgs e) => Close();
 
-    // ------------------------------------------------------------------
-
-    /// <summary>Aplica na hora, para o efeito ser visto enquanto se mexe.</summary>
     private void Confirmar()
     {
         _cfg.Salvar();
@@ -751,8 +696,6 @@ public partial class PersonalizacaoWindow : Window
             ? "Desligue o acompanhamento para escolher uma cor."
             : "A cor vale para anéis, abas e botões do painel.";
 
-        // O tema Preto desliga a transparencia: com ela o fundo mostra o
-        // desktop e deixa de ser preto. A escolha fica guardada para depois.
         var preto = TemaPreto.IsChecked == true;
         Transparencia.IsEnabled = !preto;
         DicaTransparencia.Text = preto
@@ -763,12 +706,9 @@ public partial class PersonalizacaoWindow : Window
         OpacidadeIlha.IsEnabled = Transparencia.IsChecked == true && !preto;
         DicaOpacidadeIlha.Visibility = Transparencia.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
 
-        // So faz sentido com o contador: e ele que diz qual janela e o jogo.
-        // A excecao so existe com a regra (esconder) e o contador ligados.
         var excecaoValida = IlhaTelaCheia.IsChecked == true && IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
         IlhaFicarEmTelaCheia.IsEnabled = excecaoValida;
 
-        // A lista do modo jogo so vale com o contador ligado.
         var comFps = IlhaFps.IsChecked == true && IlhaFps.IsEnabled;
         CartaoModoJogo.IsEnabled = comFps;
         CartaoModoJogo.Opacity = comFps ? 1 : 0.5;
@@ -777,8 +717,6 @@ public partial class PersonalizacaoWindow : Window
             : "Ligue \"FPS em jogos\" acima para a Kisland saber quando você está jogando.";
         LinhaFpsTelaCheia.Opacity = excecaoValida ? 1 : 0.5;
 
-        // O Kdrop e parte da bandeja: so com ela ligada. As opcoes dele, so
-        // com ele ligado.
         var comBandeja = IlhaBandeja.IsChecked == true;
         CartaoKdrop.IsEnabled = comBandeja;
         CartaoKdrop.Opacity = comBandeja ? 1 : 0.5;
@@ -786,24 +724,19 @@ public partial class PersonalizacaoWindow : Window
         LinhasKdrop.IsEnabled = comKdrop;
         LinhasKdrop.Opacity = comKdrop ? 1 : 0.5;
 
-        // A espera so vale abrindo ao passar o mouse.
         var aoPassar = IlhaAoPassar.IsChecked == true;
         CartaoEspera.IsEnabled = aoPassar;
         CartaoEspera.Opacity = aoPassar ? 1 : 0.5;
 
-        // Os tres cuidados contra marca so valem com a protecao ligada.
         var protegendo = IlhaProteger.IsChecked == true;
         LinhasProtecao.IsEnabled = protegendo;
         LinhasProtecao.Opacity = protegendo ? 1 : 0.5;
 
-        // Com a ilha desligada as opcoes dela ficam a mostra, mas apagadas:
-        // assim da para ver o que ela faz antes de ligar.
         var ilha = IlhaAtiva.IsChecked == true;
         OpcoesIlha.IsEnabled = ilha;
         OpcoesIlha.Opacity = ilha ? 1 : 0.5;
     }
 
-    /// <summary>A propria tela usa a transparencia escolhida, como previa ao vivo.</summary>
     private void AplicarFundo()
     {
         var fundo = ThemeService.CorDeFundo;
@@ -818,5 +751,4 @@ public partial class PersonalizacaoWindow : Window
         Painel.Background = new SolidColorBrush(
             Color.FromArgb(alpha, fundo.R, fundo.G, fundo.B));
     }
-
 }

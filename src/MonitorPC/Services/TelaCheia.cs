@@ -3,24 +3,6 @@ using System.Text;
 
 namespace MonitorPC.Services;
 
-/// <summary>
-/// Responde se algum programa esta em tela cheia agora, para a ilha sair da
-/// frente de jogo e video.
-///
-/// Sao duas perguntas, porque nenhuma sozinha cobre tudo. O Windows sabe dizer
-/// quando um programa Direct3D tomou a tela em modo exclusivo ou quando ha
-/// apresentacao em curso — mas jogo em "janela sem borda", que hoje e o
-/// padrao, e video em tela cheia no navegador nao entram nessa conta. Para
-/// esses, a resposta e geometrica: a janela em primeiro plano cobre o monitor
-/// inteiro, barra de tarefas incluida.
-/// </summary>
-/// <summary>O que esta em tela cheia agora, e onde.</summary>
-/// <param name="Exclusiva">
-/// Direct3D em modo exclusivo ou apresentacao: o Windows avisa, mas nao diz em
-/// qual monitor, e nada consegue aparecer por cima.
-/// </param>
-/// <param name="Janela">A janela que cobre o monitor, quando e por geometria.</param>
-/// <param name="Monitor">O monitor que ela cobre.</param>
 public readonly record struct EstadoDeTelaCheia(bool Exclusiva, IntPtr Janela, IntPtr Monitor)
 {
     public bool Cheia => Exclusiva || Janela != IntPtr.Zero;
@@ -28,13 +10,8 @@ public readonly record struct EstadoDeTelaCheia(bool Exclusiva, IntPtr Janela, I
 
 public static class TelaCheia
 {
-    /// <summary>Ha tela cheia em algum lugar. Mantido para quem so quer saber isso.</summary>
     public static bool Agora(IntPtr propria) => Consultar(propria).Cheia;
 
-    /// <summary>
-    /// O monitor em que uma janela esta. A Kisland compara com o da tela
-    /// cheia: um jogo no outro monitor nao e motivo para ela sumir deste.
-    /// </summary>
     public static IntPtr MonitorDe(IntPtr janela) =>
         janela == IntPtr.Zero ? IntPtr.Zero : MonitorFromWindow(janela, MonitorMaisProximo);
 
@@ -48,27 +25,15 @@ public static class TelaCheia
 
             var frente = GetForegroundWindow();
 
-            // "Ocupado" quer dizer que o Windows acha que ha algum app em tela
-            // cheia, em algum monitor — mas nao diz qual nem onde, e acha
-            // demais (ja foi visto valendo durante um envio pelo Kdrop, com
-            // nada em tela cheia). Antes valia como exclusiva, e a Kisland
-            // sumia de todas as janelas e so aparecia com a area de trabalho a
-            // mostra. Agora so vale se houver de fato uma janela cobrindo um
-            // monitor inteiro; e ai e ela, com o monitor dela, que decide.
             var ocupado = estado == EstadoOcupado;
 
             if (frente == IntPtr.Zero || frente == propria)
                 return ocupado ? ProcurarTelaCheia(propria) : default;
 
-            // A area de trabalho e a barra de tarefas tambem cobrem o monitor
-            // inteiro, e nao sao tela cheia de ninguem.
             var classe = Classe(frente);
             if (classe is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd")
                 return default;
 
-            // Janela maximizada comum, com barra de titulo, nao e tela cheia —
-            // e com a barra de tarefas em ocultar automaticamente ela cobriria
-            // o monitor inteiro e enganaria a conta abaixo.
             if (IsZoomed(frente) && (GetWindowLong(frente, EstiloDaJanela) & ComBarraDeTitulo) == ComBarraDeTitulo)
                 return default;
 
@@ -79,17 +44,10 @@ public static class TelaCheia
         }
         catch
         {
-            // Na duvida a ilha fica: sumir sem motivo seria pior.
             return default;
         }
     }
 
-    /// <summary>
-    /// Com o Windows dizendo "ocupado": procura, entre as janelas visiveis,
-    /// uma que cubra um monitor inteiro e nao seja a area de trabalho, a barra
-    /// de tarefas, uma janela maximizada comum ou a propria Kisland. Achou, e
-    /// ela; nao achou, nao ha tela cheia.
-    /// </summary>
     private static EstadoDeTelaCheia ProcurarTelaCheia(IntPtr propria)
     {
         var achada = new EstadoDeTelaCheia(false, IntPtr.Zero, IntPtr.Zero);
@@ -110,15 +68,9 @@ public static class TelaCheia
         return achada;
     }
 
-    /// <summary>Janela "escondida" pelo Windows (cloaked): existe e diz que e visivel, mas nao aparece.</summary>
     private static bool Escondida(IntPtr janela) =>
         DwmGetWindowAttribute(janela, Encoberta, out var valor, sizeof(int)) == 0 && valor != 0;
 
-    /// <summary>
-    /// Uma linha para o log, quando a Kisland some por tela cheia: o que o
-    /// Windows disse e quem estava na frente. E por ela que se descobre um
-    /// sumico sem motivo.
-    /// </summary>
     public static string Descrever(IntPtr propria, EstadoDeTelaCheia estado)
     {
         try
@@ -151,7 +103,6 @@ public static class TelaCheia
         }
     }
 
-    /// <summary>A janela cobre o monitor inteiro em que esta, barra de tarefas incluida.</summary>
     public static bool CobreOMonitor(IntPtr janela, out IntPtr monitor)
     {
         monitor = IntPtr.Zero;
@@ -166,7 +117,6 @@ public static class TelaCheia
                r.Direita >= area.Direita && r.Baixo >= area.Baixo;
     }
 
-    /// <summary>Quanto do monitor a janela ocupa, de 0 a 1.</summary>
     public static double FracaoDoMonitor(IntPtr janela)
     {
         if (!GetWindowRect(janela, out var r)) return 0;
@@ -187,10 +137,8 @@ public static class TelaCheia
         return GetClassName(janela, texto, texto.Capacity) > 0 ? texto.ToString() : "";
     }
 
-    // ------------------------------------------------------------------
-
     private const int EstadoOcupado = 2;
-    private const int Encoberta = 14; // DWMWA_CLOAKED
+    private const int Encoberta = 14;
     private const int EstadoD3DTelaCheia = 3;
     private const int EstadoApresentacao = 4;
     private const int MonitorMaisProximo = 2;

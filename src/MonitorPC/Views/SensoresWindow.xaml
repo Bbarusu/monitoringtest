@@ -31,7 +31,6 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- Busca -->
             <Border Margin="0,16,0,0" CornerRadius="10" Background="{DynamicResource Chip}"
                     BorderBrush="{DynamicResource Trilho}" BorderThickness="1" Padding="10,0">
                 <Grid>

@@ -12,29 +12,10 @@ namespace MonitorPC;
 
 public partial class App : Application
 {
-    /// <summary>
-    /// Passado pela tarefa agendada que o instalador registra. Com ele, o app
-    /// nunca tenta se relancar — e a garantia contra um laco infinito, caso a
-    /// tarefa exista mas por algum motivo nao eleve de verdade.
-    /// </summary>
     private const string ArgumentoElevado = "--elevado";
 
     private const string NomeDaTarefa = "KInfo";
 
-    /// <summary>
-    /// Quando o app foi instalado e abriu sem privilegio, pede para a tarefa do
-    /// Windows subir uma copia elevada e sai.
-    ///
-    /// Sem elevacao, o driver de sensores nao carrega e temperatura de CPU e
-    /// placa-mae voltam zeradas. Pedir elevacao pelo manifesto resolveria, mas
-    /// cobraria a confirmacao do Windows toda vez que o app abrisse — e este
-    /// app abre junto com a sessao. A tarefa foi autorizada uma vez, na
-    /// instalacao, e nao pergunta de novo.
-    ///
-    /// Sem instalacao nao ha tarefa: ai o app segue como esta, rodando com o
-    /// que conseguir ler. Rodar direto do dotnet run, no desenvolvimento,
-    /// continua funcionando igual.
-    /// </summary>
     private bool SubirPelaTarefa(string[] argumentos)
     {
         try
@@ -56,9 +37,6 @@ public partial class App : Application
 
             p.WaitForExit(10000);
 
-            // Só sai se a cópia elevada realmente subiu. O schtasks inicia
-            // sempre; o que falha é a tarefa lá dentro. Saindo sem conferir, um
-            // duplo clique no atalho não abriria nada — e foi o que aconteceu.
             if (p.ExitCode != 0)
             {
                 Log.Erro("Subir pela tarefa",
@@ -76,13 +54,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// O icone do proprio executavel, para a bandeja antes da primeira leitura.
-    ///
-    /// Dura pouco: assim que sai a primeira temperatura, o icone passa a ser o
-    /// numero desenhado. Mas e o que aparece enquanto os sensores acordam, e um
-    /// icone generico do Windows ali parece app quebrado.
-    /// </summary>
     private static D.Icon IconeDoApp()
     {
         try
@@ -128,9 +99,6 @@ public partial class App : Application
     private WF.NotifyIcon _bandeja = null!;
     private FlyoutWindow _painel = null!;
 
-    // A ilha e os dois servicos que so ela usa nascem na primeira vez que ela
-    // e ligada: quem nao usa a ilha nao paga nem a assinatura dos avisos de
-    // midia e de volume.
     private IlhaWindow? _ilha;
     private MidiaService? _midia;
     private VolumeService? _volume;
@@ -152,7 +120,6 @@ public partial class App : Application
         _alertas = new AlertService(_cfg);
         _painel = new FlyoutWindow(_cfg, _sensores, _alertas);
 
-        // A notificacao sai uma vez por episodio, nao a cada leitura.
         _alertas.Comecou += alerta => Dispatcher.BeginInvoke(() => Notificar(alerta));
 
         _bandeja = new WF.NotifyIcon
@@ -178,8 +145,6 @@ public partial class App : Application
 
         _sensores.Iniciar();
 
-        // Na primeira execucao o painel abre direto na configuracao, para os
-        // limites de temperatura nao ficarem no palpite do padrao.
         if (!_cfg.ConfiguracaoInicialFeita)
         {
             _painel.Mostrar();
@@ -195,26 +160,15 @@ public partial class App : Application
 
         _iniciado = true;
 
-        // Depois de tudo montado, e sem segurar a abertura.
         if (_cfg.VerificarAtualizacoes) _ = ProcurarAtualizacao(false);
     }
 
-    /// <summary>
-    /// Procura versao nova e, se houver, oferece no painel.
-    ///
-    /// <paramref name="pedidaPeloUsuario"/> muda duas coisas: a procura ignora
-    /// o intervalo de um dia, e o resultado "nao ha nada novo" e dito. Na
-    /// procura automatica esse resultado e silencio — quem nao pediu nada nao
-    /// precisa saber que o app olhou.
-    /// </summary>
     private async Task ProcurarAtualizacao(bool pedidaPeloUsuario)
     {
         try
         {
             if (!pedidaPeloUsuario)
             {
-                // Este app sobe junto com a sessao: num dia de reinicios seriam
-                // dez consultas para a mesma resposta.
                 var ultima = _cfg.UltimaVerificacaoDeAtualizacao;
                 if (ultima is { } quando && DateTime.UtcNow - quando < TimeSpan.FromDays(1))
                     return;
@@ -222,9 +176,6 @@ public partial class App : Application
 
             var procura = await _atualizacoes.ProcurarAsync();
 
-            // So conta como verificado o que de fato foi verificado. Gravar a
-            // data depois de uma falha trancaria a proxima tentativa por um
-            // dia inteiro por causa de uma queda de rede de um minuto.
             if (procura.Verificou)
             {
                 _cfg.UltimaVerificacaoDeAtualizacao = DateTime.UtcNow;
@@ -240,9 +191,6 @@ public partial class App : Application
                     return;
                 }
 
-                // Procura automatica que nao encontrou nada e silencio, deu
-                // certo ou nao: quem nao pediu nada nao precisa saber que o app
-                // olhou, nem que a internet caiu.
                 if (!pedidaPeloUsuario) return;
 
                 _painel.Mostrar();
@@ -260,28 +208,8 @@ public partial class App : Application
 
     private readonly AtualizacaoService _atualizacoes = new();
 
-    /// <summary>
-    /// A inicializacao chegou ao fim, e existe o que desmontar no
-    /// encerramento.
-    ///
-    /// Quando o app se relanca pela tarefa agendada, SubirPelaTarefa chama
-    /// Shutdown antes de qualquer campo existir, e o OnExit caia em cima de
-    /// seis referencias nulas — seis excecoes no erro.log a cada elevacao. Era
-    /// ruido inofensivo em si, mas enchia justamente o arquivo onde um erro de
-    /// verdade precisa ser visto.
-    /// </summary>
     private bool _iniciado;
 
-    /// <summary>
-    /// O instalador deixa um arquivo vazio pedindo que esta abertura mostre o
-    /// painel.
-    ///
-    /// Sem isso, clicar em "Abrir o Monitor" no fim da instalacao so punha um
-    /// icone na bandeja, e parecia que nada tinha acontecido. Nas aberturas
-    /// seguintes o painel continua escondido, que e o certo para um app que
-    /// sobe junto com a sessao — por isso a marca e apagada na leitura e vale
-    /// uma vez so.
-    /// </summary>
     private static bool PedidoDoInstalador()
     {
         try
@@ -301,11 +229,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Sem isto, qualquer excecao vira uma caixa de erro do Windows sem
-    /// informacao nenhuma. Erros na interface sao registrados e o app segue;
-    /// os demais sao registrados antes de encerrar.
-    /// </summary>
     private void InstalarCapturaDeErros()
     {
         DispatcherUnhandledException += (_, args) =>
@@ -326,15 +249,6 @@ public partial class App : Application
         };
     }
 
-    /// <summary>
-    /// O acento acompanha a cor do Windows quando a configuracao pede;
-    /// senao usa a cor escolhida pelo usuario.
-    /// </summary>
-    /// <summary>
-    /// O menu da bandeja e do WPF, nao do WinForms: o menu do WinForms depende de
-    /// o app virar primeiro plano para aparecer, e com um jogo em tela cheia o
-    /// Windows nega isso, deixando o menu atras da barra de tarefas.
-    /// </summary>
     private void MontarMenu()
     {
         _menu = new System.Windows.Controls.ContextMenu
@@ -349,17 +263,12 @@ public partial class App : Application
             _painel.Mostrar();
             _painel.AbrirConfiguracao(false);
         }));
-        // Também aqui, e não só na faixa de aviso do painel: numa máquina onde
-        // a leitura falha o usuário precisa poder nos mandar o relatório sem
-        // depender de o painel estar mostrando o aviso certo.
         _menu.Items.Add(Item("Procurar atualizações", () => _ = ProcurarAtualizacao(true)));
         _menu.Items.Add(Item("Salvar relatório do problema", SalvarRelatorio));
 
         _menu.Items.Add(new System.Windows.Controls.Separator());
         _menu.Items.Add(Item("Encerrar", Shutdown));
 
-        // Sem isto o menu so fecha ao escolher algo, quando o app nao esta em
-        // primeiro plano.
         _menu.Opened += (_, _) =>
         {
             if (PresentationSource.FromVisual(_menu) is HwndSource fonte)
@@ -378,13 +287,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Grava o relatorio de diagnostico e abre a pasta nele.
-    ///
-    /// E a unica via de informacao quando o app roda numa maquina que nao e
-    /// esta: o que o Windows respondeu sobre o driver nao da para adivinhar
-    /// daqui, e adivinhar foi o que custou duas hipoteses erradas.
-    /// </summary>
     private void SalvarRelatorio()
     {
         try
@@ -405,11 +307,6 @@ public partial class App : Application
         _menu.IsOpen = true;
     }
 
-    /// <summary>
-    /// Reinstala o icone na bandeja. O WinForms costuma refaze-lo sozinho quando
-    /// o Explorer recria a area de notificacao, mas isto garante o caso em que
-    /// nao refaz, que deixaria o app sem porta de entrada.
-    /// </summary>
     public void RecriarIconeDaBandeja()
     {
         try
@@ -423,7 +320,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>Reaplica a cor de destaque. Chamada pela tela de Personalização.</summary>
     public void AplicarAparencia()
     {
         ThemeService.Aplicar(_cfg.Tema);
@@ -431,24 +327,10 @@ public partial class App : Application
         AtualizarIlha();
     }
 
-    /// <summary>
-    /// A versao atual do guia da Kisland. Subir este numero faz o guia abrir
-    /// de novo, uma vez, para todos — instalacao nova e atualizacao. 2: o guia
-    /// ganhou o passo do Kdrop.
-    /// </summary>
     private const int VersaoDoGuia = 2;
 
-    /// <summary>
-    /// A versao atual das Novidades. Subir este numero faz a janela abrir de
-    /// novo, uma vez, para todos. 1 (0.1.32): o Kdrop inteiro, com o endereco
-    /// fixo e os textos e links.
-    /// </summary>
     private const int VersaoDasNovidades = 1;
 
-    /// <summary>
-    /// As Novidades, obrigatorias uma vez: sem o "Pular". Marcadas como vistas
-    /// ao aparecer, como o guia — fechar o app no meio nao faz voltar.
-    /// </summary>
     private void MostrarNovidades()
     {
         try
@@ -468,17 +350,8 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Uma vez por versao do guia, na primeira abertura: o guia da Kisland abre
-    /// sozinho, para todos. Para quem instalou agora, depois da configuracao
-    /// inicial, que vem antes. Fica marcado como visto no momento em que
-    /// aparece: pular tambem e resposta, e um guia que volta a cada abertura
-    /// vira cobranca. Depois, ele fica na Personalizacao.
-    /// </summary>
     private void ConvidarParaAKisland()
     {
-        // As Novidades vem antes e tomam o lugar do guia: quem as ve nao
-        // recebe o guia da Kisland em seguida (ele continua na Personalizacao).
         if (_cfg.NovidadesVersaoVista < VersaoDasNovidades)
         {
             MostrarNovidades();
@@ -493,8 +366,6 @@ public partial class App : Application
             _cfg.GuiaKislandVisto = true;
             _cfg.Salvar();
 
-            // Abre quando o app terminar de subir: o guia e uma janela modal,
-            // e aberto aqui seguraria o resto da inicializacao.
             _painel.Mostrar();
             Dispatcher.BeginInvoke(() => _painel.AbrirGuiaKisland(obrigatorio: true),
                                    System.Windows.Threading.DispatcherPriority.ApplicationIdle);
@@ -505,11 +376,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Liga, desliga ou repinta a ilha do topo conforme a Personalizacao.
-    /// Chamada na abertura e a cada mudanca la — inclusive de cor e
-    /// transparencia, que a ilha segue.
-    /// </summary>
     private void AtualizarIlha()
     {
         try
@@ -549,7 +415,6 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            // A ilha e um extra: falhar nela nao pode levar o painel junto.
             Log.Erro("Ilha do topo", ex);
         }
     }
@@ -567,19 +432,12 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            // Uma cor invalida ou um registro inacessivel nao pode impedir o app
-            // de abrir: fica o azul padrao.
             Log.Erro("Cor de destaque", ex);
         }
 
         Resources["Acento"] = new SolidColorBrush(cor);
     }
 
-    /// <summary>
-    /// Cor de destaque escolhida pelo usuario no Windows. Vem do DWM, em ABGR.
-    /// Nao usar SystemParameters.WindowGlassColor: aquilo e a cor do vidro das
-    /// janelas, que costuma sair acinzentada e nao acompanha a escolha do usuario.
-    /// </summary>
     private static Color? CorDeDestaqueDoWindows()
     {
         try
@@ -594,7 +452,6 @@ public partial class App : Application
                 (byte)((abgr >> 8) & 0xFF),
                 (byte)((abgr >> 16) & 0xFF));
 
-            // Um acento quase preto ou quase branco sumiria sobre o painel escuro.
             var brilho = (0.299 * cor.R + 0.587 * cor.G + 0.114 * cor.B) / 255.0;
             return brilho is > 0.12 and < 0.95 ? cor : null;
         }
@@ -604,10 +461,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Desenha o icone da bandeja com a temperatura da CPU, para o numero ficar
-    /// legivel sem abrir o painel.
-    /// </summary>
     private void AtualizarBandeja(float? cpuTemp, bool temSensores)
     {
         var texto = temSensores && cpuTemp is > 0 ? $"{cpuTemp:F0}" : "--";
@@ -615,8 +468,6 @@ public partial class App : Application
             ? $"KInfo — CPU {texto} °C"
             : "KInfo — sensores de baixo nível indisponíveis";
 
-        // 32 por 32 e desenhado para ser reduzido a 16 na bandeja: quanto mais
-        // area o numero ocupar, mais legivel ele fica depois da reducao.
         using var bmp = new D.Bitmap(32, 32, D.Imaging.PixelFormat.Format32bppArgb);
         using (var g = D.Graphics.FromImage(bmp))
         {
@@ -633,8 +484,6 @@ public partial class App : Application
             g.FillPath(fundo, quadro);
             g.DrawPath(contorno, quadro);
 
-            // O tamanho acompanha a quantidade de digitos, para o numero ocupar
-            // a largura toda sem estourar a borda.
             var tamanho = texto.Length >= 3 ? 16f : 21f;
 
             using var fonte = new D.Font("Segoe UI", tamanho, D.FontStyle.Bold,
@@ -654,7 +503,6 @@ public partial class App : Application
         _iconeAtual = D.Icon.FromHandle(handle);
         _bandeja.Icon = _iconeAtual;
 
-        // O handle do icone anterior precisa ser liberado, senao vaza a cada leitura.
         if (anterior is not null)
         {
             var antigo = anterior.Handle;
@@ -663,10 +511,6 @@ public partial class App : Application
         }
     }
 
-    /// <summary>
-    /// Aviso do Windows, para a temperatura alta aparecer mesmo com o painel
-    /// fechado. Clicar nele abre o painel.
-    /// </summary>
     private void Notificar(Alerta alerta)
     {
         if (!_cfg.NotificarNoWindows) return;
@@ -677,7 +521,6 @@ public partial class App : Application
         _bandeja.ShowBalloonTip(8000);
     }
 
-    /// <summary>Quadrado de cantos arredondados, que o GDI+ nao desenha direto.</summary>
     private static D.Drawing2D.GraphicsPath Quadrado(D.RectangleF area, float raio)
     {
         var caminho = new D.Drawing2D.GraphicsPath();
@@ -699,15 +542,8 @@ public partial class App : Application
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetForegroundWindow(IntPtr janela);
 
-    /// <summary>
-    /// Encerramento completo: o laco de leitura para, o driver e liberado e o
-    /// icone sai da bandeja. Cada passo e isolado, para uma falha num deles nao
-    /// deixar os outros por fazer.
-    /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
-        // Saida antes da inicializacao terminar: nao ha nada montado para
-        // desmontar. E o caminho normal do relancamento pela tarefa.
         if (!_iniciado)
         {
             base.OnExit(e);
@@ -722,7 +558,6 @@ public partial class App : Application
         Tentar(() => _volume?.Dispose());
         Tentar(() => _painel.GravarMaximos());
 
-        // O ultimo trecho de consumo, entre a gravacao de 30 s e agora.
         Tentar(() => _sensores.Consumo.Gravar());
         Tentar(() => _cfg.Salvar());
         Tentar(() => { if (_iconeAtual is not null) DestroyIcon(_iconeAtual.Handle); });

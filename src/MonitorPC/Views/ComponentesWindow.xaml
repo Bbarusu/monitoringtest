@@ -16,7 +16,6 @@
 
         <StackPanel>
 
-            <!-- Cabecalho -->
             <StackPanel Orientation="Horizontal">
                 <Button Style="{StaticResource BotaoIcone}" ToolTip="Voltar"
                         Margin="0,0,12,0" Click="Voltar_Click">
@@ -68,7 +67,6 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- Total -->
             <Border Margin="0,16,0,0" CornerRadius="12" Background="{DynamicResource Cartao}"
                     BorderBrush="{DynamicResource Borda}" BorderThickness="1" Padding="14">
                 <StackPanel>
