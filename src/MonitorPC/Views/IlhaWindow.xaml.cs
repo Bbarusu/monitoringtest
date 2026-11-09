@@ -141,6 +141,7 @@ public partial class IlhaWindow : Window
         Show();
         TrazerParaFrente();
         Posicionar();
+        OuvirTrocaDeJanela();
         _relogio.Start();
         _cursor.Start();
         MostrarEstado();
@@ -149,6 +150,7 @@ public partial class IlhaWindow : Window
     public void Desativar()
     {
         _ativa = false;
+        PararDeOuvirTrocaDeJanela();
         _relogio.Stop();
         _cursor.Stop();
         _fimDoAviso.Stop();
@@ -549,6 +551,40 @@ public partial class IlhaWindow : Window
     }
 
     private readonly HashSet<string> _cobertasAvisadas = new();
+
+    private IntPtr _ganchoDeJanela;
+    private EventoDeJanela? _aoTrocarJanela;
+
+    private void OuvirTrocaDeJanela()
+    {
+        if (_ganchoDeJanela != IntPtr.Zero) return;
+
+        _aoTrocarJanela = (_, _, _, _, _, _, _) =>
+            Dispatcher.BeginInvoke(() => ConferirPorCima(), System.Windows.Threading.DispatcherPriority.Background);
+        _ganchoDeJanela = SetWinEventHook(JanelaDaFrenteMudou, JanelaDaFrenteMudou, IntPtr.Zero, _aoTrocarJanela, 0, 0, ForaDoProcesso);
+    }
+
+    private void PararDeOuvirTrocaDeJanela()
+    {
+        if (_ganchoDeJanela == IntPtr.Zero) return;
+
+        UnhookWinEvent(_ganchoDeJanela);
+        _ganchoDeJanela = IntPtr.Zero;
+        _aoTrocarJanela = null;
+    }
+
+    private delegate void EventoDeJanela(IntPtr gancho, uint evento, IntPtr janela, int objeto, int filho, uint thread, uint tempo);
+
+    private const uint JanelaDaFrenteMudou = 0x0003;
+    private const uint ForaDoProcesso = 0x0000;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetWinEventHook(uint eventoMin, uint eventoMax, IntPtr modulo, EventoDeJanela funcao,
+                                                 uint processo, uint thread, uint opcoes);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnhookWinEvent(IntPtr gancho);
 
     private void TrazerParaFrente()
     {
