@@ -1,12 +1,8 @@
 ## Novidades
 
-- Kdrop: o QR Code passa a levar ao IP certo em PCs com mais de um endereço na rede, e a página volta a abrir no celular.
-- Fotos e vídeos na bandeja da Kisland aparecem com a miniatura, em vez do ícone do Windows.
-- A Kisland não fica mais escondida atrás de outras janelas depois de um tempo.
+- Microfone no mixer da Kisland: ao abrir o mixer, ajuste o volume do microfone, desligue ou ligue com um toque e escolha qual microfone usar.
 
 ## Detalhes
 
-- Kdrop, PC com mais de um IP na mesma placa (um principal por DHCP e outros fixos, de outra faixa): ia para o QR o primeiro da lista, que podia ser o secundário (192.168.0.118 em vez de 192.168.1.118), fora do alcance do celular. Agora cada IP ganha nota, e o da mesma faixa do gateway (pela máscara) vence, seguido do que veio por DHCP.
-- Bandeja: foto ou vídeo (JPG, PNG, GIF, BMP, WebP, HEIC, TIFF, AVIF, MP4, MOV, MKV e outros) mostra a miniatura do Windows (`IconeDoWindows.Miniatura`, `IShellItemImageFactory` com `SIIGBF_THUMBNAILONLY`), feita fora da tela e guardada por caminho e data do arquivo. Sem miniatura do Windows (HEIC sem a extensão da loja, por exemplo), tenta ler a imagem pelo WPF; sem isso, fica o ícone. Bitmap sem nenhum alfa passa a ser lido como opaco (miniatura de foto vinha com o alfa zerado).
-- Kisland atrás das janelas: o log de quem usa mostrou que o "sempre por cima" nunca se perdia, então outra janela passava à frente dela. A cada 2 s ela olha quem está acima na ordem do Windows e sobre a área dela (`QuemCobre`, por `GW_HWNDPREV`), ignorando janelas encobertas, transparentes ao clique e as do próprio Windows (menus, dicas, barra de tarefas, Iniciar, Alt+Tab). Achando uma, volta para o topo e registra no log o processo, a classe, se é "sempre por cima" e o tamanho, uma vez por janela. Janela do tamanho do monitor inteiro (jogo ou vídeo em tela cheia) só vai para o log, sem briga. Ao reaparecer (PC parado, tela cheia, pedido do Kdrop), ela também se põe no topo na hora. Além da conferência de 2 em 2 s, ela confere na hora em que outra janela vem para a frente (`SetWinEventHook` com `EVENT_SYSTEM_FOREGROUND`).
-- Limpeza do código: sem comentários em C#, XAML, página do Kdrop, scripts e projetos; removidos a página de teste `/teste` e as chaves `?diag=` do Kdrop (o problema de fotos no iPhone não voltou), o convite da Kisland no painel (substituído pelo guia e pelas Novidades), um método e uma propriedade sem uso, e o arrastar das janelas Guia e Novidades passou para `Janelas.ArrastarPeloFundo`.
+- Mixer: linha do microfone no topo, só com o mixer aberto. Volume e mudo do microfone padrão do Windows (`VolumeService` com `microfone: true`, que usa o fluxo de captura em vez do de saída), o ícone apaga quando está mudo, e subir o volume tira o mudo. A roda do mouse sobre a linha também ajusta. Com mais de um microfone ligado, aparecem os botões para escolher o padrão (o mesmo `IPolicyConfig` das saídas de som); o desenho dos botões de saída e de entrada passou a ser um só (`ChipDeAparelho`).
+- Limpeza: espaços que sobraram onde havia comentários dentro de chamadas (`GetDefaultAudioEndpoint(0 , 1 , …)`).

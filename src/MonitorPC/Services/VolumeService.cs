@@ -11,6 +11,7 @@ public sealed class VolumeService : IDisposable
     private RetornoDeVolume? _retorno;
     private string? _aparelho;
     private Guid _contexto = Guid.NewGuid();
+    private readonly int _fluxo;
 
     public event Action<int, bool>? Mudou;
 
@@ -18,14 +19,18 @@ public sealed class VolumeService : IDisposable
     public bool Mudo { get; private set; }
     public bool Disponivel => _volume is not null;
 
-    public VolumeService() => Conferir();
+    public VolumeService(bool microfone = false)
+    {
+        _fluxo = microfone ? 1 : 0;
+        Conferir();
+    }
 
     public void Conferir()
     {
         try
         {
             var enumerador = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-            if (enumerador.GetDefaultAudioEndpoint(0 , 1 , out var aparelho) != 0)
+            if (enumerador.GetDefaultAudioEndpoint(_fluxo, 1, out var aparelho) != 0)
             {
                 Soltar();
                 return;
@@ -37,7 +42,7 @@ public sealed class VolumeService : IDisposable
             Soltar();
 
             var iid = typeof(IAudioEndpointVolume).GUID;
-            aparelho.Activate(ref iid, 23 , IntPtr.Zero, out var objeto);
+            aparelho.Activate(ref iid, 23, IntPtr.Zero, out var objeto);
 
             _volume = (IAudioEndpointVolume)objeto;
             _aparelho = id;
@@ -124,10 +129,10 @@ public sealed class VolumeService : IDisposable
             var enumerador = (IMMDeviceEnumerator)new MMDeviceEnumerator();
 
             string? padrao = null;
-            if (enumerador.GetDefaultAudioEndpoint(0 , 1 , out var atual) == 0)
+            if (enumerador.GetDefaultAudioEndpoint(_fluxo, 1, out var atual) == 0)
                 atual.GetId(out padrao);
 
-            if (enumerador.EnumAudioEndpoints(0 , 1 , out var colecao) != 0)
+            if (enumerador.EnumAudioEndpoints(_fluxo, 1, out var colecao) != 0)
                 return lista;
 
             colecao.GetCount(out var quantos);
@@ -137,7 +142,7 @@ public sealed class VolumeService : IDisposable
                 colecao.Item(i, out var aparelho);
                 aparelho.GetId(out var id);
 
-                var nome = Ler(aparelho, NomeAmigavel) ?? "Saída de som";
+                var nome = Ler(aparelho, NomeAmigavel) ?? (_fluxo == 1 ? "Microfone" : "Saída de som");
                 var curto = Curto(Ler(aparelho, Descricao) ?? nome);
                 lidas.Add((id, nome, curto));
             }
@@ -166,7 +171,7 @@ public sealed class VolumeService : IDisposable
     {
         try
         {
-            aparelho.OpenPropertyStore(0 , out var propriedades);
+            aparelho.OpenPropertyStore(0, out var propriedades);
 
             var chave = qual;
             if (propriedades.GetValue(ref chave, out var valor) != 0) return null;

@@ -1744,8 +1744,13 @@ public partial class IlhaWindow : Window
             AppsDoMixer.Children.Clear();
             _linhasDoMixer.Clear();
             _assinaturaDoMixer = "";
+            LinhaDoMicrofone.Children.Clear();
+            EntradasDeSom.Children.Clear();
+            _assinaturaDasEntradas = "";
             return;
         }
+
+        MontarMicrofone();
 
         var apps = MixerService.Apps();
         MixerVazio.Visibility = Visivel(apps.Count == 0);
@@ -1755,7 +1760,8 @@ public partial class IlhaWindow : Window
         {
             _assinaturaDoMixer = assinatura;
             AppsDoMixer.Children.Clear();
-            _linhasDoMixer.Clear();
+            foreach (var chave in _linhasDoMixer.Keys.Where(k => k != ChaveDoMicrofone).ToList())
+                _linhasDoMixer.Remove(chave);
             foreach (var app in apps)
                 AppsDoMixer.Children.Add(LinhaDoApp(app));
         }
@@ -1774,6 +1780,177 @@ public partial class IlhaWindow : Window
             linha.Valor.Text = app.Mudo ? "Mudo" : $"{app.Nivel}%";
         }
         _ajustandoMixer = false;
+    }
+
+    private const string ChaveDoMicrofone = "\u0001microfone";
+    private const string DesenhoDoMicrofone =
+        "M12,3 A3,3 0 0,1 15,6 L15,12 A3,3 0 0,1 9,12 L9,6 A3,3 0 0,1 12,3 Z M5,11 A7,7 0 0,0 19,11 M12,18 L12,21 M9,21 L15,21";
+
+    private VolumeService? _microfone;
+    private string _assinaturaDasEntradas = "";
+
+    private void MontarMicrofone()
+    {
+        _microfone ??= new VolumeService(microfone: true);
+        _microfone.Conferir();
+
+        MicrofoneDoMixer.Visibility = Visivel(_microfone.Disponivel);
+        if (!_microfone.Disponivel)
+        {
+            LinhaDoMicrofone.Children.Clear();
+            _linhasDoMixer.Remove(ChaveDoMicrofone);
+            return;
+        }
+
+        var entradas = _microfone.Saidas();
+        var emUso = entradas.FirstOrDefault(e => e.Padrao);
+        var nome = emUso?.NomeCurto ?? "Microfone";
+
+        if (!_linhasDoMixer.TryGetValue(ChaveDoMicrofone, out var linha))
+        {
+            LinhaDoMicrofone.Children.Clear();
+            LinhaDoMicrofone.Children.Add(LinhaDoMicrofoneNova(nome));
+            linha = _linhasDoMixer[ChaveDoMicrofone];
+        }
+
+        _ajustandoMixer = true;
+        linha.Nome.Text = nome;
+        linha.Nome.ToolTip = emUso?.Nome ?? nome;
+        linha.Icone.Opacity = _microfone.Mudo ? 0.4 : 1;
+        if (!linha.Controle.IsMouseCaptureWithin)
+        {
+            linha.Controle.Value = _microfone.Nivel;
+            linha.Valor.Text = _microfone.Mudo ? "Mudo" : $"{_microfone.Nivel}%";
+        }
+        _ajustandoMixer = false;
+
+        var assinatura = string.Join("|", entradas.Select(e => e.Id + (e.Padrao ? "*" : "")));
+        if (assinatura == _assinaturaDasEntradas) return;
+
+        _assinaturaDasEntradas = assinatura;
+        EntradasDeSom.Children.Clear();
+        EntradasDeSom.Visibility = Visivel(entradas.Count > 1);
+        if (entradas.Count < 2) return;
+
+        foreach (var entrada in entradas)
+            EntradasDeSom.Children.Add(ChipDeAparelho(entrada, DesenhoDoMicrofone,
+                entrada.Padrao ? $"{entrada.Nome} (em uso)" : $"Gravar por {entrada.Nome}", Entrada_Click));
+    }
+
+    private Grid LinhaDoMicrofoneNova(string nomeDoAparelho)
+    {
+        var grade = new Grid { Margin = new Thickness(0, 6, 0, 0), Background = Brushes.Transparent };
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(104) });
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grade.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
+
+        var desenho = new System.Windows.Shapes.Path
+        {
+            Data = Geometry.Parse(DesenhoDoMicrofone),
+            StrokeThickness = 1.6,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round,
+            Width = 14,
+            Height = 14,
+            Stretch = Stretch.Uniform
+        };
+        desenho.SetResourceReference(Shape.StrokeProperty, "Acento");
+
+        var quadro = new Border
+        {
+            Width = 28,
+            Height = 28,
+            CornerRadius = new CornerRadius(8),
+            Child = desenho
+        };
+        quadro.SetResourceReference(Border.BackgroundProperty, "Chip");
+
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoSemMoldura"),
+            Content = quadro,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = "Desligar ou ligar o microfone"
+        };
+        botao.Click += (_, _) =>
+        {
+            _microfone?.AlternarMudo();
+            MontarMicrofone();
+        };
+
+        var nome = new TextBlock
+        {
+            Text = nomeDoAparelho,
+            FontSize = 12,
+            FontWeight = FontWeights.Medium,
+            Margin = new Thickness(10, 0, 8, 0),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        nome.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
+        var controle = new Slider
+        {
+            Style = (Style)FindResource("SliderIlha"),
+            Minimum = 0,
+            Maximum = 100,
+            IsMoveToPointEnabled = true,
+            IsSnapToTickEnabled = true,
+            TickFrequency = 1,
+            VerticalAlignment = VerticalAlignment.Center,
+            Focusable = false
+        };
+
+        var valor = new TextBlock
+        {
+            FontSize = 13,
+            FontWeight = FontWeights.Light,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        valor.SetResourceReference(TextBlock.FontFamilyProperty, "FonteNumero");
+        valor.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
+
+        controle.ValueChanged += (_, e) =>
+        {
+            if (_ajustandoMixer || _microfone is null) return;
+
+            var nivel = (int)Math.Round(e.NewValue);
+            _microfone.Definir(nivel);
+
+            if (e.NewValue > e.OldValue && _microfone.Mudo)
+            {
+                _microfone.AlternarMudo();
+                quadro.Opacity = 1;
+            }
+
+            valor.Text = $"{nivel}%";
+        };
+
+        Grid.SetColumn(botao, 0);
+        Grid.SetColumn(nome, 1);
+        Grid.SetColumn(controle, 2);
+        Grid.SetColumn(valor, 3);
+        grade.Children.Add(botao);
+        grade.Children.Add(nome);
+        grade.Children.Add(controle);
+        grade.Children.Add(valor);
+
+        var linha = new LinhaDoMixer(ChaveDoMicrofone, controle, valor, quadro, nome);
+        grade.Tag = linha;
+        _linhasDoMixer[ChaveDoMicrofone] = linha;
+        return grade;
+    }
+
+    private void Entrada_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string id } || _microfone is null) return;
+
+        _microfone.UsarSaida(id);
+        _assinaturaDasEntradas = "";
+        MontarMicrofone();
     }
 
     private Grid LinhaDoApp(AppDeSom app)
@@ -1933,58 +2110,62 @@ public partial class IlhaWindow : Window
         if (saidas.Count < 2) return;
 
         foreach (var saida in saidas)
+            SaidasDeSom.Children.Add(ChipDeAparelho(saida, DesenhoDaSaida(saida.Nome),
+                saida.Padrao ? $"{saida.Nome} (em uso)" : $"Tocar em {saida.Nome}", Saida_Click));
+    }
+
+    private Button ChipDeAparelho(SaidaDeSom saida, string desenho, string dica, RoutedEventHandler aoClicar)
+    {
+        var icone = new System.Windows.Shapes.Path
         {
-            var icone = new System.Windows.Shapes.Path
-            {
-                Data = Geometry.Parse(DesenhoDaSaida(saida.Nome)),
-                StrokeThickness = 1.6,
-                StrokeStartLineCap = PenLineCap.Round,
-                StrokeEndLineCap = PenLineCap.Round,
-                StrokeLineJoin = PenLineJoin.Round,
-                Width = 13,
-                Height = 13,
-                Stretch = Stretch.Uniform,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            var nome = new TextBlock
-            {
-                Text = saida.NomeCurto,
-                FontSize = 11.5,
-                FontWeight = FontWeights.Medium,
-                Margin = new Thickness(6, 0, 0, 0),
-                MaxWidth = 150,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center
-            };
+            Data = Geometry.Parse(desenho),
+            StrokeThickness = 1.6,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Round,
+            Width = 13,
+            Height = 13,
+            Stretch = Stretch.Uniform,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var nome = new TextBlock
+        {
+            Text = saida.NomeCurto,
+            FontSize = 11.5,
+            FontWeight = FontWeights.Medium,
+            Margin = new Thickness(6, 0, 0, 0),
+            MaxWidth = 150,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        };
 
-            var linha = new StackPanel { Orientation = Orientation.Horizontal };
-            linha.Children.Add(icone);
-            linha.Children.Add(nome);
+        var linha = new StackPanel { Orientation = Orientation.Horizontal };
+        linha.Children.Add(icone);
+        linha.Children.Add(nome);
 
-            var fundo = new Border
-            {
-                CornerRadius = new CornerRadius(13),
-                Padding = new Thickness(10, 5, 10, 5),
-                BorderThickness = new Thickness(1),
-                Child = linha
-            };
+        var fundo = new Border
+        {
+            CornerRadius = new CornerRadius(13),
+            Padding = new Thickness(10, 5, 10, 5),
+            BorderThickness = new Thickness(1),
+            Child = linha
+        };
 
-            fundo.SetResourceReference(Border.BackgroundProperty, saida.Padrao ? "InfoFundo" : "Chip");
-            fundo.SetResourceReference(Border.BorderBrushProperty, saida.Padrao ? "Acento" : "Trilho");
-            icone.SetResourceReference(Shape.StrokeProperty, saida.Padrao ? "InfoTexto" : "TextoFraco");
-            nome.SetResourceReference(TextBlock.ForegroundProperty, saida.Padrao ? "InfoTexto" : "Texto");
+        fundo.SetResourceReference(Border.BackgroundProperty, saida.Padrao ? "InfoFundo" : "Chip");
+        fundo.SetResourceReference(Border.BorderBrushProperty, saida.Padrao ? "Acento" : "Trilho");
+        icone.SetResourceReference(Shape.StrokeProperty, saida.Padrao ? "InfoTexto" : "TextoFraco");
+        nome.SetResourceReference(TextBlock.ForegroundProperty, saida.Padrao ? "InfoTexto" : "Texto");
 
-            var botao = new Button
-            {
-                Style = (Style)FindResource("BotaoSemMoldura"),
-                Content = fundo,
-                Tag = saida.Id,
-                ToolTip = saida.Padrao ? $"{saida.Nome} (em uso)" : $"Tocar em {saida.Nome}",
-                Margin = new Thickness(0, 0, 6, 6)
-            };
-            botao.Click += Saida_Click;
-            SaidasDeSom.Children.Add(botao);
-        }
+        var botao = new Button
+        {
+            Style = (Style)FindResource("BotaoSemMoldura"),
+            Content = fundo,
+            Tag = saida.Id,
+            ToolTip = dica,
+            Margin = new Thickness(0, 0, 6, 6)
+        };
+        botao.Click += aoClicar;
+        return botao;
     }
 
     private void Saida_Click(object sender, RoutedEventArgs e)

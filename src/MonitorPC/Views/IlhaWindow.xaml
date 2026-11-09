@@ -622,6 +622,11 @@
 
                         <StackPanel x:Name="MixerDeSom" Visibility="Collapsed" Margin="0,12,0,0">
                             <Border Height="1" Margin="0,0,0,4" Background="{DynamicResource Borda}" />
+                            <StackPanel x:Name="MicrofoneDoMixer" Visibility="Collapsed">
+                                <StackPanel x:Name="LinhaDoMicrofone" />
+                                <WrapPanel x:Name="EntradasDeSom" Margin="38,8,0,-6" Visibility="Collapsed" />
+                                <Border Height="1" Margin="0,10,0,4" Background="{DynamicResource Borda}" />
+                            </StackPanel>
                             <StackPanel x:Name="AppsDoMixer" />
                             <TextBlock x:Name="MixerVazio" Visibility="Collapsed" FontSize="11" Margin="0,6,0,0"
                                        TextWrapping="Wrap" Foreground="{DynamicResource TextoFraco}"

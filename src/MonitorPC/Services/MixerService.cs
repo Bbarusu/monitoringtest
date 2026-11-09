@@ -110,11 +110,11 @@ public static class MixerService
         try
         {
             var enumerador = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-            if (enumerador.GetDefaultAudioEndpoint(0 , 1 , out var aparelho) != 0)
+            if (enumerador.GetDefaultAudioEndpoint(0, 1, out var aparelho) != 0)
                 return lista;
 
             var iid = typeof(IAudioSessionManager2).GUID;
-            aparelho.Activate(ref iid, 23 , IntPtr.Zero, out var objeto);
+            aparelho.Activate(ref iid, 23, IntPtr.Zero, out var objeto);
             var gerente = (IAudioSessionManager2)objeto;
 
             if (gerente.GetSessionEnumerator(out var sessoes) != 0) return lista;
