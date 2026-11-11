@@ -1,8 +1,7 @@
 ## Novidades
 
-- Microfone no mixer da Kisland: ao abrir o mixer, ajuste o volume do microfone, desligue ou ligue com um toque e escolha qual microfone usar.
+- A capa do que está tocando na Kisland troca junto com o áudio, mesmo quando o título é igual (como áudios de WhatsApp e Telegram).
 
 ## Detalhes
 
-- Mixer: linha do microfone no topo, só com o mixer aberto. Volume e mudo do microfone padrão do Windows (`VolumeService` com `microfone: true`, que usa o fluxo de captura em vez do de saída), o ícone apaga quando está mudo, e subir o volume tira o mudo. A roda do mouse sobre a linha também ajusta. Com mais de um microfone ligado, aparecem os botões para escolher o padrão (o mesmo `IPolicyConfig` das saídas de som); o desenho dos botões de saída e de entrada passou a ser um só (`ChipDeAparelho`).
-- Limpeza: espaços que sobraram onde havia comentários dentro de chamadas (`GetDefaultAudioEndpoint(0 , 1 , …)`).
+- Mídia: a capa era reaproveitada sempre que app, título e artista eram os mesmos da leitura anterior. Áudios de mensagem (Telegram e WhatsApp no navegador) chegam todos como "Mensagem de Voz" e, muitas vezes, com o mesmo artista, então a foto do primeiro ficava presa. Agora cada aviso de troca de conteúdo do Windows (`MediaPropertiesChanged`) obriga a ler a capa de novo, e uma segunda leitura 1,5 s depois pega a imagem que o navegador manda atrasada. Avisos só de posição e de play/pausa continuam reaproveitando a capa.

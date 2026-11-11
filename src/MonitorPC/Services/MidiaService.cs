@@ -49,6 +49,8 @@ public sealed class MidiaService : IDisposable
     private GerenciadorDeMidia? _gerenciador;
     private string? _escolhida;
     private int _geracao;
+    private int _versaoDasPropriedades;
+    private int _versaoDaCapa = -1;
 
     public event Action<EstadoDeMidia?>? Mudou;
 
@@ -100,7 +102,7 @@ public sealed class MidiaService : IDisposable
                     };
 
                     sessao.PlaybackInfoChanged += Estado_Mudou;
-                    sessao.MediaPropertiesChanged += Conteudo_Mudou;
+                    sessao.MediaPropertiesChanged += Propriedades_Mudou;
                     sessao.TimelinePropertiesChanged += Conteudo_Mudou;
                 }
 
@@ -157,6 +159,22 @@ public sealed class MidiaService : IDisposable
         if ((sessao.SourceAppUserModelId ?? "") == _escolhida) _ = LerAsync();
     }
 
+    private void Propriedades_Mudou(SessaoDeMidia sessao, object args)
+    {
+        Interlocked.Increment(ref _versaoDasPropriedades);
+        if ((sessao.SourceAppUserModelId ?? "") != _escolhida) return;
+
+        _ = LerAsync();
+        _ = RelerDepois();
+    }
+
+    private async Task RelerDepois()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(1.5));
+        Interlocked.Increment(ref _versaoDasPropriedades);
+        _ = LerAsync();
+    }
+
     private bool Escolher()
     {
         string? nova;
@@ -197,7 +215,7 @@ public sealed class MidiaService : IDisposable
         try
         {
             sessao.PlaybackInfoChanged -= Estado_Mudou;
-            sessao.MediaPropertiesChanged -= Conteudo_Mudou;
+            sessao.MediaPropertiesChanged -= Propriedades_Mudou;
             sessao.TimelinePropertiesChanged -= Conteudo_Mudou;
         }
         catch
@@ -208,6 +226,7 @@ public sealed class MidiaService : IDisposable
     private async Task LerAsync()
     {
         var minha = Interlocked.Increment(ref _geracao);
+        var versao = Volatile.Read(ref _versaoDasPropriedades);
 
         try
         {
@@ -215,7 +234,7 @@ public sealed class MidiaService : IDisposable
 
             if (sessao is null)
             {
-                Publicar(minha, null);
+                Publicar(minha, versao, null);
                 return;
             }
 
@@ -227,7 +246,7 @@ public sealed class MidiaService : IDisposable
             var titulo = props?.Title?.Trim() ?? "";
             if (titulo.Length == 0)
             {
-                Publicar(minha, null);
+                Publicar(minha, versao, null);
                 return;
             }
 
@@ -236,7 +255,8 @@ public sealed class MidiaService : IDisposable
                           GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
 
             var capa = Atual is { } anterior && anterior.Origem == origem &&
-                       anterior.Titulo == titulo && anterior.Artista == artista
+                       anterior.Titulo == titulo && anterior.Artista == artista &&
+                       versao == Volatile.Read(ref _versaoDaCapa)
                 ? anterior.Capa
                 : await LerCapaAsync(props!);
 
@@ -246,7 +266,7 @@ public sealed class MidiaService : IDisposable
 
             if (lidaEm.Year < 2000) lidaEm = DateTimeOffset.Now;
 
-            Publicar(minha, new EstadoDeMidia(
+            Publicar(minha, versao, new EstadoDeMidia(
                 origem,
                 titulo,
                 artista,
@@ -264,10 +284,11 @@ public sealed class MidiaService : IDisposable
         }
     }
 
-    private void Publicar(int geracao, EstadoDeMidia? estado)
+    private void Publicar(int geracao, int versao, EstadoDeMidia? estado)
     {
         if (geracao != Volatile.Read(ref _geracao)) return;
 
+        Volatile.Write(ref _versaoDaCapa, versao);
         Atual = estado;
         Mudou?.Invoke(estado);
     }
