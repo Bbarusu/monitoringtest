@@ -1,5 +1,8 @@
 # Instruções para quem trabalha neste repositório
 
+O projeto fica em `W:\monitoringtest` no PC do Kahuã: é ali que ele roda o
+`git pull`, o `publicar.cmd` e o `publicar-release.cmd`.
+
 ## Versões: só quando o Kahuã pedir
 
 - **Não suba o número da versão por conta própria.** O `<Version>` do

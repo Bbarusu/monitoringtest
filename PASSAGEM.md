@@ -1,6 +1,7 @@
 # Passagem de contexto — onde paramos (4 nov 2026)
 
-Arquivo para quem continuar o trabalho no KInfo (Claude Code no PC do Kahuã).
+Arquivo para quem continuar o trabalho no KInfo (Claude Code no PC do Kahuã,
+projeto em `W:\monitoringtest`).
 Leia junto com o `CLAUDE.md` (regras do projeto, valem sempre), o `README.md`
 (como cada parte funciona por dentro) e o `DESIGN.md` (o visual de cada tela).
 
