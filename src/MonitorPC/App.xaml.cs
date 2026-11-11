@@ -160,20 +160,36 @@ public partial class App : Application
 
         _iniciado = true;
 
-        if (_cfg.VerificarAtualizacoes) _ = ProcurarAtualizacao(false);
+        _ = ProcurarAoIniciar();
     }
 
-    private async Task ProcurarAtualizacao(bool pedidaPeloUsuario)
+    private enum MomentoDaProcura { AoIniciar, DeTempoEmTempo, PedidaPeloUsuario }
+
+    private string? _versaoAvisada;
+    private System.Windows.Threading.DispatcherTimer? _procuraPeriodica;
+
+    private async Task ProcurarAoIniciar()
     {
+        for (var tentativa = 0; tentativa < 4 && _cfg.VerificarAtualizacoes; tentativa++)
+        {
+            if (await ProcurarAtualizacao(MomentoDaProcura.AoIniciar)) break;
+            await Task.Delay(TimeSpan.FromMinutes(1));
+        }
+
+        _procuraPeriodica = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromHours(6) };
+        _procuraPeriodica.Tick += (_, _) =>
+        {
+            if (_cfg.VerificarAtualizacoes) _ = ProcurarAtualizacao(MomentoDaProcura.DeTempoEmTempo);
+        };
+        _procuraPeriodica.Start();
+    }
+
+    private async Task<bool> ProcurarAtualizacao(MomentoDaProcura quando)
+    {
+        var pedidaPeloUsuario = quando == MomentoDaProcura.PedidaPeloUsuario;
+
         try
         {
-            if (!pedidaPeloUsuario)
-            {
-                var ultima = _cfg.UltimaVerificacaoDeAtualizacao;
-                if (ultima is { } quando && DateTime.UtcNow - quando < TimeSpan.FromDays(1))
-                    return;
-            }
-
             var procura = await _atualizacoes.ProcurarAsync();
 
             if (procura.Verificou)
@@ -186,8 +202,19 @@ public partial class App : Application
             {
                 if (procura.TemNovidade)
                 {
-                    _painel.OferecerAtualizacao(procura.Manifesto!);
-                    _painel.Mostrar();
+                    var manifesto = procura.Manifesto!;
+                    _painel.OferecerAtualizacao(manifesto);
+
+                    if (quando != MomentoDaProcura.DeTempoEmTempo) _painel.Mostrar();
+
+                    if (!pedidaPeloUsuario && _versaoAvisada != manifesto.Versao)
+                    {
+                        _versaoAvisada = manifesto.Versao;
+                        _bandeja.BalloonTipTitle = $"KInfo {manifesto.Versao} disponível";
+                        _bandeja.BalloonTipText = "Uma nova versão está pronta para instalar. Toque para ver o que mudou.";
+                        _bandeja.BalloonTipIcon = WF.ToolTipIcon.Info;
+                        _bandeja.ShowBalloonTip(10000);
+                    }
                     return;
                 }
 
@@ -199,10 +226,13 @@ public partial class App : Application
                     ? $"Você já tem a versão mais recente ({AtualizacaoService.VersaoAtual})."
                     : $"Não foi possível verificar: {procura.Motivo}.");
             });
+
+            return procura.Verificou;
         }
         catch (Exception ex)
         {
             Log.Erro("Procurar atualização", ex);
+            return false;
         }
     }
 
@@ -263,7 +293,7 @@ public partial class App : Application
             _painel.Mostrar();
             _painel.AbrirConfiguracao(false);
         }));
-        _menu.Items.Add(Item("Procurar atualizações", () => _ = ProcurarAtualizacao(true)));
+        _menu.Items.Add(Item("Procurar atualizações", () => _ = ProcurarAtualizacao(MomentoDaProcura.PedidaPeloUsuario)));
         _menu.Items.Add(Item("Salvar relatório do problema", SalvarRelatorio));
 
         _menu.Items.Add(new System.Windows.Controls.Separator());
