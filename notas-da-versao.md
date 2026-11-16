@@ -1,9 +1,7 @@
 ## Novidades
 
-- A capa do que está tocando na Kisland troca junto com o áudio, mesmo quando o título é igual (como áudios de WhatsApp e Telegram).
-- Quando sai uma versão nova, o KInfo avisa assim que é aberto: o painel abre com as novidades e chega uma notificação do Windows.
+- A Kisland fechada ocupa só o espaço que aparece: dá para clicar no que está logo abaixo dela, como a barra de endereços do navegador.
 
 ## Detalhes
 
-- Mídia: a capa era reaproveitada sempre que app, título e artista eram os mesmos da leitura anterior. Áudios de mensagem (Telegram e WhatsApp no navegador) chegam todos como "Mensagem de Voz" e, muitas vezes, com o mesmo artista, então a foto do primeiro ficava presa. Agora cada aviso de troca de conteúdo do Windows (`MediaPropertiesChanged`) obriga a ler a capa de novo, e uma segunda leitura 1,5 s depois pega a imagem que o navegador manda atrasada. Avisos só de posição e de play/pausa continuam reaproveitando a capa.
-- Atualizações: a procura deixou de ser no máximo uma vez por dia. Agora acontece a cada início do app (com até 3 novas tentativas, de minuto em minuto, se a internet ainda não estiver pronta, como logo após ligar o PC) e de 6 em 6 horas com o app aberto. Achando versão nova ao iniciar, o painel abre com o cartão da atualização; em qualquer caso, uma notificação do Windows (balão da bandeja) avisa uma vez por versão, e tocar nela abre o painel. A opção "Procurar atualizações" da Configuração continua desligando tudo isso.
+- Kisland: a janela tinha 28 px de margem embaixo e 16 px dos lados para caber a sombra da Kisland aberta. Na fechada, os pixels quase invisíveis da sombra seguravam o clique até uns 30 px abaixo da pílula. Agora, fechada, ela usa margem de 10 px e uma sombra menor (`SombraCompacta`, desfoque 8, deslocamento 2); aberta, volta a margem e a sombra de antes (`AplicarSombra`, chamado em `MostrarEstado` e `AplicarPreta`). A margem de cima não muda, então a pílula não pula.

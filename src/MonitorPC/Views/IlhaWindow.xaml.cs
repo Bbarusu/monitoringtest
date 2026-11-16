@@ -267,17 +267,41 @@ public partial class IlhaWindow : Window
 
     private System.Windows.Media.Effects.Effect? _sombra;
 
-    private void AplicarPreta()
+    private static readonly System.Windows.Media.Effects.DropShadowEffect SombraCompacta = CriarSombraCompacta();
+
+    private static System.Windows.Media.Effects.DropShadowEffect CriarSombraCompacta()
+    {
+        var sombra = new System.Windows.Media.Effects.DropShadowEffect
+        {
+            BlurRadius = 8,
+            ShadowDepth = 2,
+            Direction = 270,
+            Opacity = 0.3,
+            Color = Colors.Black
+        };
+        sombra.Freeze();
+        return sombra;
+    }
+
+    private static readonly Thickness MargemCompacta = new(10, 6, 10, 10);
+    private static readonly Thickness MargemAberta = new(16, 6, 16, 28);
+
+    private void AplicarSombra()
     {
         _sombra ??= Casca.Effect;
 
+        Casca.Margin = _expandida ? MargemAberta : MargemCompacta;
+        Casca.Effect = _cfg.IlhaPreta ? null : _expandida ? _sombra : SombraCompacta;
+    }
+
+    private void AplicarPreta()
+    {
         if (_cfg.IlhaPreta)
         {
             foreach (var (chave, pincel) in ThemeService.PaletaPreta())
                 Resources[chave] = pincel;
 
             Casca.BorderBrush = Brushes.Transparent;
-            Casca.Effect = null;
         }
         else
         {
@@ -285,8 +309,9 @@ public partial class IlhaWindow : Window
                 Resources.Remove(chave);
 
             Casca.SetResourceReference(Border.BorderBrushProperty, "Borda");
-            Casca.Effect = _sombra;
         }
+
+        AplicarSombra();
     }
 
     private int _passoDoPixel;
@@ -1320,6 +1345,7 @@ public partial class IlhaWindow : Window
         Compacta.Visibility = Visivel(!_expandida && aviso == Aviso.Nenhum);
 
         Casca.CornerRadius = new CornerRadius(_expandida ? 16 : aviso is Aviso.Faixa or Aviso.Texto ? 28 : 22);
+        AplicarSombra();
 
         var pilulaNaTela = _ativa && !_escondidaPorTelaCheia && !_escondidaPorInatividade &&
                            Compacta.Visibility == Visibility.Visible;
