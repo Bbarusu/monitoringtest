@@ -1,88 +1,168 @@
-##KInfo
+<div align="center">
 
-O KInfo é um painel de monitoramento leve e discreto que vive na bandeja do Windows.Ele exibe dados em tempo real sobre temperatura, carga, memória e energia do seu PC, sem comprometer o desempenho do sistema. O painel é totalmente flutuante e pode ser arrastado para qualquer área de trabalho ou monitor secundário.   
+<img src="src/MonitorPC/kinfo.ico" width="96" alt="KInfo">
 
-##Kisland: A Ilha Dinâmica do Windows
+# KInfo
 
-Inspirada na interface dos smartphones modernos, a Kisland é uma pílula interativa e inteligente localizada no topo da tela.   Controle Multimídia e Áudio: Fechada, exibe a temperatura, volume e a música atual. Aberta, transforma-se em um player completo com suporte a capas de álbuns e atalhos de energia.   Monitoramento em Jogos: O modo jogo exibe o FPS real diretamente pelo rastreamento de eventos do Windows, sem injetar código que possa causar banimentos.   Proteção para Telas OLED: O painel se move sutilmente a cada 3 minutos, reduz a opacidade quando o mouse está distante e desaparece após 10 minutos de inatividade.   Integração com Inteligência Artificial: O anel pulsante da ilha pode ser configurado como um atalho rápido para o seu chat de IA favorito (como ChatGPT, Claude, Gemini ou Copilot).   
+**Painel de monitoramento leve para Windows que vive na bandeja, com ilha dinâmica (Kisland) e compartilhamento local (Kdrop).**
 
+[Kisland](#kisland-a-ilha-dinâmica-do-windows) ·
+[Kdrop](#kdrop-compartilhamento-local-sem-complicação) ·
+[Hardware e desempenho](#hardware-e-desempenho) ·
+[Instalação](#instalação-e-requisitos) ·
+[Estrutura](#estrutura)
 
-##Kdrop: Compartilhamento Local Sem Complicação
+</div>
 
-O Kdrop transforma seu PC em um servidor local seguro para transferência de arquivos e textos.   
-Transferência via Navegador: O aplicativo hospeda uma página leve que você acessa pelo celular, permitindo baixar arquivos do PC ou enviar fotos e documentos diretamente para a bandeja do Windows.   
-Recuperação de Envios: Arquivos são transferidos em blocos de 8 MB. Se a conexão Wi-Fi cair, o sistema retoma o envio exatamente de onde parou.   
-Totalmente Local: Funciona via rede local (porta HTTP 48620) e MDNS, sem uploads para a nuvem e com descoberta automática entre computadores da mesma casa.   
+O **KInfo** exibe em tempo real temperatura, carga, memória, disco e energia do PC sem pesar no sistema. O painel abre ancorado na bandeja do Windows, é totalmente flutuante e pode ser arrastado para qualquer canto da área de trabalho ou monitor secundário — além de redesenhar o próprio ícone da bandeja com a temperatura atual da CPU.
 
-##Hardware e Desempenho
+---
 
-O sistema lê os componentes a fundo de maneira adaptativa, consumindo em média apenas 0,05% da CPU e 88 MB de RAM no hardware de referência.   
-Uso de GPU por Programa: Identifica o consumo da placa de vídeo individualmente por processo, utilizando os contadores nativos do Windows.   
-Leitura Avançada de Sensores: O acesso seguro aos sensores da placa-mãe e processador é feito pelo driver PawnIO. O instalador configura uma tarefa agendada inteligente para elevar os privilégios na inicialização sem importunar o usuário com alertas contínuos do sistema.   
-Limites e Especificações Reais: As barras de carga baseiam-se em tetos reais de funcionamento (como TBP e TjMax) vindos de um catálogo de hardware embutido e atualizável, ou de testes de calibração térmica e de ventoinhas feitos no próprio PC.   
-Teste de Estresse Integrado: Permite aplicar carga controlada na CPU para analisar reduções térmicas e monitorar o comportamento do clock sob pressão.   
+## Painel principal
 
-Instalação e Requisitos 
+Cinco abas fixas com visual adaptável (temas **Escuro**, **Claro**, **Sistema** e **Preto OLED**), cor de destaque personalizável e transparência ajustável:
 
-Sistema: Windows 10 ou 11 (64 bits).   
-Dependências: Requer o .NET 8 SDK.   
-Setup Inteligente: O executável resolve sozinho as permissões do Windows Defender, configura regras de firewall para o Kdrop (apenas em redes privadas) e gerencia as atualizações de forma transparente, mantendo suas preferências.
+| Aba | O que mostra |
+|---|---|
+| **Geral** | Temperatura da CPU no anel principal, uso de RAM, cards expansíveis de GPU/RAM e perfis de energia |
+| **CPU** | Grade dinâmica por núcleo ou thread, clocks, tensão, potência e **Teste de estresse** integrado |
+| **GPU** | Temperatura da borda, hot spot (com alerta de diferença alta), VRAM, clocks, ventoinha e uso por processo |
+| **Disco** | Temperatura, leitura/escrita em MB/s, vida útil SMART, uso por processo, arquivos abertos e log de picos |
+| **Energia** | Potência medida (CPU/GPU) + estimada, consumo acumulado em Wh/kWh, média/pico e calibração de componentes |
+
+> **Atenção:** o menu da bandeja é desenhado pelo próprio app (não pelo menu nativo do Windows) para continuar aparecendo normalmente mesmo com jogos em tela cheia.
+
+---
+
+## Kisland: a ilha dinâmica do Windows
+
+Inspirada na ilha interativa dos smartphones modernos, a **Kisland** fica sempre acessível sem roubar o foco da janela em uso (`WS_EX_NOACTIVATE`).
+
+- **Posição livre e modo vertical:** arraste para qualquer lugar da tela ou entre monitores. Perto do centro do topo ela encaixa de volta no padrão; perto das bordas esquerda ou direita (ou pelo menu de clique direito / Personalização), assume formato vertical compacto e expande ancorada dentro da tela.
+- **Multimídia, volume e mixer:** fechada, exibe música atual, temperaturas, RAM, disco, potência, relógio e volume. Aberta, traz player com capa, controles, seletor de saídas de áudio e mixer por aplicativo com controle de microfone.
+- **Monitoramento em jogos:** exibe o FPS real por rastreamento de eventos do Windows (DXGI/D3D9, estilo PresentMon), sem injetar código no jogo e sem risco de banimento.
+- **Proteção para telas OLED:** desloca 1–2 px a cada 3 minutos, escurece quando o cursor está longe e se esconde após 10 minutos sem entrada no PC (além da opção de fundo preto puro).
+- **Atalhos e IA:** o anel pulsante pode abrir seu chat de IA favorito (ChatGPT, Claude, Gemini, Copilot, Perplexity, DeepSeek ou endereço próprio), e a área expandida comporta até 6 atalhos de apps ou sites.
+
+---
+
+## Kdrop: compartilhamento local sem complicação
+
+O **Kdrop** transforma a bandeja da Kisland em um ponto de troca rápida de arquivos, pastas e textos na mesma rede Wi-Fi — sem nuvem, sem conta e sem servidor externo.
+
+- **Página para o celular:** escaneando o QR Code na Kisland, você abre uma página leve no navegador do celular para baixar itens do PC ou enviar fotos, vídeos e documentos direto para a bandeja.
+- **Envio retomável em partes:** arquivos grandes sobem em blocos de 8 MB; se o Wi-Fi oscilar, a página retoma exatamente de onde parou.
+- **Pastas e textos:** pastas baixadas pelo celular saem compactadas em `.zip` sob demanda; textos e links copiados entram na bandeja com botões rápidos de copiar e abrir.
+- **Segurança na rede:** todo envio passa por aceite na Kisland (prazo de 60 s), exceto aparelhos marcados como confiáveis, e a regra de firewall vale apenas para redes privadas e de domínio.
+
+| Serviço | Porta / Protocolo | Função |
+|---|---|---|
+| Servidor Web | `48620` / TCP (HTTP) | Página do celular e transferência de arquivos |
+| Descoberta local | `48621` / UDP | Anúncio da bandeja entre PCs com KInfo na rede |
+| Endereço fixo | `5353` / UDP (mDNS) | Responde por `kdrop-<nome>.local` na rede doméstica |
+
+---
+
+## Hardware e desempenho
+
+Medido no hardware de referência a cada 3 segundos: média de **0,05% a 0,07% de CPU** e memória estabilizada em torno de **88 MB**.
+
+- **Leitura adaptativa:** intervalo de `1 s` com o painel aberto, `3 s` fechado e `30 s` para sensores lentos; listas caras (disco e GPU por processo) só rodam com a respectiva tela aberta.
+- **GPU por programa:** identifica consumo e VRAM por processo via contadores nativos do Windows (`GPU Engine` e `GPU Process Memory`), independente do fabricante.
+- **Driver seguro sem UAC repetitivo:** utiliza o driver assinado **PawnIO** via `LibreHardwareMonitorLib`. O instalador cria uma tarefa agendada com privilégio elevado uma única vez, evitando pedidos do Windows a cada inicialização.
+- **Tetos reais e calibração:** as barras usam limites reais de fábrica (PPT, TBP, TjMax, boost) de um catálogo embutido e atualizável, além de aprendizado automático de curvas PWM e calibração de ventoinhas a 100%.
+- **Teste de estresse integrado:** aplica carga controlada nas threads da CPU com parada automática perto do limite térmico, apontando queda de clock por redução térmica.
+
+---
+
+## Instalação e requisitos
+
+### Para usar (instalador pronto)
+
+- **Sistema:** Windows 10 ou 11 (64 bits).
+- **Instalador:** baixe o `KInfo-Setup.exe` na página de [releases](https://github.com/Bbarusu/kinfo-releases/releases/latest).
+- **Setup completo:** instala o app, configura a tarefa elevada dos sensores, oferece a instalação do **PawnIO**, cria regra de firewall do Kdrop (redes privadas), adiciona exceção opcional no Windows Defender e gerencia atualizações mantendo suas configurações.
+
+### Para compilar do código
+
+- **Requisitos:** Windows 10 ou 11 e [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+```bash
+cd src/MonitorPC
+dotnet run
+```
+
+> Sem privilégio de administrador (e sem o PawnIO instalado), GPU, memória e discos continuam funcionando normalmente, mas temperatura da CPU e sensores da placa-mãe ficam indisponíveis.
+
+Para gerar o instalador completo (`dist\instalador\KInfo-Setup.exe`):
+
+```bat
+publicar.cmd
+```
+
+---
 
 ## Estrutura
 
+```text
+src/
+  Comum/
+    Versao.cs                        leitura e comparação de versão compartilhada
+  MonitorPC/
+    App.xaml.cs                      ícone da bandeja, elevação, atualizações e ciclo de vida
+    Dados/
+      catalogo.json                  ficha técnica embutida de CPUs e GPUs
+      kdrop.html                     página web servida ao celular pelo Kdrop
+    Models/
+      Snapshot.cs                    leitura completa dos sensores em um ciclo
+      Teto.cs                        limite máximo de barra e procedência
+      CurvaDeVentoinha.cs            curva rotação × PWM aprendida entre sessões
+      ...                            modelos de disco, sensores e processos
+    Services/
+      SensorService.cs               leitura adaptativa e cálculo de energia
+      EspecificacaoService.cs        escolha de tetos (manual, hardware, curva, catálogo)
+      CatalogoService.cs             catálogo embutido com cache e atualização semanal
+      CalibracaoService.cs           medição de rotação máxima real das ventoinhas
+      ConsumoService.cs              registro diário de consumo em texto
+      AlertService.cs                alertas térmicos com histerese e silenciamento
+      PowerService.cs                alternância de planos de energia do Windows
+      PerformanceService.cs          ações do Modo Desempenho e gestão de processos
+      StressService.cs               carga controlada de CPU por threads
+      DiskProcessService.cs          taxa de I/O de disco por processo
+      DiskLogService.cs              histórico de picos de disco
+      GpuProcessService.cs           uso de GPU e VRAM por processo via PDH
+      OpenFilesService.cs            arquivos abertos por processo sob demanda
+      FpsService.cs                  contador de FPS via ETW (DXGI / D3D9) e detector de jogos
+      MidiaService.cs                controle de mídia via SMTC do Windows
+      VolumeService.cs               volume, mudo e saídas/entradas via Core Audio
+      MixerService.cs                mixer por aplicativo e microfone
+      KdropService.cs                servidor HTTP, descoberta UDP e fila de transferências
+      NomeNaRede.cs                  responder mDNS mínimo para kdrop-<nome>.local
+      ThemeService.cs                temas Claro, Escuro, Sistema e Preto (OLED)
+      AtualizacaoService.cs          verificação, download e validação SHA-256 de updates
+      AppConfig.cs                   persistência em %APPDATA%\KInfo\config.json
+    Views/
+      FlyoutWindow.xaml              painel principal da bandeja (5 abas)
+      IlhaWindow.xaml                Kisland flutuante (horizontal, vertical e expandida)
+      PersonalizacaoWindow.xaml      temas, cores, transparência e ajustes da Kisland
+      ConfiguracaoWindow.xaml        limites térmicos e preferências gerais
+      GuiaKislandWindow.xaml         guia interativo de apresentação da Kisland
+      NovidadesWindow.xaml           apresentação do Kdrop
+      ...                            telas auxiliares (Sensores, Memória, GPU, Disco, Estresse)
+  MonitorPC.Setup/
+    Instalacao.cs                    instalação, tarefa agendada, PawnIO, atualização e remoção
+    SetupWindow.xaml                 interface do instalador/atualizador
 ```
-src/MonitorPC/
-  Models/Snapshot.cs        uma leitura completa dos sensores
-  Services/SensorService.cs leitura adaptativa e cálculo de energia
-  Services/AppConfig.cs     configuração em JSON
-  Views/FlyoutWindow.xaml   o painel e suas abas
-  Views/BarraDeNucleo.cs    uma linha da grade de núcleos
-  Views/BarraDeMetrica.cs   barra rotulada com valor (VRAM, potência, ventoinha)
-  Views/LinhaDeDisco.cs     uma linha da lista de processos ou unidades
-  Views/LinhaDeLegenda.cs   uma linha da legenda de energia
-  Services/DiskProcessService.cs  uso de disco por processo
-  Views/PersonalizacaoWindow.xaml  cor e transparência
-  Views/ConfiguracaoWindow.xaml    limites de temperatura
-  Services/PowerService.cs  perfis de energia
-  Services/AlertService.cs  quando a temperatura passa do limite
-  Services/ThemeService.cs  paleta clara e escura
-  Services/OpenFilesService.cs  arquivos abertos por um processo
-  Views/ArquivosWindow.xaml     a lista de arquivos abertos
-  Views/MemoriaWindow.xaml  programas por consumo de memória
-  Views/ComponentesWindow.xaml  quantidades e watts por unidade
-  Views/LinhaDeAjuste.cs    uma linha de ajuste (contador ou número)
-  Services/PerformanceService.cs  ações do Modo Desempenho
-  Services/StressService.cs       carga de CPU controlada
-  Views/SensoresWindow.xaml       lista de todos os sensores
-  Services/ConsumoService.cs      registro de consumo por dia, em txt
-  Services/GpuProcessService.cs   uso da placa de vídeo por programa
-  Views/GpuProcessosWindow.xaml   a tela de GPU por programa
-  Views/LinhaDeProcessoGpu.cs     uma linha dessa tela, com o botão de fechar
-  Models/Teto.cs                  um valor máximo e a procedência dele
-  Models/CurvaDeVentoinha.cs      curva rotação x PWM aprendida
-  Services/CatalogoService.cs     ficha técnica por modelo, embutida e atualizável
-  Services/EspecificacaoService.cs escolhe o teto de cada barra
-  Services/CalibracaoService.cs   mede a rotação máxima real das ventoinhas
-  Views/CalibracaoWindow.xaml     a tela da calibração
-  Dados/catalogo.json             o catálogo embutido
-  Views/EstresseWindow.xaml       a tela do teste de estresse
-  Services/DiskLogService.cs      registro de picos de disco
-  Views/LogDiscoWindow.xaml       a tela do log
-  Views/DesempenhoWindow.xaml     a tela do Modo Desempenho
-  Views/IlhaWindow.xaml           a ilha do topo da tela
-  Services/MidiaService.cs        o que está tocando, pelo controle de mídia do Windows
-  Services/VolumeService.cs       volume geral pelo Core Audio
-  Services/TelaCheia.cs           se há programa em tela cheia agora
-  App.xaml.cs               ícone da bandeja e ciclo de vida
-```
 
+---
 
+## Hardware de referência e conflitos
 
-## Hardware de referência
+- **Hardware de referência:** Ryzen 7 5700, ASUS Prime B550M-A, Radeon RX 7600, 24 GB em 3 módulos e 3 SSDs.
+- **Conflitos conhecidos:** **HWMonitor**, **Armoury Crate** e **Ryzen Master** disputam o mesmo acesso de baixo nível aos sensores. Rodando junto com eles, algumas leituras podem vir zeradas.
 
-Ryzen 7 5700, ASUS Prime B550M-A, Radeon RX 7600, 24 GB em 3 módulos, 3 SSDs.
+---
 
-## Conflitos conhecidos
+## Estado
 
-HWMonitor, Armoury Crate e Ryzen Master disputam o mesmo acesso de baixo nível aos
-sensores. Rodando junto com eles, algumas leituras podem vir zeradas.
+Projeto pessoal em desenvolvimento contínuo (versão atual `1.0.3`). Feito para uso diário no Windows 10 e 11 sem depender de assinaturas ou serviços pagos de terceiros.
