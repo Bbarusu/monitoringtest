@@ -83,22 +83,6 @@ Medido no hardware de referência a cada 3 segundos: média de **0,05% a 0,07% d
 - **Instalador:** baixe o `KInfo-Setup.exe` na página de [releases](https://github.com/Bbarusu/kinfo-releases/releases/latest).
 - **Setup completo:** instala o app, configura a tarefa elevada dos sensores, oferece a instalação do **PawnIO**, cria regra de firewall do Kdrop (redes privadas), adiciona exceção opcional no Windows Defender e gerencia atualizações mantendo suas configurações.
 
-### Para compilar do código
-
-- **Requisitos:** Windows 10 ou 11 e [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
-
-```bash
-cd src/MonitorPC
-dotnet run
-```
-
-> Sem privilégio de administrador (e sem o PawnIO instalado), GPU, memória e discos continuam funcionando normalmente, mas temperatura da CPU e sensores da placa-mãe ficam indisponíveis.
-
-Para gerar o instalador completo (`dist\instalador\KInfo-Setup.exe`):
-
-```bat
-publicar.cmd
-```
 
 ---
 
