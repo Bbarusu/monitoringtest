@@ -15,6 +15,7 @@ Recuperação de Envios: Arquivos são transferidos em blocos de 8 MB. Se a cone
 Totalmente Local: Funciona via rede local (porta HTTP 48620) e MDNS, sem uploads para a nuvem e com descoberta automática entre computadores da mesma casa.   
 
 ##Hardware e Desempenho
+
 O sistema lê os componentes a fundo de maneira adaptativa, consumindo em média apenas 0,05% da CPU e 88 MB de RAM no hardware de referência.   
 Uso de GPU por Programa: Identifica o consumo da placa de vídeo individualmente por processo, utilizando os contadores nativos do Windows.   
 Leitura Avançada de Sensores: O acesso seguro aos sensores da placa-mãe e processador é feito pelo driver PawnIO. O instalador configura uma tarefa agendada inteligente para elevar os privilégios na inicialização sem importunar o usuário com alertas contínuos do sistema.   
